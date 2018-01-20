@@ -100,23 +100,21 @@ void retro_init(void)
 	// get paths
 	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &SystemPath);
 
+	char *biosPath;
+	biosPath = (char*)malloc(strlen(SystemPath) + (10 *(*sizeof(char)));
+				 
 	// load exec
-	char *execPath;
-	execPath = malloc(strlen(SystemPath) + 10);
-	strcpy(execPath, SystemPath);
-	strcat(execPath, "exec.bin");
-	//printf("%s\n", execPath);
-	loadExec(execPath);
-	free(execPath);
-
+	strcpy(biosPath, SystemPath);
+	strcat(biosPath, "/exec.bin");
+	printf("Loading Mattel Intellivision exec.bin BIOS: %s\n", execPath);
+	loadExec(biosPath);
 	// load grom
-	char *gromPath;
-	gromPath = malloc(strlen(SystemPath) + 10);
-	strcpy(gromPath, SystemPath);
-	strcat(gromPath, "grom.bin");
-	//printf("%s\n", gromPath);
-	loadGrom(gromPath);
-	free(gromPath);
+	strcpy(biosPath, SystemPath);
+	strcat(biosPath, "/grom.bin");
+	printf("%sLoading Mattel Intellivision grom.bin BIOS: \n", gromPath);
+	loadGrom(biosPath);
+				 
+	free(biosPath);
 
 	// Setup keyboard input
 	struct retro_keyboard_callback kb = { Keyboard };
