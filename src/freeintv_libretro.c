@@ -109,6 +109,7 @@ void retro_init(void)
 	printf("Loading Mattel Intellivision exec.bin BIOS: %s\n", biosPath);
 	loadExec(biosPath);
 	// load grom
+	memset(biosPath,0,strlen(biosPath));
 	strcpy(biosPath, SystemPath);
 	strcat(biosPath, "/grom.bin");
 	printf("%sLoading Mattel Intellivision grom.bin BIOS: \n", biosPath);
