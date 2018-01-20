@@ -101,17 +101,17 @@ void retro_init(void)
 	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &SystemPath);
 
 	char *biosPath;
-	biosPath = (char*)malloc(strlen(SystemPath) + (10 *(*sizeof(char)));
+	biosPath = (char*)malloc(strlen(SystemPath) + (10 * (sizeof(char))));
 				 
 	// load exec
 	strcpy(biosPath, SystemPath);
 	strcat(biosPath, "/exec.bin");
-	printf("Loading Mattel Intellivision exec.bin BIOS: %s\n", execPath);
+	printf("Loading Mattel Intellivision exec.bin BIOS: %s\n", biosPath);
 	loadExec(biosPath);
 	// load grom
 	strcpy(biosPath, SystemPath);
 	strcat(biosPath, "/grom.bin");
-	printf("%sLoading Mattel Intellivision grom.bin BIOS: \n", gromPath);
+	printf("%sLoading Mattel Intellivision grom.bin BIOS: \n", biosPath);
 	loadGrom(biosPath);
 				 
 	free(biosPath);
