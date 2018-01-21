@@ -78,25 +78,25 @@ void STICDrawFrame()
 
 	// draw displayed area
 	drawBackground();
-	
+
 	// draw MOBs
 	drawSprites();
 
 	// draw border
 	drawBorder();
-	
+
 	// complete collisions e.g.:
 	// if MOB2 hits MOB1, MOB1 should also hit MOB2
 	for(i=0; i<8; i++)
 	{
 		// clear self-interactions 
 		if(((Memory[0x18+i]>>i)&0x01)==1)
-		{ 
+		{
 			Memory[0x18+i] = Memory[0x18+i] ^ (1<<i);
-		} 
+		}
 		// skip non-interacting sprites
 		if(((Memory[0x00+i]>>8)&0x01)==0) { continue; }
-		
+
 		// copy collisions to colliding sprites
 		for(j=0; j<8; j++)
 		{
@@ -154,15 +154,15 @@ void drawSprites() // MOBs
 	int card; // card number
 	int gram; // is sprite in GRAM or GROM
 	int offset; // address of upper-left corner of sprite in framebuffer
-	int sizeX; 
-	int sizeY; 
-	int flipX; 
+	int sizeX;
+	int sizeY;
+	int flipX;
 	int flipY;
 	int posX;
 	int posY;
 	int yRes; // some sprites are two-tiles
 	int cbit; // collision bit for collision buffer for collision detection
-	
+
 	int gfxheight; // sprite is either 8 or 16 bytes (1 or 2 tiles) tall
 	int rowheight; // line size for sprite scaling on Y-axis
 	int row; // current scan line from start of sprite
@@ -170,7 +170,7 @@ void drawSprites() // MOBs
 
 	int pixel, showpixel, bit;
 	int bitstart, bitdir;
-	int gfxstart, gfxdir;
+	int gfxdir;
 	int priority = 0;
 
 	for(i=7; i>=0; i--)
@@ -189,7 +189,7 @@ void drawSprites() // MOBs
 		card = (Ra>>3) & 0xFF;
 		if(gram==1) { card = card & 0x3F; } // ignore bits 6 and 7
 		gfx = 0x3000 + (0x800*gram) + (card*8);
-		
+
 		sizeX = (Rx>>10) & 0x01;
 		sizeY = (Ry>>8) & 0x03;
 		flipX = (Ry>>10) & 0x01;
@@ -199,11 +199,11 @@ void drawSprites() // MOBs
 		yRes = (Ry>>7) & 0x01;
 		priority = (Ra>>13) & 0x01;
 
-		fgcolor = colors[((Ra>>9)&0x08)|(Ra&0x07)];	
-		
+		fgcolor = colors[((Ra>>9)&0x08)|(Ra&0x07)];
+
 		offset = posY*352 + posX;
 
-		gfxheight=8;
+		gfxheight = 8;
 		rowheight = 1<<sizeY; // 1, 2, 4, or 8 from 0, 1, 2, or 3
 
 		if(yRes==1) //16 bit tall sprites, the second card follows in memory
@@ -238,10 +238,10 @@ void drawSprites() // MOBs
 
 					n = offset+(row*352)+col;
 					pixel = (gdata>>bit) & 1;
-					
+
 					if(((Rx>>9)&0x01)==1) // visible
 					{
-						showpixel = !(pixel==0 | (priority==1 & ((cbuff[n]>>8)&0x01))==1);
+						showpixel = !((pixel==0) | ((priority==1) & (((cbuff[n]>>8)&0x01)==1)));
 						frame[n] = showpixel ? fgcolor : frame[n];
 						frame[n+1] = showpixel ? fgcolor : frame[n+1];
 						// draw four pixels wide if sizeX==1

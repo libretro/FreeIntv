@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <string.h>
 #include "libretro.h"
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
 
 #include "intv.h"
 #include "memory.h"
@@ -85,9 +87,6 @@ static void Keyboard(bool down, unsigned keycode, uint32_t character, uint16_t k
 
 void retro_init(void)
 {
-	char* execpath;
-	char* grompath;
-
 	// init buffers, structs
 	memset(frame, 0, frameSize);
 
@@ -100,22 +99,15 @@ void retro_init(void)
 	// get paths
 	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &SystemPath);
 
-	char *biosPath;
-	biosPath = (char*)malloc(strlen(SystemPath) + (10 * (sizeof(char))));
-				 
 	// load exec
-	strcpy(biosPath, SystemPath);
-	strcat(biosPath, "/exec.bin");
-	printf("Loading Mattel Intellivision exec.bin BIOS: %s\n", biosPath);
-	loadExec(biosPath);
+	char execPath[PATH_MAX_LENGTH];
+	fill_pathname_join(execPath, SystemPath, "exec.bin", PATH_MAX_LENGTH);
+	loadExec(execPath);
+
 	// load grom
-	memset(biosPath,0,strlen(biosPath));
-	strcpy(biosPath, SystemPath);
-	strcat(biosPath, "/grom.bin");
-	printf("%sLoading Mattel Intellivision grom.bin BIOS: \n", biosPath);
-	loadGrom(biosPath);
-				 
-	free(biosPath);
+	char gromPath[PATH_MAX_LENGTH];
+	fill_pathname_join(gromPath, SystemPath, "grom.bin", PATH_MAX_LENGTH);
+	loadGrom(gromPath);
 
 	// Setup keyboard input
 	struct retro_keyboard_callback kb = { Keyboard };
@@ -207,7 +199,7 @@ void retro_run(void)
 			drawText(14, 21, "HELP - PRESS A");
 		}
 	}
-	
+
 	if(paused)
 	{
 		// help menu //
@@ -259,14 +251,14 @@ void retro_run(void)
 		// draw overlays
 		if(showKeypad0) { drawMiniKeypad(0, frame); }
 		if(showKeypad1) { drawMiniKeypad(1, frame); }
-		
+
 		// sample audio from buffer
 		audioInc = 3733.5 / audioSamples;
 
 		for(i=0; i<audioSamples; i++)
 		{
 			Audio(PSGBuffer[(int)audioBufferPos], PSGBuffer[(int)audioBufferPos]); // Audio(left, right)
-			
+
 			audioBufferPos += audioInc;
 
 			audioBufferPos = audioBufferPos * (audioBufferPos<(PSGBufferSize-1));
@@ -292,7 +284,7 @@ void retro_run(void)
 
 	// send frame to libretro
 	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
-	
+
 }
 
 unsigned retro_get_region(void)

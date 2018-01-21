@@ -21,4 +21,8 @@ unsigned int Memory[0x10000];
 
 void MemoryInit();
 
+int readMem(int adr);
+
+void writeMem(int adr, int val);
+
 #endif

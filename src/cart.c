@@ -45,7 +45,7 @@ int LoadCart(char *path)
 {
 	unsigned char word[1];
 	FILE *fp;
-	
+
 	size = 0;
 
 	if((fp = fopen(path,"rb"))!=NULL)
@@ -96,7 +96,7 @@ int readWord()
 	return val;
 }
 
-int loadRange(int start, int stop)
+void loadRange(int start, int stop)
 {
 	while(start<=stop && pos<size) // load segment
 	{
@@ -117,8 +117,7 @@ int loadROM() // load intellicart format rom
 	pos = 0;
 	int i;
 	int segments = readWord() & 0xFF; // number of non-contiguous rom segments (drop magic number)
-	int ocs = readWord(); // 1's compliment of segments
-	int t;
+	int t = readWord(); // 1's compliment of segments (ignore)
 	int start;
 	int stop;
 	for(i=0; i<segments; i++)
@@ -396,4 +395,5 @@ int getLoadMethod() // lazy, but it works
 			method = fingerprints[i+1];
 		}
 	}
+	return method;
 }

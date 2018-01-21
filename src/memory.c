@@ -22,7 +22,7 @@
 
 void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {
-	if(adr>=0x100 & adr<=0x1FF)
+	if(adr>=0x100 && adr<=0x1FF)
 	{
 		val = val & 0xFF;
 	}
@@ -34,7 +34,7 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 	{ 
 		Memory[adr & 0x3FFF] = val & 0xFFFF;
 	}
-	
+
 	//GRAM Alias
 	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
 	{ 
@@ -46,7 +46,7 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 	{
 		PSGNotify(adr, val);
 	}
-	
+
 	if(VBlank1>0)
 	{
 		// STIC Display Enable
@@ -65,7 +65,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
 {
 	int val = Memory[adr & 0xFFFF];
 
-	if(adr>=0x100 & adr<=0x1FF)
+	if(adr>=0x100 && adr<=0x1FF)
 	{
 		val = val & 0xFF;
 	}

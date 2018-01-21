@@ -61,7 +61,7 @@ int readIndirect(int reg) // Read Indirect, handle SDBD, update autoincriment re
 
 	if(reg==6) { R[reg] = R[reg] - 1; } // decriment R6 (SP) before read
 	adr = R[reg];
-	
+
 	if(Flag_DoubleByteData==0)
 	{
 		val = readMem(adr);
@@ -77,11 +77,11 @@ int readIndirect(int reg) // Read Indirect, handle SDBD, update autoincriment re
 	if(reg==4 || reg==5 || reg==7) // autoincrement registers R4-R7 excluding SP (R6)
 	{
 		R[reg] = (R[reg]+1) & 0xFFFF;
-	} 
+	}
 	return val;
 }
 
-int writeIndirect(int reg, int val)
+void writeIndirect(int reg, int val)
 {
 	int adr = R[reg];
 	writeMem(adr, val);
@@ -106,29 +106,31 @@ int readOperandIndirect()
 	return val;
 }
 
-int SetFlagsCSZ(int reg)
-{
-	Flag_Carry = (R[reg] & 0x10000) != 0;
-	SetFlagsSZ(reg);
-}
-int SetFlagsSZ(int reg)
+void SetFlagsSZ(int reg)
 {
 	R[reg] = R[reg] & 0xFFFF;
 	Flag_Sign = (R[reg] & 0x8000)!=0;
 	Flag_Zero = R[reg]==0;
 }
+
+void SetFlagsCSZ(int reg)
+{
+	Flag_Carry = (R[reg] & 0x10000) != 0;
+	SetFlagsSZ(reg);
+}
+
 int AddSetSZOC(int A, int B)
 {
 	int signa = A & 0x8000;
 	int signb = B & 0x8000;
 	int result = (A+B);
 	int signr =  result & 0x8000;
-	
+
 	Flag_Overflow = (signa==signb && signa!=signr) ? 1 : 0;
 	Flag_Carry = (result & 0x10000) != 0;
-	
+
 	result = result & 0xFFFF;
-	
+
 	Flag_Sign = (result & 0x8000)!=0;
 	Flag_Zero = result==0;
 	return result;
@@ -148,9 +150,9 @@ int CP1610Tick(int debug)
 {
 	// execute one instruction //
 	int sdbd = Flag_DoubleByteData;
-	
+
 	unsigned int instruction = readMem(R[PC]);
-	
+
 	int ticks = 0;
 
 	if(instruction > 0x03FF)
@@ -158,7 +160,7 @@ int CP1610Tick(int debug)
 		// bad OpCode, Halt //
 		return 0;
 	}
-	
+
 	// DEBUG
 /*
 	printf("[%03x] %04x %04x %04x %04x %04x %04x %04x %04x   ", instruction, R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7]);
@@ -172,7 +174,7 @@ int CP1610Tick(int debug)
 	printf("\n");
 */
 	R[PC]++; // point PC/R7 at operand/next address
-	
+
 	ticks = OpCodes[instruction](instruction); // execute instruction
 
 	if(sdbd==1) { Flag_DoubleByteData = 0; } // reset SDBD
@@ -447,7 +449,6 @@ int CMPR(int v) // Compare Registers
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
-	int sign = R[dreg] & 0x8000;
 	int res = SubSetOC(R[dreg], R[sreg]);
 	Flag_Sign = (res & 0x8000)!=0;
 	Flag_Zero = res==0;
@@ -594,7 +595,6 @@ int ADDI(int v) // Add Immediate
 int SUB(int v) // Subtract
 {
 	int reg = v & 0x07;
-	int sign = R[reg] & 0x8000;
 	int val = readOperandIndirect();
 	R[reg] = SubSetOC(R[reg], val);
 	SetFlagsSZ(reg);
@@ -604,7 +604,6 @@ int SUBa(int v)  // Subtract Indirect
 {
 	int areg = (v >> 3) & 0x07;
 	int dreg = v & 0x07;
-	int sign = R[dreg] & 0x8000;
 	int val = readIndirect(areg);
 	R[dreg] = SubSetOC(R[dreg], val);
 	SetFlagsSZ(dreg);
@@ -646,7 +645,6 @@ int CMPI(int v) // CMP Immediate
 int AND(int v) // And
 {
 	int reg = v & 0x07;
-	int sign = R[reg] & 0x8000;
 	int val = readOperandIndirect();
 	R[reg] = R[reg] & val;
 	SetFlagsSZ(reg);
