@@ -1,0 +1,16 @@
+SOURCES_C += $(SOURCE_DIR)/freeintv_libretro.c \
+	$(SOURCE_DIR)/intv.c \
+	$(SOURCE_DIR)/memory.c \
+	$(SOURCE_DIR)/cp1610.c \
+	$(SOURCE_DIR)/cart.c \
+	$(SOURCE_DIR)/controller.c \
+	$(SOURCE_DIR)/osd.c \
+	$(SOURCE_DIR)/psg.c \
+	$(SOURCE_DIR)/stic.c \
+	$(SOURCE_DIR)/deps/libretro-common/file/file_path.c \
+	$(SOURCE_DIR)/deps/libretro-common/compat/compat_strl.c \
+	$(SOURCE_DIR)/deps/libretro-common/compat/compat_strcasestr.c
+
+SOURCES_CXX += 
+
+INCLUDES += -Isrc/deps/libretro-common/include
