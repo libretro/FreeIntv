@@ -1,0 +1,90 @@
+-----------------------------------------------------------------
+To Install FreeIntv on RetroPie 4.2:
+-----------------------------------------------------------------
+
+Installing FreeIntv is simple, though you'll need a basic
+understanding of file system operations and be comfortable
+working from the command line.
+
+Specifically, you'll need to know how to change directories,
+how to move or copy files, and how to edit text files.
+
+-----------------------------------------------------------------
+Step 1:  Create the necessary directories
+-----------------------------------------------------------------
+
+	> sudo mkdir /opt/retropie/libretrocores/lr-freeintv
+
+-----------------------------------------------------------------
+Step 2: Install the libreto core
+-----------------------------------------------------------------
+
+Copy the file:
+
+	freeintv_libretro.so
+to: 
+	/opt/retropie/libretrocores/lr-freeintv
+
+Be sure to set permissions to 755:
+
+	> sudo chmod 755 /opt/retropie/libretrocores/lr-freeintv/*
+
+-----------------------------------------------------------------
+Step 3: Add the retroarch config file
+-----------------------------------------------------------------
+
+Add the file:
+
+	retroarch.cfg
+to:
+	/opt/retropie/configs/intellivision
+
+Be sure to set permissions to 755:
+
+	> sudo chmod 755 /opt/retropie/configs/intellivision/*
+
+-----------------------------------------------------------------
+Step 4:  
+-----------------------------------------------------------------
+
+If you're already using an Intellivision emulator, add the line:
+
+	lr-freeintv = "/opt/retropie/emulators/retroarch/bin/retroarch -L /opt/retropie/libretrocores/lr-freeintv/freeintv_libretro.so --config /opt/retropie//configs/intellivision/retroarch.cfg %ROM%"
+
+to the top of the file:
+
+	/opt/retropie/configs/intellivision/emulators.cfg
+
+Optionally, you can choose to set it as default, as is the case for
+the included emulators.cfg file.
+
+If not, copy the included emulators.cfg file to:
+
+	/opt/retropie/configs/intellivision/
+
+Be sure to set permissions to 755:
+
+	> sudo chmod 755 /opt/retropie/configs/intellivision/*
+
+-----------------------------------------------------------------
+Step 5: Restart EmulationStation and play some Intellivision! 
+-----------------------------------------------------------------
+
+George Plimpton would approve.
+
+----------------------------------------------------------------
+Remember that FreeIntv is free software
+----------------------------------------------------------------
+
+FreeIntv is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+FreeIntv is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with FreeIntv.  If not, see http://www.gnu.org/licenses/

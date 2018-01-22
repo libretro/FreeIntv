@@ -21,6 +21,10 @@ int SR1; // SR1 line for interupt
 
 void LoadGame();
 
+void loadExec(char *path);
+
+void loadGrom(char *path);
+
 void Run();
 
 void Reset();

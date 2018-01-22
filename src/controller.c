@@ -150,7 +150,7 @@ int getKeypadState(int player, int joypad[], int joypre[])
 	if(joypre[1]==0 && joypad[1]!=0) { cursorY++; if(cursorY>3) { cursorY = 0; } } // down
 	if(joypre[2]==0 && joypad[2]!=0) { cursorX--; if(cursorX<0) { cursorX = 2; } } // left
 	if(joypre[3]==0 && joypad[3]!=0) { cursorX++; if(cursorX>2) { cursorX = 0; } } // right
-	
+
 	cursor[player*2] = cursorX;
 	cursor[player*2+1] = cursorY;
 
@@ -169,12 +169,12 @@ int getQuickKeypadState(int player)
 	return keypadStates[(cursorY*3)+cursorX];
 }
 
-void drawMiniKeypad(int player, int frame[])
+void drawMiniKeypad(int player, unsigned int frame[])
 {
 	int i, j, k;
 	int cursorX = cursor[player*2];
 	int cursorY = cursor[player*2+1];
-	
+
 	// draw keypad //
 	int offset = 65120 + (player*325);
 	k = 0;

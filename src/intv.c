@@ -24,6 +24,8 @@
 #include "controller.h"
 #include "cart.h"
 
+int exec();
+
 void LoadGame(char* path) // load cart rom //
 {
 	if(LoadCart(path))
@@ -55,6 +57,7 @@ void loadExec(char* path)
 	}
 	else
 	{
+		printf("Failed loading exec from: %s", path);
 		frame[2] = 0xFF0000;
 	}
 }
@@ -78,6 +81,7 @@ void loadGrom(char* path)
 	}
 	else
 	{
+		printf("Failed loading grom from: %s", path);
 		frame[4] = 0xFF0000;
 	}
 }
