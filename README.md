@@ -1,6 +1,17 @@
 # FreeIntv
 FreeIntv is a libretro emulation core for the Mattel Intellivision designed to be compatible with joypads from the SNES era forward even if they originally required a number pad.
 
+## BIOS
+
+FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'system' folder for proper emulation:
+
+| Function | Filename* | MD5 Hash |
+| --- | --- | --- | 
+| Executive ROM | `exec.bin`  | `62e761035cb657903761800f4437b8af` |
+| Graphics ROM | `grom.bin` | `0cd5946c6473e42e8e4c2137785e427f`
+
+* BIOS filenames are case-sensitive
+
 ## Controls
 * The d-pad will give you 8-way movement. If available, the left analog stick will function like the 16-way disc.
 * The FreeIntv "mini keypad" allows you to view and press keys on a small keypad that appears in the lower-corner of the display while L or R is being held.
