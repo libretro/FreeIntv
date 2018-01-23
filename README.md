@@ -21,4 +21,4 @@ Mattel Intellivision games were often meant to be played with game-specific card
 * The select button lets you switch the left and right controllers. Some games expect the left controller to be player one, others expect the right controller. This isn't a problem if you have two controllers (and don't mind juggling them) but users with only one controller or using a portable setup would be effectively locked out of some games. Pressing select from either controller with swap the left controller for the right and vice-versa.
 
 ## Entertainment Computer System and Intellivoice
-FreeIntv does not currently support Entertainment Computer System (ECS) and Intellivoice funcationality. Contributions to the source are welcome!
+FreeIntv does not currently support Entertainment Computer System (ECS) and Intellivoice functionality. Contributions to the source are welcome!
