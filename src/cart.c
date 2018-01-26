@@ -43,6 +43,7 @@ int pos = 0; // current position in data
 
 int LoadCart(char *path)
 {
+	printf("Attempting to load cartridge ROM from: %s\n", path);		
 	unsigned char word[1];
 	FILE *fp;
 
@@ -59,11 +60,13 @@ int LoadCart(char *path)
 
 		if(isROM()) // intellicart format
 		{
+			printf("Intellicart cartridge format detected\n");		
 			return loadROM();
 		}
 		else
 		{
 			// check cartinfo database for load method
+			printf("Intelllicart format not detected. Determining load method via database.\n");		
 			switch(getLoadMethod())
 			{
 				case 0: load0(); break;
@@ -84,6 +87,7 @@ int LoadCart(char *path)
 	}
 	else
 	{
+		printf("Failed to load cartridge ROM from: %s\n", path);		
 		return 0;
 	}
 }
