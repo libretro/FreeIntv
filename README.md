@@ -1,6 +1,13 @@
 # FreeIntv
 FreeIntv is a libretro emulation core for the Mattel Intellivision designed to be compatible with joypads from the SNES era forward even if they originally required a number pad.
 
+## Authors
+
+FreeIntv was created by David Richardson.
+
+## License
+The FreeIntv core is licensed under GPLv3. More information at https://github.com/markwkidd/FreeIntv/blob/master/LICENSE.
+
 ## BIOS
 FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'system' folder for proper emulation:
 
