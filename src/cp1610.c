@@ -157,7 +157,7 @@ int CP1610Tick(int debug)
 
 	if(instruction > 0x03FF)
 	{
-		printf("Bad Opcode: %i", instruction);
+		printf("[ERROR][FREEINT] Bad opcode: %i\n", instruction);
 	        // bad OpCode, Halt //
 		return 0;
 	}
