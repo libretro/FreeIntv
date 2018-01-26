@@ -54,11 +54,11 @@ void loadExec(char* path)
 
 		fclose(fp);
 		frame[2] = 0x00FF00;
-		printf("Succeeded loading Executive BIOS from: %s\n", path);		
+		printf("[INFO] [FREEINTV] Succeeded loading Executive BIOS from: %s\n", path);		
 	}
 	else
 	{
-		printf("Failed loading Executive BIOS from: %s\n", path);
+		printf("[ERROR] [FREEINTV] Failed loading Executive BIOS from: %s\n", path);
 		frame[2] = 0xFF0000;
 	}
 }
@@ -79,12 +79,12 @@ void loadGrom(char* path)
 
 		fclose(fp);
 		frame[4] = 0x00FF00;
-		printf("Succeeded loading Graphics BIOS from: %s\n", path);
+		printf("[INFO] [FREEINTV] Succeeded loading Graphics BIOS from: %s\n", path);
 		
 	}
 	else
 	{
-		printf("Failed loading Graphics BIOS from: %s\n", path);
+		printf("[ERROR] [FREEINTV] Failed loading Graphics BIOS from: %s\n", path);
 		frame[4] = 0xFF0000;
 	}
 }
@@ -113,7 +113,7 @@ int exec() // Run one instruction
 	if(ticks==0)
 	{
 		// Halt Instruction found! //
-		printf("\nHALT! at %i\n", Cycles);
+		printf("[ERROR] [FREEINTV] \nHALT! at %i\n", Cycles);
 		exit(0);
 		return 0;
 	}
