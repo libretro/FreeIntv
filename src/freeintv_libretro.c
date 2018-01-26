@@ -102,13 +102,11 @@ void retro_init(void)
 	// load exec
 	char execPath[PATH_MAX_LENGTH];
 	fill_pathname_join(execPath, SystemPath, "exec.bin", PATH_MAX_LENGTH);
-	printf("Attempting to load Intellivision BIOS: %s\n", execPath);		
 	loadExec(execPath);
 
 	// load grom
 	char gromPath[PATH_MAX_LENGTH];
 	fill_pathname_join(gromPath, SystemPath, "grom.bin", PATH_MAX_LENGTH);
-	printf("Attempting to load Intellivision BIOS: %s\n", gromPath);			
 	loadGrom(gromPath);
 
 	// Setup keyboard input
