@@ -54,10 +54,11 @@ void loadExec(char* path)
 
 		fclose(fp);
 		frame[2] = 0x00FF00;
+		printf("Succeeded loading Intellivision exec.bin BIOS from: %s", path);		
 	}
 	else
 	{
-		printf("Failed loading exec from: %s", path);
+		printf("Failed loading Intellivision exec.bin BIOS from: %s", path);
 		frame[2] = 0xFF0000;
 	}
 }
@@ -78,10 +79,12 @@ void loadGrom(char* path)
 
 		fclose(fp);
 		frame[4] = 0x00FF00;
+		printf("Succeeded loading Intellivision grom.bin BIOS from: %s", path);
+		
 	}
 	else
 	{
-		printf("Failed loading grom from: %s", path);
+		printf("Failed loading Intellivision grom.bin BIOS from: %s", path);
 		frame[4] = 0xFF0000;
 	}
 }
