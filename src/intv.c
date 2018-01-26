@@ -113,7 +113,7 @@ int exec() // Run one instruction
 	if(ticks==0)
 	{
 		// Halt Instruction found! //
-		printf("[ERROR] [FREEINTV] \nHALT! at %i\n", Cycles);
+		printf("\n\n[ERROR] [FREEINTV] HALT! at %i\n", Cycles);
 		exit(0);
 		return 0;
 	}
