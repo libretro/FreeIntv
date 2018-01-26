@@ -79,15 +79,15 @@ int LoadCart(char *path)
 				case 7: load7(); break;
 				case 8: load8(); break;
 				case 9: load9(); break;
-				default: load0();
+				default: printf("No database match. Using default cartridge memory map.\n"); load0();
 			}
 		}
-
+		printf("Cartridge ROM loaded into memory.\n");
 		return 1;
 	}
 	else
 	{
-		printf("Failed to load cartridge ROM from: %s\n", path);		
+		printf("Failed to load cartridge ROM.\n");		
 		return 0;
 	}
 }
