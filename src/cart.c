@@ -69,7 +69,7 @@ int LoadCart(char *path)
 			printf("[INFO] [FREEINTV] Intelllicart format not detected. Determining load method via database.\n");		
 			switch(getLoadMethod())
 			{
-				case 0: printf("[INFO] [FREEINTV] Cartridge database match: memory map 0"); load0(); break;
+				case 0: printf("[INFO] [FREEINTV] Cartridge database match: memory map 0\n"); load0(); break;
 				case 1: printf("[INFO] [FREEINTV] Cartridge database match: memory map 1\n"); load1(); break;
 				case 2: printf("[INFO] [FREEINTV] Cartridge database match: memory map 2\n"); load2(); break;
 				case 3: printf("[INFO] [FREEINTV] Cartridge database match: memory map 3\n"); load3(); break;
