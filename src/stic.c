@@ -338,17 +338,22 @@ void drawBackground()
 
 			if(((card>>11)&0x03)==2) // Color Squares Mode
 			{
-				c[0] = colors[card & 0x07];
-				c[1] = colors[(card>>3) & 0x07];
-				c[2] = colors[(card>>6) & 0x07];
-				c[3] = colors[((card>>11)&0x04)|((card>>9)&0x03)];
+				c[0] = card & 0x07;
+				c[1] = (card>>3) & 0x07;
+				c[2] = (card>>6) & 0x07;
+				c[3] = ((card>>11)&0x04)|((card>>9)&0x03);
+
+				c[0] = colors[(c[0] * (c[0]!=7)) + ((Memory[CSP] & 0x0F) * (c[0]==7))];
+				c[1] = colors[(c[1] * (c[1]!=7)) + ((Memory[CSP] & 0x0F) * (c[1]==7))];
+				c[2] = colors[(c[2] * (c[2]!=7)) + ((Memory[CSP] & 0x0F) * (c[2]==7))];
+				c[3] = colors[(c[3] * (c[3]!=7)) + ((Memory[CSP] & 0x0F) * (c[3]==7))];
 
 				for(j=0; j<8; j++)
 				{
 					for(k=0; k<8; k++)
 					{
 						a = offset+(352*j*2)+(k*2);
-						sc = ((j>4)<<1) & (k>4); // select color
+						sc = ((j>3)<<1) | (k>3); // select color
 						frame[a] = c[sc];
 						frame[a+1] = c[sc];
 						frame[a+352] = c[sc];
