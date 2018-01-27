@@ -43,7 +43,7 @@ int pos = 0; // current position in data
 
 int LoadCart(char *path)
 {
-	printf("[INFO] [FREEINTV] Attempting to load cartridge ROM from: %s\n", path);		
+    printf("[INFO] [FREEINTV] Attempting to load cartridge ROM from: %s\n", path);		
 	unsigned char word[1];
 	FILE *fp;
 
@@ -56,34 +56,41 @@ int LoadCart(char *path)
 			data[size] = word[0];
 			size++;
 		}
-		fclose(fp);
-
-		if(isROM()) // intellicart format
-		{
-			printf("[INFO] [FREEINTV] Intellicart cartridge format detected\n");		
-			return loadROM();
-		}
-		else
-		{
-			// check cartinfo database for load method
-			printf("[INFO] [FREEINTV] Intelllicart format not detected. Determining load method via database.\n");		
-			switch(getLoadMethod())
-			{
-				case 0: printf("[INFO] [FREEINTV] Cartridge database match: memory map 0\n"); load0(); break;
-				case 1: printf("[INFO] [FREEINTV] Cartridge database match: memory map 1\n"); load1(); break;
-				case 2: printf("[INFO] [FREEINTV] Cartridge database match: memory map 2\n"); load2(); break;
-				case 3: printf("[INFO] [FREEINTV] Cartridge database match: memory map 3\n"); load3(); break;
-				case 4: printf("[INFO] [FREEINTV] Cartridge database match: memory map 4\n"); load4(); break;
-				case 5: printf("[INFO] [FREEINTV] Cartridge database match: memory map 5\n"); load5(); break;
-				case 6: printf("[INFO] [FREEINTV] Cartridge database match: memory map 6\n"); load6(); break;
-				case 7: printf("[INFO] [FREEINTV] Cartridge database match: memory map 7\n"); load7(); break;
-				case 8: printf("[INFO] [FREEINTV] Cartridge database match: memory map 8\n"); load8(); break;
-				case 9: printf("[INFO] [FREEINTV] Cartridge database match: memory map 9\n"); load9(); break;
-				default: printf("[INFO] [FREEINTV] No database match. Using default cartridge memory map.\n"); load0();
-			}
-		}
-		printf("[INFO] [FREEINTV] Cartridge ROM loaded into memory.\n");
-		return 1;
+        fclose(fp);
+        if (feof(fp))
+        {
+            printf("[INFO] [FREEINTV] Successful cartridge load: EOF indicator set");
+        }
+        if (ferror(fp))
+        {
+            printf("[ERROR] [FREEINTV] Cartridge load error indicator set");
+        }
+        if(isROM()) // intellicart format
+        {
+            printf("[INFO] [FREEINTV] Intellicart cartridge format detected\n");		
+            return loadROM();
+	    }
+        else
+        {
+            // check cartinfo database for load method
+            printf("[INFO] [FREEINTV] Intelllicart format not detected. Determining load method via database.\n");		
+            switch(getLoadMethod())
+            {
+                    case 0: printf("[INFO] [FREEINTV] Cartridge database match: memory map 0\n"); load0(); break;
+                    case 1: printf("[INFO] [FREEINTV] Cartridge database match: memory map 1\n"); load1(); break;
+                    case 2: printf("[INFO] [FREEINTV] Cartridge database match: memory map 2\n"); load2(); break;
+                    case 3: printf("[INFO] [FREEINTV] Cartridge database match: memory map 3\n"); load3(); break;
+                    case 4: printf("[INFO] [FREEINTV] Cartridge database match: memory map 4\n"); load4(); break;
+                    case 5: printf("[INFO] [FREEINTV] Cartridge database match: memory map 5\n"); load5(); break;
+                    case 6: printf("[INFO] [FREEINTV] Cartridge database match: memory map 6\n"); load6(); break;
+                    case 7: printf("[INFO] [FREEINTV] Cartridge database match: memory map 7\n"); load7(); break;
+                    case 8: printf("[INFO] [FREEINTV] Cartridge database match: memory map 8\n"); load8(); break;
+                    case 9: printf("[INFO] [FREEINTV] Cartridge database match: memory map 9\n"); load9(); break;
+                    default: printf("[INFO] [FREEINTV] No database match. Using default cartridge memory map.\n"); load0();
+            }
+        }
+        printf("[INFO] [FREEINTV] Cartridge ROM loaded into memory.\n");
+        return 1;
 	}
 	else
 	{
