@@ -9,12 +9,12 @@ FreeIntv was created by David Richardson.
 The FreeIntv core is licensed under GPLv3. More information at https://github.com/markwkidd/FreeIntv/blob/master/LICENSE.
 
 ## BIOS
-FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'system' folder for proper emulation:
+FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'system' folder:
 
 | Function | Filename* | MD5 Hash |
 | --- | --- | --- | 
 | Executive ROM | `exec.bin`  | `62e761035cb657903761800f4437b8af` |
-| Graphics ROM | `grom.bin` | `0cd5946c6473e42e8e4c2137785e427f`
+| Graphics ROM | `grom.bin` | `0cd5946c6473e42e8e4c2137785e427f` |
 
 * BIOS filenames are case-sensitive
 
