@@ -65,11 +65,12 @@ int LoadCart(char *path)
         {
             printf("[ERROR] [FREEINTV] Cartridge load error indicator set");
         }
+        
         if(isROM()) // intellicart format
         {
             printf("[INFO] [FREEINTV] Intellicart cartridge format detected\n");		
             return loadROM();
-	    }
+        }
         else
         {
             // check cartinfo database for load method
