@@ -59,11 +59,11 @@ int LoadCart(char *path)
         fclose(fp);
         if (feof(fp))
         {
-            printf("[INFO] [FREEINTV] Successful cartridge load: EOF indicator set");
+            printf("[INFO] [FREEINTV] Successful cartridge load: EOF indicator set\n");
         }
         if (ferror(fp))
         {
-            printf("[ERROR] [FREEINTV] Cartridge load error indicator set");
+            printf("[ERROR] [FREEINTV] Cartridge load error indicator set\n");
         }
         
         if(isROM()) // intellicart format
@@ -90,14 +90,13 @@ int LoadCart(char *path)
                     default: printf("[INFO] [FREEINTV] No database match. Using default cartridge memory map.\n"); load0();
             }
         }
-        printf("[INFO] [FREEINTV] Cartridge ROM loaded into memory.\n");
         return 1;
 	}
-	else
-	{
-		printf("[ERROR] [FREEINTV] Failed to load cartridge ROM.\n");		
-		return 0;
-	}
+    else
+    {
+        printf("[ERROR] [FREEINTV] Failed to load cartridge ROM file.\n");		
+        return 0;
+    }
 }
 
 int readWord()
