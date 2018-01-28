@@ -126,9 +126,10 @@ int isROM() // check for intellicart format rom
 int loadROM() // load intellicart format rom
 {
 	pos = 0;
-	int i;
+	int i, t;
 	int segments = readWord() & 0xFF; // number of non-contiguous rom segments (drop magic number)
-	int t = readWord(); // 1's compliment of segments (ignore)
+	pos++; // 1's compliment of segments (ignore)
+
 	int start;
 	int stop;
 	for(i=0; i<segments; i++)
