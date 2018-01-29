@@ -94,6 +94,7 @@ else ifeq ($(platform), emscripten)
 	TARGET := $(TARGET_NAME)_libretro_emscripten.bc
 	fpic := -fPIC
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
+	STATIC_LINKING := 1
 else ifeq ($(platform), vita)
 	TARGET := $(TARGET_NAME)_vita.a
 	CC = arm-vita-eabi-gcc
