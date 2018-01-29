@@ -18,27 +18,31 @@
 #include "stic.h"
 #include "psg.h"
 
+#include <stdio.h>
+
 // unsigned int Memory[0x10000];
 
 void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {
+	val = val & 0xFFFF;
+
 	if(adr>=0x100 && adr<=0x1FF)
 	{
 		val = val & 0xFF;
 	}
 
-	Memory[adr & 0xFFFF] = val & 0xFFFF;
+	Memory[adr & 0xFFFF] = val;
 
 	//STIC Alias
 	if((adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
 	{ 
-		Memory[adr & 0x3FFF] = val & 0xFFFF;
+		Memory[adr & 0x3FFF] = val;
 	}
 
 	//GRAM Alias
 	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
 	{ 
-		Memory[adr & 0x3FFF] = val & 0xFFFF;
+		Memory[adr & 0x3FFF] = val;
 	}
 
 	//PSG Registers
@@ -57,7 +61,7 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 		// STIC Mode Select 
 		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
 		{
-			STICmode = 0;
+			STICMode = 0;
 		}
 	}
 }
@@ -74,7 +78,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
 	{
 		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
 		{
-			STICmode = 1;
+			STICMode = 1;
 		}
 	}
 	return val;

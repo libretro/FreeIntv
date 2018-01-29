@@ -19,13 +19,15 @@
 #include "memory.h"
 #include "stic.h"
 
+#include <stdio.h>
+
 void drawBackground();
 void drawSprites();
 void drawBorder();
 
 // http://spatula-city.org/~im14u2c/intv/jzintv-1.0-beta3/doc/programming/stic.txt
 
-//unsigned int STICmode = 1; // 0-foreground/background, 1-color stack/color squares 
+//unsigned int STICMode = 1; // 0-foreground/background, 1-color stack/color squares 
 //unsigned int frame[352*224]; // frame buffer
 
 unsigned int cbuff[352*224]; // collision buffer
@@ -55,7 +57,7 @@ unsigned int colors[16] =
 
 void STICReset()
 {
-	STICmode = 1;
+	STICMode = 1;
 	VBlank1 = 0;
 	VBlank2 = 0;
 	SR1 = 0;
@@ -286,7 +288,7 @@ void drawBackground()
 	int sc = 0; // selected color
 	int cbit = 1<<8; // collision bit for BG
 
-	if(STICmode==0) // Foreground/Background Mode
+	if(STICMode==0) // Foreground/Background Mode
 	{
 		for(i=0; i<240; i++)
 		{
@@ -300,8 +302,9 @@ void drawBackground()
 			bgcolor = colors[((card>>9)&0x03) | ((card>>11)&0x04) | ((card>>9)&0x08)];
 			gram = (card>>11) & 0x01;
 			cardnum = (card>>3) & 0x3F;
+			if(gram) { cardnum = cardnum & 0x3F; }
 
-			gfx = 0x3000 + (0x800*gram) + (cardnum*8);
+			gfx = 0x3000 + (0x800*gram) + (cardnum<<3);
 
 			for(j=0; j<8; j++)
 			{
@@ -368,9 +371,7 @@ void drawBackground()
 			}
 			else // Normal Color Stack Mode 
 			{
-				gram = (card>>11) & 0x01;
-				if(gram) { fgcolor = colors[(card&0x07) | ((card>>9)&0x08)]; }					
-				
+				gram = (card>>11) & 0x01;				
 				advcolor = (card>>13) & 0x01;
 				CSP = (CSP+advcolor) & 0x2B; // cycle through 0x28-0x2B
 				
@@ -380,7 +381,8 @@ void drawBackground()
 				cardnum = (card>>3) & 0xFF;
 				if(gram) { cardnum = cardnum & 0x3F; }
 
-				gfx = 0x3000 + (0x800*gram) + (cardnum*8);
+				gfx = 0x3000 + (0x800*gram) + (cardnum<<3);
+
 				
 				for(j=0; j<8; j++)
 				{

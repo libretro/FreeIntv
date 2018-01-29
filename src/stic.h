@@ -17,7 +17,7 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-unsigned int STICmode; // 0-foreground/background, 1-color stack/color squares 
+unsigned int STICMode; // 0-foreground/background, 1-color stack/color squares 
 
 int VBlank1; // counter for VBlank period 1
 int VBlank2; // counter for VBlank period 2
