@@ -294,7 +294,6 @@ else
 	CC = gcc
 	SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 	CFLAGS += -D__WIN32__ -D__WIN32_LIBRETRO__ -Wno-missing-field-initializers
-	IS_X86 = 1
 endif
 
 LDFLAGS += $(LIBM)
