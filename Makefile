@@ -287,6 +287,37 @@ else ifeq ($(platform), windows_msvc2005_x86)
 	LDFLAGS += -DLL
 	CFLAGS += -D_CRT_SECURE_NO_DEPRECATE
 	LIBS =
+	
+# Windows MSVC 2003 Xbox 1
+else ifeq ($(platform), xbox1_msvc2003)
+	TARGET := $(TARGET_NAME)_libretro_xdk1.lib
+	MSVCBINDIRPREFIX = $(XDK)/xbox/bin/vc71
+	CC  = "$(MSVCBINDIRPREFIX)/CL.exe"
+	CXX  = "$(MSVCBINDIRPREFIX)/CL.exe"
+	LD   = "$(MSVCBINDIRPREFIX)/lib.exe"
+
+	export INCLUDE := $(XDK)/xbox/include
+	export LIB := $(XDK)/xbox/lib
+	PSS_STYLE :=2
+	CFLAGS   += -D_XBOX -D_XBOX1
+	CXXFLAGS += -D_XBOX -D_XBOX1
+	STATIC_LINKING=1
+	
+# Windows MSVC 2010 Xbox 360
+else ifeq ($(platform), xbox360_msvc2010)
+	TARGET := $(TARGET_NAME)_libretro_xdk360.lib
+	MSVCBINDIRPREFIX = $(XEDK)/bin/win32
+	CC  = "$(MSVCBINDIRPREFIX)/cl.exe"
+	CXX  = "$(MSVCBINDIRPREFIX)/cl.exe"
+	LD   = "$(MSVCBINDIRPREFIX)/lib.exe"
+
+	export INCLUDE := $(XEDK)/include/xbox
+	export LIB := $(XEDK)/lib/xbox
+	PSS_STYLE :=2
+	CFLAGS   += -D_XBOX -D_XBOX360
+	CXXFLAGS += -D_XBOX -D_XBOX360
+	STATIC_LINKING=1
+	BIGENDIAN = 1
 
 # Current Windows builds via mingw/gcc
 else
