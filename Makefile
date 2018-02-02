@@ -292,18 +292,32 @@ else ifeq ($(platform), windows_msvc2005_x86)
 else
 	TARGET := $(TARGET_NAME)_libretro.dll
 	CC = gcc
-	SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T
+	SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 	CFLAGS += -D__WIN32__ -D__WIN32_LIBRETRO__ -Wno-missing-field-initializers
 	IS_X86 = 1
 endif
-	
-else
-	CC = gcc
-	TARGET := $(TARGET_NAME)_libretro.dll
-	SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
-endif
 
 LDFLAGS += $(LIBM)
+
+ifneq ($(platform), sncps3)
+	ifeq (,$(findstring msvc,$(platform)))
+		CFLAGS += -Wall -Wno-sign-compare -Wunused \
+		-Wpointer-arith -Wbad-function-cast -Wcast-align -Waggregate-return \
+		-Wshadow -Wstrict-prototypes \
+		-Wformat-security -Wwrite-strings \
+		-Wdisabled-optimization
+	endif
+endif
+
+ifeq ($(DEBUG), 1)
+	CFLAGS += -O0 -Wall -Wno-unused -g
+else
+	CFLAGS += -O2 -DNDEBUG
+endif
+
+ifeq (,$(findstring msvc,$(platform)))
+	CFLAGS += -fomit-frame-pointer -fstrict-aliasing
+endif
 
 ifeq ($(DEBUG), 1)
 	CXXFLAGS += -O0 -g
