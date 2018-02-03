@@ -1,0 +1,567 @@
+@@loop:
+        DECLE   $0010
+        DECLE   $4000
+        DECLE   NUTMARCH
+        ENDP
+
+ball    STRUCT  $320            ; The ball
+@@x     EQU     $ + 0           ; X position of ball as 8.8 'fixed point'
+@@y     EQU     $ + 1           ; Y position of ball as 8.8 'fixed point'
+@@xv    EQU     $ + 2           ; X velocity of ball as 8.8 'fixed point'
+@@yv    EQU     $ + 3           ; Y velocity of ball as 8.8 'fixed point'
+        ENDS
+
+pad0    STRUCT  $120            ; Controller pad #0
+@@y     EQU     $ + 0           ; Y position of center of pad
+@@ai    EQU     $ + 1           ; Whether or not to use built-in AI on this pad
+        ENDS
+
+pad1    STRUCT  $122            ; Controller pad #1
+@@y     EQU     $ + 0           ; Y position of center of pad
+@@ai    EQU     $ + 1           ; Whether or not to use built-in AI on this pad
+        ENDS
+
+rnd     STRUCT  $35E            ; Random number state
+@@lo    EQU     $ + 0           ; lower 16 bits
+@@hi    EQU     $ + 1           ; upper 16 bits
+        ENDS
+
+BIPT    EQU     $113            ; Bip timer
+
+;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+
+T1TLE:  BYTE    100, "4-TRIS", 0
+
+pong    PROC
+@@scor0 EQU     $110            ; Pad #0's score
+@@scor1 EQU     $111            ; Pad #1's score
+@@start EQU     $112            ; "Start of new game" flag
+@@wait  EQU     $350            ; Pause/Wait timer
+
+        DIS
+        SUBI    #4,     R5
+        SDBD
+        MVI@    R5,     R2
+        MVII    #$1FE,  R4
+        SDBD
+        CMP@    R4,     R2
+        BEQ     @@ok
+        J       TITLE + 8       ; not secret game.
+@@ok:   SUBI    #2,     R4
+        SDBD
+        MVI@    R4,     R2
+        COMR    R2              ; wait for pads to go up
+        BNEQ    @@ok
+        JSRD    R5,     ISRSPIN ; Set ISR to '@@init' and spin.
+
+;------------------------------------------------------------------------------
+; Initialization code
+;------------------------------------------------------------------------------
+@@init:
+        DIS
+        ; Make sure rand-number generator's non-zero
+        MVO     PC,     rnd.lo
+        MVO     PC,     rnd.hi
+
+        ; Set up GRAM, playfield
+        MVII    #$3C,   R0
+        MVII    #$3800, R4
+        MVII    #8,     R1
+        CALL    FILLMEM                 ; Set up paddle graphic
+
+        MVII    #$18,   R0      
+        MVO@    R0,     R4              ; Ball graphic
+        MVO@    R0,     R4
+        MVII    #6,     R1
+        CALL    FILLZERO
+
+        ; Clear display, memory
+        MVII    #$100,  R4
+        MVII    #$1F0,  R1
+        CALL    FILLZERO
+        MVII    #$300,  R4
+        MVII    #$05D,  R1
+        CALL    FILLZERO
+
+        ; Playfield
+        MVII    #$2E7,   R3             ; White bar
+        MVII    #$200 + 10, R4
+        MVII    #12,    R2
+@@pfloop:
+        MVO@    R3,     R4
+        ADDI    #19,    R4
+        DECR    R2
+        BNEQ    @@pfloop
+
+        ; Sprites
+        CLRR    R4
+        MVII    #$32,   R1
+        CALL    FILLZERO                ; First, disable all MOBs
+
+        ; Sprite attribute registers
+                ;pfG??nnnnnnfff
+        MVII    #00100000000010b, R0    ; paddles at either end
+        MVII    #$10,   R4
+        MVO@    R0,     R4              ; Paddle 0 in MOB 0
+        DECR    R0
+        MVO@    R0,     R4              ; Paddle 1 in MOB 1
+        ADDI    #8+5,   R0
+        MVO@    R0,     R4              ; Ball in MOB2
+
+        ; Sprite position registers
+        CLRR    R4
+        MVII    #512 + 16,      R0      ; Paddle 0 at left
+        MVII    #512 + 158,     R1      ; Paddle 1 at right
+        MVO@    R0,     R4
+        MVO@    R1,     R4
+
+        MVII    #8,     R4
+        MVII    #512 + 44, R0
+        MVO@    R0,     R4              ; Paddle 0, centered, 2x height
+        MVO@    R0,     R4              ; Paddle 1, centered, 2x height
+        
+        ; Set posn structures
+        ANDI    #$FF,   R0
+        MVO     R0,     pad0.y  
+        MVO     R0,     pad1.y  
+
+        ; Force color stack mode, all black
+        MVI     $21,    R0
+        CLRR    R0
+        MVII    #$28,   R4
+        MVO@    R0,     R4
+        MVO@    R0,     R4
+        MVO@    R0,     R4
+        MVO@    R0,     R4
+        MVO@    R0,     R4
+
+        ; Make sound init'd properly
+        MVII    #$38,   R0
+        MVO     R0,     $1F8
+
+        ; Set up an initial wait, and set the 'start of game' flag.
+        MVII    #$80,   R0
+        MVO     R0,     @@wait          ; Wait ~4 sec when game pops up
+        MVO     R0,     @@start         ; Flag that we're starting up
+
+        ; That's it.
+        CALL    ISRSPIN                 ; Set game ISR, and spin.
+
+;------------------------------------------------------------------------------
+; Main Game ISR.  
+; The entire game logic is implemented in the interrupt service routine.
+; This is very reminiscent of how one would program for an Atari 2600.
+;------------------------------------------------------------------------------
+@@mainisr:
+        PSHR    R5
+
+        ; Do controller paddles
+        MVII    #0,     R4
+        CALL    @@padpos        ; Process controller 0
+
+        MVII    #1,     R4
+        CALL    @@padpos        ; Process controller 1
+
+        ; If we're waiting because a ball was off-sides, skip ball update.
+        MVI     @@wait, R0
+        DECR    R0
+        BMI     @@notwait       ; If expired, we're not waiting... just do it.
+        MVO     R0,     @@wait
+        BEQ     @@clearscore    ; When count transitions to 0, clear score disp
+        B       @@done
+@@clearscore:
+        MVII    #$200 + 40, R4
+        MVII    #10,    R1
+        CALL    FILLZERO
+        INCR    R4
+        MVII    #10,    R1
+        CALL    FILLZERO
+@@notwait:
+
+        ; Do ball position
+        MVII    #ball.x,R4
+        MVI@    R4,     R0      ; get x
+        MVI@    R4,     R1      ; get y
+        ADD@    R4,     R0      ; add xv
+        MVI@    R4,     R3
+        ADDR    R3,     R1      ; add yv
+        SUBI    #4,     R4
+        MVO@    R0,     R4      ; store x
+        MVO@    R1,     R4      ; store y
+
+        MVII    #$FF,   R2      ; handy constant
+
+        SWAP    R0
+        SWAP    R1
+        ANDR    R2,     R0      ; integer portion of x pos
+        ANDR    R2,     R1      ; integer portion of y pos
+
+        CMPI    #1,     R0      ; Off left?
+        BLE     @@badball       ; ...yes: bad ball!
+        CMPI    #170,   R0      ; Off right?
+        BGT     @@badball       ; ...yes: bad ball!
+
+        TSTR    R3
+        BPL     @@not_bounce_y_top ; If ball's not moving up, don't check top
+        CMPI    #8,     R1      ; See if we hit the top of the screen.
+        BLE     @@did_bounce_y  ; ... Yes, go bounce the ball.
+        B       @@not_bounce_y  ; ... No, then don't test for bottom of screen.
+        
+@@not_bounce_y_top:
+        CMPI    #101,   R1      ; We're moving down. Test for bottom of screen.
+        BLE     @@not_bounce_y  ; ... No, then don't bounce.
+@@did_bounce_y:
+        NEGR    R3              ; Ok, bounce the ball by inverting velocity.
+        MVO     R3,     ball.yv
+
+        MVII    #$100,  R3      ; Make a mid-frequency 'BIP'
+        CALL    _BIP
+
+@@not_bounce_y:
+
+        MVI     ball.xv, R5     ; Get our X velocity.
+        NEGR    R5              ; Prepare to bounce off paddles.
+        BPL     @@check_left    ; If going left, check left paddle.
+        ; right paddle values
+        MVII    #156,   R4      ; ... else check right paddle.
+        MVI     pad1.y, R3
+        B       @@check
+@@check_left:
+        ; left paddle values
+        MVII    #19,    R4
+        MVI     pad0.y, R3
+@@check:
+        ADDI    #7,     R3      ; center ball with respect to pad
+
+        SUBR    R0,     R4      ; Compare ball's X position with paddle's
+        BEQ     @@maybe_hit     ; If equal, maybe we've hit.
+        DECR    R4              ; Add 1 unit of fuzz in there...
+        BNEQ    @@not_hit       ; Still no match?  Forget it.
+
+@@maybe_hit:
+        SUBR    R1,     R3      ; We might have a hit, so check our Y values.
+        BMI     @@upper_half    ; If ball's Y is less than paddle's, 
+                                ; ...then we're in the upper half of the paddle
+
+        CMPI    #$8,    R3      ; See if we're in 8 pixel range, lower half.
+        BGT     @@not_hit       ; Greater?  We went under the paddle.
+        B       @@hit           ; Else, we hit!  Go to the 'hit' stuff.
+
+@@upper_half:                   ; We're in the upper half of the paddle.
+        NEGR    R3              ; Negate the difference, so it's positive.
+        CMPI    #$8,    R3      ; Are we in 8 pixel range on upper half?
+        BGT     @@not_hit       ; Greater?  We went over the paddle.
+        NEGR    R3              ; Else, we hit!  Fix our difference.
+
+@@hit:
+        NEGR    R3              ; First, negate our difference, and then
+        SLL     R3,     2       ; multiply by 32.
+        SLL     R3,     2
+        SLL     R3,     1
+        ADD     ball.yv, R3     ; Add this to our ball's Y velocity to put
+                                ; some 'english' on the ball.
+
+        MVO     R3,     ball.yv ; Store our updated Y velocity.
+        MVO     R5,     ball.xv ; Store our negated X velocity.
+
+        MVII    #$200,  R3      ; Default to low 'BIP' tone for left paddle.
+        CMPI    #80,    R0
+        BLT     @@bip_lo        ; If we're on right side, do high BIP tone.
+        SLR     R3,     2       ; Set period to high BIP tone for right paddle
+@@bip_lo
+        CALL    _BIP            ; Bip!
+
+@@not_hit:
+        XORI    #512,   R0      ; Set the visibility bit on the ball
+        XORI    #256,   R1      ; Set the Y Size 2x flag on the ball
+        MVO     R0,     $2      ; Set X coord + Vis
+        MVO     R1,     $A      ; Set Y coord + YSize2
+
+@@done:
+        ; Count down the 'bip' counter
+        MVI     BIPT,   R0      ; Get the BIP counter.
+        DECR    R0              ; Count it down
+        BMI     @@bip_skip      ; Negative?  Already expired.
+        MVO     R0,     BIPT    ; Store updated count.
+        BNEQ    @@bip_skip      ; Not zero?  Don't shut off BIP.
+        MVO     R0,     $1FB    ; Else, shut off the BIP by zeroing volume.
+@@bip_skip:
+        
+        ; STIC 'handshake'
+        MVO     R0,     $20     ; Tell the STIC to enable video.
+
+        ; Return.
+        PULR    PC              ; End of ISR!
+
+;------------------------------------------------------------------------------
+; Ball went off-sides -- OR -- start of a game.
+;------------------------------------------------------------------------------
+@@badball:
+        MVII    #88,    R0
+        MVII    #48,    R1
+        MVO     R0,     @@wait
+        SWAP    R0
+        SWAP    R1
+
+        MVO     R0,     ball.x
+        MVO     R1,     ball.y
+        CLRR    R0
+        CMP     @@start, R0
+        BEQ     @@doscore
+        MVII    #@@scor0, R4
+        MVO@    R0,     R4
+        MVO@    R0,     R4
+        MVO@    R0,     R4
+        B       @@fix
+@@doscore
+        MVI     ball.xv, R0
+        MVII    #@@scor0,R3
+        TSTR    R0
+        BPL     @@p1score
+        INCR    R3
+@@p1score
+        MVI@    R3,     R1
+        INCR    R1
+        MVO@    R1,     R3
+
+        ; show scores
+        MVII    #$200 + 40 + 3, R4
+        MVI     @@scor0,R0
+        CALL    _SCORE  
+        MVII    #$200 + 60 - 4, R4
+        MVI     @@scor1,R0
+        CALL    _SCORE  
+
+@@again:
+        MVI     ball.xv, R0
+        TSTR    R0
+        BEQ     @@fix
+        MVI     ball.yv, R0
+        SARC    R0,     1
+        MVO     R0,     ball.yv
+        BNEQ    @@done
+@@fix:
+        MVII    #32,    R2
+        CALL    NEXTRAND  
+        SARC    R0,     1
+        MVII    #$FF,   R0
+        ANDR    R0,     R1
+        MVO     R1,     ball.yv
+        ADCR    PC              ; skip negr if C set
+        NEGR    R0
+        MVO     R0,     ball.xv
+        B       @@done
+
+;------------------------------------------------------------------------------
+; Process paddle's position, and update based on controller inputs.
+;------------------------------------------------------------------------------
+@@padpos:
+        MOVR    R4,     R3
+        ADDR    R4,     R3
+        ADDI    #pad0.y, R3     ; Point to pad 0 or 1 structure
+        MOVR    R4,     R2
+        XORI    #$1FF,  R2      ; Point to controller input 0 or 1
+        MVI@    R2,     R0      ; Load value from controller input.
+        MVI@    R3,     R2      ; Load Y value from pad's structure.
+
+        CMPI    #$FF,   R0      ; See if controller is pressed at all
+        BEQ     @@nopadpress
+
+        INCR    R3
+        MVO@    R3,     R3      ; Set 'no AI' flag
+        DECR    R3
+
+        MOVR    R0,     R1
+        ANDI    #1,     R0      ; See if player pressed down
+        BNEQ    @@notpaddown
+@@domoveup
+        INCR    R2              ; Yes?  Move down.
+        CMPI    #89,    R2
+        BLE     @@padok
+@@badpadpos:
+@@padposdone:
+        JR      R5
+        
+@@notpaddown
+        ANDI    #4,     R1      ; See if player pressed up.
+        BNEQ    @@nopadpress
+@@domovedown
+        DECR    R2              ; Yes?  Move up.
+        CMPI    #8,     R2
+        BLT     @@badpadpos
+@@padok:
+        MVO@    R2,     R3      ; Store new Y position
+        XORI    #512,   R2      ; Set 'YSize2' bit.
+        ADDI    #8,     R4      ; Point to correct pad's Y position register
+        MVO@    R2,     R4
+        JR      R5
+
+@@nopadpress:
+        ; If wait timer is active, don't do AI.
+        MVI     @@wait, R0
+        TSTR    R0
+        BNEQ    @@padposdone
+
+        ; Do 'AI' for paddles which haven't been moved yet.
+        INCR    R3
+        MVI@    R3,     R0
+        DECR    R3
+        TSTR    R0
+        BNEQ    @@padposdone
+
+        MOVR    R4,     R1
+        DECR    R1              ; -1 if pad 0, 0 if pad 1
+        XOR     ball.xv, R1     ; Want to compare sign bits
+        SLLC    R1,     1       ; If carry cleared, ball coming our way.
+        BC      @@padposdone
+
+        MVI     ball.y, R1
+        SWAP    R1
+        ANDI    #$FF,   R1
+        SUBI    #7,     R1
+        SUBR    R2,     R1
+        BGT     @@moveup        ; Ball above paddle, move up.
+        BLT     @@movedown      ; Ball below paddle, move down.
+        B       @@padposdone    ; Level with each other, don't move
+
+        ; Allow some slop in AI so that the AI puts some 'english' on the ball
+@@moveup:
+        CMPI    #4,     R1      ; Are we within acceptible range on paddle?
+        BLT     @@padposdone    ; Yes... don't move.
+        B       @@domoveup
+@@movedown:
+        NEGR    R1
+        CMPI    #4,     R1      ; Are we within acceptible range on paddle?
+        BLT     @@padposdone    ; Yes... don't move.
+        B       @@domovedown
+        
+        
+
+        ENDP
+
+;;==========================================================================;;
+;; _BIP                                                                     ;;
+;; Play a bip on the PSG, with period in R3.                                ;;
+;;                                                                          ;;
+;; INPUTS:                                                                  ;;
+;; R3 -- Period of BIP sound effect.                                        ;;
+;; R5 -- Return address.                                                    ;;
+;;                                                                          ;;
+;; OUTPUTS:                                                                 ;;
+;; R3 -- trashed.                                                           ;;
+;;==========================================================================;;
+_BIP:    PROC
+
+        MVO     R3,     $1F0    ; Store low half of period to Channel A lo
+        SWAP    R3
+        MVO     R3,     $1F4    ; Store high half of period to Channel A hi
+        MVII    #$F,    R3      ; Volume == 15
+        MVO     R3,     $1FB    ; Store volume to Channel A's volume reg.
+        MVII    #4,     R3
+        MVO     R3,     BIPT    ; Set our bip duration to 3 ticks.
+        JR      R5
+        ENDP
+
+
+
+;;==========================================================================;;
+;; RAND                                                                     ;;
+;; Advance random number generator state by some number of bits.            ;;
+;;                                                                          ;;
+;; INPUTS:                                                                  ;;
+;; R2 -- Number of bits to advance state by.                                ;;
+;;                                                                          ;;
+;; OUTPUTS:                                                                 ;;
+;; R0 -- Lower 16 bits of random number state                               ;;
+;; R1 -- Upper 16 bits of random number state                               ;;
+;; R2 -- Zeroed                                                             ;;
+;; R4 -- Clobbered                                                          ;;
+;; R5 -- Intact                                                             ;;
+;;==========================================================================;;
+;RAND    PROC
+;        MVII    #rnd.lo, R4
+;        MVI@    R4,     R0
+;        MVI@    R4,     R1
+;
+;@@loop:
+;        SLLC    R0,     1
+;        RLC     R1,     1
+;        BNC     @@nocarry
+;        XORI    #$A,    R0      ; period==(2**31 - 1) polynomial
+;@@nocarry:
+;        DECR    R2
+;        BNEQ    @@loop
+;
+;        SUBI    #2,     R4
+;        MVO@    R0,     R4
+;        MVO@    R1,     R4
+;        JR      R5
+;        ENDP
+
+;;==========================================================================;;
+;; _SCORE                                                                   ;;
+;; Display score for a given player.  Also test for game over.              ;;
+;;                                                                          ;;
+;; INPUTS:                                                                  ;;
+;; R0 -- Score  (0..15)                                                     ;;
+;; R4 -- Display pointer                                                    ;;
+;; R5 -- Return address                                                     ;;
+;;                                                                          ;;
+;; OUTPUTS:                                                                 ;;
+;; R0, R1 -- Trashed.                                                       ;;
+;; R4 -- Points to right of score.                                          ;;
+;;==========================================================================;;
+_SCORE: PROC
+        CMPI    #15,    R0
+        BLT     @@notgameover           ; Game Over at 15 points.
+
+        CLRR    R1
+        DECR    R1
+        SLR     R1,     1       
+        MVO     R1,     pong.start      ; Reset our 'Start' and 'Wait' flags
+        MVO     R1,     pong.wait       ; to a really large number ($7FFF)
+
+@@notgameover:  
+        CLRR    R1                      ; Start out leading digit as blank.
+        CMPI    #10,    R0              ; See if we have a leading 1 digit.
+        BLT     @@notten                ; If R0 < 10, we do not have leading 1.
+        SUBI    #10,    R0              ; ... otherwise, subtract 10
+        MVII    #$8F,   R1              ; ... and set the leading digit to '1'
+
+@@notten:
+        MVO@    R1,     R4              ; Write the first digit of the score.
+        SLL     R0,     2               ; Move the second digit into place
+        SLL     R0,     1               ; ... by left shifting 3.
+        ADDI    #$87,   R0              ; Add card offset and #7 for 'white'
+        MVO@    R0,     R4              ; Show second digit.
+        JR      R5                      ; Return.
+        ENDP
+
+;;==========================================================================;;
+;; ISRSPIN                                                                  ;;
+;; Sets ISR to the value in R5, and spins waiting for interrupts.           ;;
+;; Note:  Call this with interrupts disabled! (eg. JSRD)                    ;;
+;;                                                                          ;;
+;; INPUTS:                                                                  ;;
+;; R5 -- ISR function address                                               ;;
+;;                                                                          ;;
+;; OUTPUTS:                                                                 ;;
+;; ISR vector set to value in R5.                                           ;;
+;; Does not return.                                                         ;;
+;;==========================================================================;;
+ISRSPIN PROC
+        MVII    #$2F0,  R6
+        MOVR    R5,     R0
+        MVO     R0,     $100
+        SWAP    R0
+        MVO     R0,     $101
+
+        EIS
+        MOVR    PC,     R5
+@@spinloop:
+        DECR    R2
+        B       NEXTRAND                ; loops to @@spinloop
+
+
+

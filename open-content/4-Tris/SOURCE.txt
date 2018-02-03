@@ -1,0 +1,280 @@
+;;===========================================================================;;
+;; Joe Zbiciak's 4-Tris -- A "Falling Tetrominoes" Game for Intellivision    ;;
+;; Copyright 2000, Joe Zbiciak, im14u2c@primenet.com                         ;;
+;; http://www.primenet.com/~im14u2c/intv/                                    ;;
+;;===========================================================================;;
+
+The 4-Tris source code is divided into a small handful of files:
+
+    4-tris.asm          -- Contains all of the executable program code .
+    font.asm            -- Contains the GRAM definitions for 4-Tris.
+    nut1mrch.asm        -- Nutcracker "March" music data.
+    chindnce.asm        -- Nutcracker "Chinese Dance" music data.
+    behappy.asm         -- "Don't Worry, Be Happy" music data.
+
+This file mostly focuses on the general design of the 4-Tris game, and
+not on the file formats for the font or music data.  These are documented
+in the 4-Tris source code itself.
+
+Note that this document kinda rambles at points and isn't as structured
+as I would like.  I currently have the flu and I'm not thinking 100% 
+clearly.  Nonetheless, I hope you find this useful.
+
+
+;;===========================================================================;;
+;;  Program Structure                                                        ;;
+;;===========================================================================;;
+
+----------------
+ Initialization
+----------------
+
+The program is initialized in two steps.  
+
+The first step preempts the EXEC's initialization by using the "Special
+Title Screen" bit in the cartridge ROM header.  This causes the EXEC
+to jump to our Initialization code that's immediately after the title
+string.  This code performs some minor, basic tasks, such as clearing 
+memory and trying to randomize the random number generator's seed.  It 
+then sets our Interrupt Service Routine's address to point to the main 
+initialization code, and spins waiting for an interrupt.
+
+The main initialization code is called via the vertical retrace interrupt.
+The reason this was done was so that the initialization routine could
+safely write to the GRAM and STIC control registers.  By running our
+initialization from an interrupt handler, we can be sure to have access
+to the STIC, GRAM, and GROM for as long as we need.
+
+The GRAM, GROM, and STIC are only accessible for approximately 2100 cycles 
+after a vertical retrace interrupt (I haven't measured this -- this is a 
+rough guess) under normal circumstances.  In normal play, programs are
+expected to access the GRAM and STIC registers during the short vertical
+retrace window, and then hit the "STIC handshake" register (location $0020)
+to let the STIC know it's safe to display a frame.  However, these can be 
+accessed for longer if the program does not hit the "STIC handshake".  The
+display merely blanks.
+
+Anyway, the main initialization code copies the GROM font over to GRAM
+to give us a nice default.  (This allows us to occasionally use pastels
+in color-stack mode for text.  See the 'Sound Test' screen for an example.)
+Then, after the GROM font is copied to GRAM, we unpack 4-Tris' special 
+font replacements overtop of the default font.  It does this, as well as
+some other minor initialization steps, with interrupts disabled so that
+we are sure to get a clean GRAM/STIC setup.
+
+These are the other initialization steps that are performed:  
+
+ -- Resets the stack pointer to $2F0.
+
+ -- Verifies random number seed is non-zero.  (A zero in the seed
+    causes the random number generator to generate zeros only!)
+
+ -- Stubs out the "PREVBL" task ... the game will set this later.
+
+ -- Sets our interrupt handler to the game's Main ISR.
+
+
+Once the initialization is complete, the game falls into the main 
+state-machine loop.  (Note that the INIT function never returns.)
+
+
+-----------------------------------------
+ Overall Game Structure:  The Task Model
+-----------------------------------------
+
+The game is structured as a set of tasks that are triggered either by
+events or by timers which expire.  All tasks are queued when they
+are ready to run, and are serviced from an asynchronous "Main Loop".
+The "Main Loop" pulls tasks from the queue as they arrive, and calls
+them one at a time.  Optional "instance data" may be provided when
+a task is queued, and that data is provided in register R2.
+
+The system itself consists of a mixture of periodic, semi-periodic,
+one-shot, and event-spawned tasks.  The first three, periodic, 
+semi-periodic, and one-shot, are scheduled by task counters that are 
+maintained in the game's Main ISR.  A separate task record is kept in 
+16-bit memory for each task that is timer oriented.  You can think
+of these tasks as being "synchronously scheduled".
+
+Event-spawned tasks are placed in the queue whenever some function in
+the game detects that a task needs to be spawned to handle the event.
+For instance, controller inputs result in a small task being queued
+to dispatch to the correct handler.  Also, the special "Exit" task
+(which is queued by the function SCHEDEXIT) is queued in this manner,
+although it causes the Main Loop to exit.
+
+Synchronously scheduled tasks in 4-Tris include the task which animates 
+the title banner, the task which updates the player's score display, 
+and the task which causes piece to fall.  Asynchronous tasks include 
+controller input dispatches, the scoring routines, and the task which 
+updates the # of lines and level number.
+
+Synchronously scheduled tasks can be either 'periodic' or 'one-shot'.
+Periodic tasks are useful for tasks that need to run with a certain
+frequency.  This includes the score update (which 'rolls' towards the 
+player's actual score), as well as the 'artificial gravity' that makes 
+pieces fall.  One-shot tasks are useful when a particular task needs to 
+be run after a certain delay, but is only run once.  In-between these
+two are self-retriggering tasks, which are started as 'One-shot' tasks,
+but which retrigger themselves if they determine that they need to
+run an additional time.  The line-clear routine in DOSCORE is such a
+task.
+
+
+-------------------------------
+ The Interrupt Service Routine
+-------------------------------
+
+The main Interrupt Service Routine is the glue which holds the game 
+together.  It performs several tasks which are necessary to keep the
+game going:
+
+ -- Run any miscellaneous "pre-VBLANK" task requested by main program.
+ -- Hit the vertical blank handshake to keep screen enabled.
+ -- Update any active sound streams.
+ -- Drain and pixels queued up in the Pixel Queue.
+ -- Count down task timers and schedule tasks when timers expire.
+ -- Count down the 'busy-wait' timer if it is set.
+ -- Detect a "Pause" request and pause the game if needed.
+
+Let's take these one at a time:
+
+ -- Run any miscellaneous "pre-VBLANK" task requested by main program.
+
+If the main program needs to update any STIC registers or GRAM contents,
+it can do so by setting up a function in the pointer "PREVBL".  This is
+called first-thing on entering the ISR.  Currently, 4-Tris installs a
+simple routine which manages the color stack, and that's it.
+
+ -- Hit the vertical blank handshake to keep screen enabled.
+
+Once all STIC and GRAM accesses are out of the way, we hit the STIC 
+handshake to ensure that the display stays enabled.  If we don't do
+this, the display will blank.
+
+ -- Update any active sound streams.
+
+This is where sound effects and music are updated.  We make multiple
+calls to "DOSNDSTREAM" to update both music and sound effects.  Both
+are encoded identically.  If the 4-Tris well is overly full, we call
+the music update twice, to make the music go double-speed.  I'll discuss
+the music architecture later.
+
+ -- Drain and pixels queued up in the Pixel Queue. 
+
+In order to prevent flicker when pieces are redrawn, I've implemented a
+"pixel queue" which queues up put-pixel requests for drawing the pieces.
+I empty this queue from the ISR, so that (hopefully) I beat the display
+refresh and avoid flicker.  Apparently, I've succeeded, according to
+Doug Parsons.  
+
+I didn't place the pixel queue routines in the Pre-VBlank routine for a 
+couple reasons.  First, they're slow.  Slow enough that it could cause 
+the display to blank in some cases if enough pixels were queued.  Second,
+the Pre-VBlank routine is called before the sound update, and the 
+pixel queue depth could vary widely.  This could affect sound quality.
+Third, if the piece does flicker a little (maybe possible at top of
+screen), it's non-fatal -- just a nuisance.
+
+ -- Count down task timers and schedule tasks when timers expire.
+
+This is where the synchronously scheduled tasks are scheduled.  I loop
+through all of the active tasks and count down their timers.  If a timer
+expires, I restart it (unless it's a one-shot task), and I queue the
+task's function pointer and instance data in the task queue.  If the
+task queue overflows, right now I drop the task.  (I haven't had any
+problem with task-queue overflows, though.)
+
+ -- Count down the 'busy-wait' timer if it is set.
+
+The main program can call the "WAIT" function to wait for a certain
+number of 60Hz ticks.  The ISR is responsible for counting down this
+timer.  Waiting for a single tick (wait duration of '1') is a good way 
+to sync up with the ISR, say, if you're waiting for queued pixels to
+be drawn.
+
+ -- Detect a "Pause" request and pause the game if needed.
+
+Finally, there's the infamous 'Pause' key sequence.  We implement this
+in the ISR, since we treat Pause as an event that preempts the entire
+game.  If Pause is detected, the Pause code mutes the audio by zeroing
+volume registers (and saving the old volume register contents from the 
+PSG), and then busywaits until the player's request an un-pause.  The
+"wait for unpause" looks about like so:
+
+     -- Wait for both controller pads to be un-pressed.
+     -- Wait for either controller pad to be pressed
+     -- Wait for both controller pads to be un-pressed.
+
+This was done to make pausing clean and reliable, and not glitchy.
+
+------------------
+ The Music Engine
+------------------
+
+A more complete description of the music format is given in the 4-Tris
+source code.  This mainly discusses how sound and music are interleaved
+together.
+
+4-Tris' sound engine is a "microprogrammed" sound engine, in that the
+data stream consists primarly of commands of the form "write this value
+to that register."  While this is extremely expressive, it's a pain to
+work with, and not really very flexible.  But, given my limited time 
+frame, I was able to achieve some impressive results nonetheless.
+
+4-Tris is configured to have two active sound streams.  One sound 
+stream is dedicated to background music, and the other is dedicated
+to sound effects.  Each sound streamm is given access to certain
+registers on the PSG.  This is controlled via a bitmask stored in the
+sound stream's status record.
+
+The sound effects in 4-Tris vary in their complexity.  For instance, 
+the most common sound effects, the piece-movement 'Bip', the piece
+placement 'BYump', and the line-clearing laser blast all require only
+a single PSG channel to play.  In contrast, the rarer sound effects,
+such as the 'Cleared Four Lines' gong, and the level-change 'Three 
+Dings' require more PSG channels.  This means that the sound effect
+stream is going to need access to a varying number of sound channels.
+
+One approach would be to just allocate the maximum number of sound 
+channels that a sound effect needs to the sound effect stream, and 
+leave it at that.  However, some sound effects use the _entire_
+PSG.  The compromise position would be to lessen the richness of
+the sound effect and/or music.  Obviously, this won't work.
+
+The 4-Tris music engine solves this by the following technique.  First,
+it allocates the entire PSG to the Music stream, since Music is generally
+playing all of the time.  Then, when a sound effect comes active, it
+'borrows' as many PSG resources as it needs from the Music stream, but
+only during the duration of the sound effect.  This borrowing is
+controlled by the routine "SNDPRIO".
+
+SNDPRIO looks to see if there is a sound effect active.  If so, it
+looks at its "Stream Channel Mask", which is a 14-bit word that says
+which registers that stream can write to.  It complements that word
+within the lower 14 bits (it XORs with $3FFF), and stores this out
+as the Music's "Stream Channel Mask".  (Actually, there's one additional
+step:  If the Music is muted, then the Music's stream channel mask is
+ANDed with $7FF to prevent the Music stream from writing to the volume
+registers.)  The SNDPRIO routine is called before updating the sound 
+streams.
+
+This method works, but is prone to glitches.  In order for this 
+technique to work reliably, music data that expects to be preempted by 
+sound effects should send frequent volume updates as well as both halves 
+of the period registers when updating notes.  Otherwise, strange things 
+can happen when stray values are left in registers that were borrowed for 
+a sound-effect.
+
+On a different subject, we have sound effect priorities.  Since we have
+only one sound effect stream, we can only play one sound effect at a time.
+The 4-Tris music engine implements sound effect priorities to solve
+this.  Whenever a sound effect is triggered, the music code first sees
+if a higher priority sound effect is already playing.  If it isn't,
+it plays the requested sound effect.  Otherwise, the sound effect is 
+dropped.  This keeps weird things from happening, such as the "BIP" 
+overriding the "Change of Level" sound effect.
+
+Sound effects and music streams are played by calling the PLAY.sfx
+and PLAY.mus functions.
+
