@@ -18,14 +18,16 @@ FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'sys
 
 * BIOS filenames are case-sensitive
 
-
 ## Entertainment Computer System and Intellivoice
-FreeIntv does not currently support Entertainment Computer System (ECS) and Intellivoice functionality. Contributions to the source are welcome!
+FreeIntv does not currently support Entertainment Computer System (ECS) and Intellivoice functionality. Contributions to the code are welcome!
 
 ## Controller overlays
 Mattel Intellivision games were often meant to be played with game-specific cards overlaid on the numeric keypad. These overlays convey information which can be very useful in gameplay. Images of a limited selection of Intellivision titles are available at: http://www.intellivisionlives.com/bluesky/games/instructions.shtml
 
 ## Controls
+
+Definitions:
+* **Mini-Keypad** - allows the user to view and select keys from a small Intellivision pad in the lower corner of the display.
 
 | RetroPad | FreeIntv Function |
 | --- | --- |
@@ -33,8 +35,8 @@ Mattel Intellivision games were often meant to be played with game-specific card
 | Left Analog Stick | 16-way disc |
 | A | Left Action Button |
 | Y | Top Action Button |
-| X | Use the Last Selected Intellivision Keypad Button (see Mini-Keypad below for more information) - In Astrosmash, for example, you can leave "3" selected to enable instant access to hyperspace. |
-| L/R | Show Intellivision Mini-Keypad which allows you to view and select keys from a small Intellivision pad in the lower corner of the display. |
+| X | Use the Last Selected Mini-Keypad Button - In Astrosmash, for example, you can leave "3" selected to enable instant access to hyperspace. |
+| L/R | Activate the Mini-Keypad |
 | Start | Pause Game |
 | Select | Swap left/right controllers - Some games expect the left controller to be player one, others expect the right controller. This isn't a problem if you have two controllers (and don't mind juggling them) but users with only one controller or using a portable setup would be effectively locked out of some games. Pressing select from either controller with swap the left controller for the right and vice-versa. |
 
