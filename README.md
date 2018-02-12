@@ -26,8 +26,8 @@ Mattel Intellivision games were often meant to be played with game-specific card
 
 ## Controls
 
-Definitions:
 * **Mini-Keypad** - allows the user to view and select keys from a small Intellivision pad in the lower corner of the display.
+* **Controller Swap** - Some Intellivision games expect the left controller to be player one, others expect the right controller. This isn't a problem if you have two controllers (and don't mind juggling them) but users with only one controller or using a portable setup would be effectively locked out of some games. Controller Swap swaps the two controller interfaces so that the player does not have to physically swap controllers.
 
 | RetroPad | FreeIntv Function |
 | --- | --- |
@@ -35,8 +35,8 @@ Definitions:
 | Left Analog Stick | 16-way disc |
 | A | Left Action Button |
 | Y | Top Action Button |
-| X | Use the Last Selected Mini-Keypad Button - In Astrosmash, for example, you can leave "3" selected to enable instant access to hyperspace. |
+| X | Use the Last Selected Intellivision Keypad Button. In Astrosmash, for example, you can leave "3" selected to enable instant access to hyperspace. |
 | L/R | Activate the Mini-Keypad |
 | Start | Pause Game |
-| Select | Swap left/right controllers - Some games expect the left controller to be player one, others expect the right controller. This isn't a problem if you have two controllers (and don't mind juggling them) but users with only one controller or using a portable setup would be effectively locked out of some games. Pressing select from either controller with swap the left controller for the right and vice-versa. |
+| Select | Controller Swap |
 
