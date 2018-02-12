@@ -24,6 +24,7 @@ int PSGBufferPos; // points to next location in output buffer
 int PSGBufferSize;
 
 void PSGInit(); 
+void PSGFrame(); // Notify New Frame
 void PSGTick(int ticks); // ticks PSG some number of cpu cycles 
 void PSGNotify(int adr, int val); // updates PSG on register change
 
