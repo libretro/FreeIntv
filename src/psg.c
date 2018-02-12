@@ -127,6 +127,11 @@ void PSGInit()
 	readRegisters();
 }
 
+void PSGFrame()
+{
+	PSGBufferPos = 0;
+}
+
 void PSGNotify(int adr, int val) // PSG Registers Modified 0x01F0-0x1FD (called from writeMem)
 {
 	readRegisters();

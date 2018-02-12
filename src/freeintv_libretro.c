@@ -257,12 +257,14 @@ void retro_run(void)
 
 		for(i=0; i<audioSamples; i++)
 		{
-			Audio(PSGBuffer[(int)audioBufferPos], PSGBuffer[(int)audioBufferPos]); // Audio(left, right)
+			Audio(PSGBuffer[(int)(audioBufferPos)], PSGBuffer[(int)(audioBufferPos)]); // Audio(left, right)
 
 			audioBufferPos += audioInc;
 
 			audioBufferPos = audioBufferPos * (audioBufferPos<(PSGBufferSize-1));
 		}
+		audioBufferPos = 0.0;
+		PSGFrame();
 	}
 
 	// Swap Left/Right Controller
