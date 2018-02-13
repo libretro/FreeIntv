@@ -116,7 +116,7 @@ void drawBorder()
 {
 	int i;
 	int j;
-	int cbit = 1<<9;
+	int cbit = 1<<9; // bit 9 - border collision 
 	int color = colors[Memory[0x2C]]; // border color
 	int extendTop = 16*((Memory[0x32]>>1)&0x01);
 	int extendLeft = 16*(Memory[0x32]&0x01);
@@ -133,7 +133,7 @@ void drawBorder()
 		for(j=0; j<32+extendLeft; j++)
 		{
 			frame[(i*352)+336+j] = color;
-			cbuff[(i*352)+j] |= cbit;
+			cbuff[(i*352)+336+j] |= cbit;
 		}
 	}
 	for(i=208; i<224; i++)
@@ -228,15 +228,15 @@ void drawSprites() // MOBs
 		{
 			gdata = Memory[gfx];
 			gfx+=gfxdir;
-			if(offset+(row*352)<(352*delayV)) { row++; continue; } // clip
+			if(offset+(row*352)<(352*delayV)) { row++; Memory[0x18+i] |= (1<<9); continue; } // clip
 			for(m=0; m<rowheight; m++)
 			{
-				if(offset+(row*352)+32>(352*224)) { row++; continue; } // clip
+				if(offset+(row*352)+32>(352*224)) { row++; Memory[0x18+i] |= (1<<9); continue; } // clip
 				bit = bitstart;
 				col = 0;
 				for(k=0; k<8; k++)
 				{
-					if(posX+col+2+(2*sizeX)>352) { continue; } // clip
+					if(posX+col+2+(2*sizeX)>352) { Memory[0x18+i] |= (1<<9); continue; } // clip
 
 					n = offset+(row*352)+col;
 					pixel = (gdata>>bit) & 1;
@@ -286,7 +286,7 @@ void drawBackground()
 	int advcolor; // advance CSP
 	int c[4] = {0, 0, 0, 0}; // color squares colors
 	int sc = 0; // selected color
-	int cbit = 1<<8; // collision bit for BG
+	int cbit = 1<<8; // bit 8 - collision bit for BG
 
 	if(STICMode==0) // Foreground/Background Mode
 	{
