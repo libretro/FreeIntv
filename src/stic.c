@@ -81,6 +81,9 @@ void STICDrawFrame()
 	// draw displayed area
 	drawBackground();
 
+	// draw border for collision
+	drawBorder();
+
 	// draw MOBs
 	drawSprites();
 
