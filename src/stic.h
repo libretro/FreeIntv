@@ -26,7 +26,7 @@ int DisplayEnabled; // determines if frame should be updated or not
 
 unsigned int frame[352*224]; // frame buffer
 
-void STICDrawFrame();
-void STICReset();
+void STICDrawFrame(void);
+void STICReset(void);
 
 #endif

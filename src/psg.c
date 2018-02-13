@@ -70,7 +70,7 @@ int EnvAttack;
 int EnvAlternate;
 int EnvHold;
 
-void readRegisters()
+void readRegisters(void)
 {
 	ChA = (Memory[0x01F0] & 0xFF) | ((Memory[0x1F4] & 0x0F)<<8);
 	ChB = (Memory[0x01F1] & 0xFF) | ((Memory[0x1F5] & 0x0F)<<8);

@@ -17,10 +17,10 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-void CP1610Init(); // Adds opcodes to lookup tables
+void CP1610Init(void); // Adds opcodes to lookup tables
 
-void CP1610Reset(); // reset cpu
+void CP1610Reset(void); // reset cpu
 
-int CP1610Tick(); // execute a single instruction, return cycles used
+int CP1610Tick(int debug); // execute a single instruction, return cycles used
 
 #endif

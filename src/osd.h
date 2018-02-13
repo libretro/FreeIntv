@@ -19,12 +19,12 @@
 
 // On-Screen Display //
 
-void drawText(int x, int y, char *text);
+void drawText(int x, int y, const char *text);
 
-void drawPaused();
+void drawPaused(void);
 
-void drawLeftRight();
+void drawLeftRight(void);
 
-void drawRightLeft();
+void drawRightLeft(void);
 
 #endif

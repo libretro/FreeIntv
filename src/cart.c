@@ -19,19 +19,19 @@
 #include "memory.h"
 #include "cart.h"
 
-int isROM();
-int loadROM();
-int getLoadMethod();
-void load0();
-void load1();
-void load2();
-void load3();
-void load4();
-void load5();
-void load6();
-void load7();
-void load8();
-void load9();
+int isROM(void);
+int loadROM(void);
+int getLoadMethod(void);
+void load0(void);
+void load1(void);
+void load2(void);
+void load3(void);
+void load4(void);
+void load5(void);
+void load6(void);
+void load7(void);
+void load8(void);
+void load9(void);
 
 const char *title[0x40];
 
@@ -41,7 +41,7 @@ int size = 0; // size of file read
 
 int pos = 0; // current position in data
 
-int LoadCart(char *path)
+int LoadCart(const char *path)
 {
     printf("[INFO] [FREEINTV] Attempting to load cartridge ROM from: %s\n", path);		
 	unsigned char word[1];
@@ -99,7 +99,7 @@ int LoadCart(char *path)
     }
 }
 
-int readWord()
+int readWord(void)
 {
 	pos = pos * (pos<size);
 	int val = (data[pos]<<8) | data[pos+1];

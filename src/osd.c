@@ -213,7 +213,7 @@ void drawLetter(int x, int y, int c)
 	}
 }
 
-void drawText(int x, int y, char *text)
+void drawText(int x, int y, const char *text)
 {
 	int i = 0;
 	int c = 32;
