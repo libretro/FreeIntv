@@ -24,9 +24,9 @@
 #include "controller.h"
 #include "cart.h"
 
-int exec();
+int exec(void);
 
-void LoadGame(char* path) // load cart rom //
+void LoadGame(const char* path) // load cart rom //
 {
 	if(LoadCart(path))
 	{
@@ -38,7 +38,7 @@ void LoadGame(char* path) // load cart rom //
 	}
 }
 
-void loadExec(char* path)
+void loadExec(const char* path)
 {
 	// EXEC lives at 0x1000-0x1FFF
 	int i;
@@ -63,7 +63,7 @@ void loadExec(char* path)
 	}
 }
 
-void loadGrom(char* path)
+void loadGrom(const char* path)
 {
 	// GROM lives at 0x3000-0x37FF
 	int i;
@@ -105,7 +105,7 @@ void Run()
 	while(exec()) { }
 }
 
-int exec() // Run one instruction 
+int exec(void) // Run one instruction 
 {
 	int ticks = CP1610Tick(0); // Tick CP-1610 CPU, runs one instruction, returns used cycles
 	Cycles = Cycles + ticks; 

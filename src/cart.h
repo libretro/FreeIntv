@@ -17,6 +17,6 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-int LoadCart(char *path);
+int LoadCart(const char *path);
 
 #endif

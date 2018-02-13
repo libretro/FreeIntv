@@ -21,9 +21,9 @@
 
 #include <stdio.h>
 
-void drawBackground();
-void drawSprites();
-void drawBorder();
+void drawBackground(void);
+void drawSprites(void);
+void drawBorder(void);
 
 // http://spatula-city.org/~im14u2c/intv/jzintv-1.0-beta3/doc/programming/stic.txt
 

@@ -19,7 +19,7 @@
 
 unsigned int Memory[0x10000];
 
-void MemoryInit();
+void MemoryInit(void);
 
 int readMem(int adr);
 

@@ -18,6 +18,7 @@
 #include <string.h>
 #include "intv.h"
 #include "memory.h"
+#include "cp1610.h"
 
 // http://wiki.intellivision.us/index.php?title=CP1610#Instruction_Set
 // http://spatula-city.org/~im14u2c/chips/GICP1600.pdf
@@ -91,14 +92,14 @@ void writeIndirect(int reg, int val)
 	}
 }
 
-int readOperand()
+int readOperand(void)
 {
 	int val = readMem(R[PC]);
 	R[PC]++;
 	return val;
 }
 
-int readOperandIndirect()
+int readOperandIndirect(void)
 {
 	int adr = readMem(R[PC]);
 	int val = readMem(adr);
@@ -695,7 +696,7 @@ int XORI(int v) // Xor Immediate
 // Make a big table of function pointers for opcodes
 // as well as a table of flags so that opcodes can
 // be quickly executed and determined to be interuptable 
-void addInstruction(int start, int end, int caninterupt, char *name, int (*callback)())
+void addInstruction(int start, int end, int caninterupt, const char *name, int (*callback)(int))
 {
 	int i;
 	for(i=start; i<=end; i++)

@@ -19,14 +19,14 @@
 
 int SR1; // SR1 line for interupt
 
-void LoadGame();
+void LoadGame(const char *path);
 
-void loadExec(char *path);
+void loadExec(const char *path);
 
-void loadGrom(char *path);
+void loadGrom(const char *path);
 
-void Run();
+void Run(void);
 
-void Reset();
+void Reset(void);
 
 #endif

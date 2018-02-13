@@ -19,7 +19,7 @@
 
 int controllerSwap;
 
-void controllerInit();
+void controllerInit(void);
 
 int getControllerState(int joypad[], int player);
 

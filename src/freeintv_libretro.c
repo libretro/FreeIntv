@@ -51,10 +51,10 @@ void retro_set_input_state(retro_input_state_t fn) { InputState = fn; }
 
 struct retro_game_geometry Geometry;
 
-int joypad0[17]; // joypad 0 state
-int joypad1[17]; // joypad 1 state
-int joypre0[17]; // joypad 0 previous state
-int joypre1[17]; // joypad 1 previous state
+int joypad0[18]; // joypad 0 state
+int joypad1[18]; // joypad 1 state
+int joypre0[18]; // joypad 0 previous state
+int joypre1[18]; // joypad 1 previous state
 
 bool paused = false;
 
@@ -71,8 +71,6 @@ unsigned int frameWidth = 352;
 unsigned int frameHeight = 224;
 unsigned int frameSize = 78848;
 //unsigned int frame[78848];
-
-void drawPaused();
 
 void quit(int state)
 {
@@ -329,7 +327,7 @@ void retro_deinit(void)
 void retro_reset(void)
 {
 	// Reset (from intv.c) //
-	Reset(0);
+	Reset();
 }
 
 /* Stubs */

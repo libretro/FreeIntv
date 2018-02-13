@@ -84,7 +84,7 @@ int getControllerState(int joypad[], int player)
 		theta = atan2((double)Ly, (double)Lx) + PI;
 		// normalize
 		if(theta<0.0) { theta = 0.0; }
-		norm = (int)floor((theta/(2*PI))*15.0);
+		norm = floor((theta/(2*PI))*15.0);
 		norm -= 4; 
 		if(norm<0) { norm += 16; }
 		state = state & discDirections[norm & 0x0F];
