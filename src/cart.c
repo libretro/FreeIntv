@@ -210,6 +210,28 @@ void load9()
 	loadRange(0xF000, 0xFFFF);
 }
 
+int getLoadMethod() // lazy, but it works
+{
+	int i;
+	int method = 0;
+	int fingerprint = 0;
+	// find fingerprint
+	for(i=0; i<256; i++)
+	{
+		fingerprint = fingerprint + data[i];
+	}
+	printf("[INFO][FREEINT] Cartridge fingerprint code: %i\n", fingerprint);
+	
+	for (i=0; i<344; i+=2)
+	{
+		if(fingerprint==fingerprints[i])
+		{
+			method = fingerprints[i+1];
+		}
+	}
+	return method;
+}
+
 int fingerprints[344] =
 {
 15702, 0, // 4-TRIS (2001) (Joseph Zbiciak)
@@ -389,23 +411,3 @@ int fingerprints[344] =
 10887, 0, // Worm Whomper (1983) (Activision)
 11566, 0  // Zaxxon (1982) (Coleco)
 };
-
-int getLoadMethod() // lazy, but it works
-{
-	int i;
-	int method = 0;
-	int f = 0;
-	// find fingerprint
-	for(i=0; i<256; i++)
-	{
-		f = f + data[i];
-	}
-	for (i=0; i<344; i+=2)
-	{
-		if(f==fingerprints[i])
-		{
-			method = fingerprints[i+1];
-		}
-	}
-	return method;
-}
