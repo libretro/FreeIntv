@@ -2,6 +2,13 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
+INCLUDES :=
+SOURCES_C :=
+SOURCES_CXX :=
+
+SOURCE_DIR := $(LOCAL_PATH)/../src
+INCFLAGS := -I$(SOURCE_DIR)/deps/libretro-common/include
+
 GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
 ifneq ($(GIT_VERSION)," unknown")
 	LOCAL_CXXFLAGS += -DGIT_VERSION=\"$(GIT_VERSION)\"
@@ -26,9 +33,8 @@ LOCAL_MODULE    := libretro
 
 include ../Makefile.common
 
-LOCAL_SRC_FILES    =  $(SOURCES_CXX)
+LOCAL_SRC_FILES    =  $(SOURCES_C)
 
-LOCAL_CXXFLAGS += -DANDROID -D__LIBRETRO__ -DHAVE_STRINGS_H -DRIGHTSHIFT_IS_SAR $(INCFLAGS)
-LOCAL_C_INCLUDES = $(INCFLAGS)
+LOCAL_CFLAGS += -DANDROID -D__LIBRETRO__ -DHAVE_STRINGS_H -DRIGHTSHIFT_IS_SAR $(INCFLAGS)
 
 include $(BUILD_SHARED_LIBRARY)
