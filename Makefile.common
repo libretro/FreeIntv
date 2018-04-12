@@ -9,12 +9,15 @@ SOURCES_C := \
 	$(SOURCE_DIR)/controller.c \
 	$(SOURCE_DIR)/osd.c \
 	$(SOURCE_DIR)/psg.c \
-	$(SOURCE_DIR)/stic.c \
-	$(LIBRETRO_COMM_DIR)/file/file_path.c \
-	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
-	$(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \
-	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
-	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c
+	$(SOURCE_DIR)/stic.c
+
+ifeq ($(STATIC_LINKING),1)
+SOURCES_C += $(LIBRETRO_COMM_DIR)/file/file_path.c \
+				 $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+				 $(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \
+				 $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+				 $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c
+endif
 
 SOURCES_CXX := 
 
