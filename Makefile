@@ -1,4 +1,4 @@
-STATIC_LINKING := 0
+STATIC_LINKING=0
 AR := ar
 
 ifeq ($(platform),)
@@ -55,7 +55,7 @@ ifndef ($(NOUNIVERSAL))
 endif
 endif
 
-ifeq ($(STATIC_LINKING), 1)
+ifeq ($(STATIC_LINKING),1)
 EXT := a
 endif
 
@@ -102,7 +102,7 @@ else ifeq ($(platform), ps3)
 	ENDIANNESS_DEFINES := -DMSB_FIRST
 	PLATFORM_DEFINES := -D__CELLOS_LV2__ -D__ppc__
 	HAVE_RZLIB := 1
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # PS3 (SNC)
 else ifeq ($(platform), sncps3)
@@ -114,7 +114,7 @@ else ifeq ($(platform), sncps3)
 	GCC_DEFINES :=
 	PLATFORM_DEFINES := -D__CELLOS_LV2__ -D__ppc__
 	HAVE_RZLIB := 1
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # Lightweight PS3 Homebrew SDK
 else ifeq ($(platform), psl1ght)
@@ -126,7 +126,7 @@ else ifeq ($(platform), psl1ght)
 	GCC_DEFINES :=
 	PLATFORM_DEFINES := -D__CELLOS_LV2__ -D__ppc__
 	HAVE_RZLIB := 1
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # Xbox 360 (libxenon)
 else ifeq ($(platform), xenon)
@@ -136,7 +136,7 @@ else ifeq ($(platform), xenon)
 	ENDIANNESS_DEFINES := -DMSB_FIRST
 	CFLAGS += -D__LIBXENON__ -m32 -D__ppc__
 	PLATFORM_DEFINES := -D__LIBXENON__ -D__ppc_
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # Nintendo Game Cube
 else ifeq ($(platform), ngc)
@@ -147,7 +147,7 @@ else ifeq ($(platform), ngc)
 	PLATFORM_DEFINES += -DGEKKO -DHW_DOL -mrvl -mcpu=750 -meabi -mhard-float
 	PLATFORM_DEFINES += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 	HAVE_RZLIB := 1
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # QNX / BLackberry
 else ifneq (,$(findstring qnx,$(platform)))
@@ -163,7 +163,7 @@ else ifeq ($(platform), wii)
 	PLATFORM_DEFINES += -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 	PLATFORM_DEFINES += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 	HAVE_RZLIB := 1
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # Nintendo WiiU
 else ifeq ($(platform), wiiu)
@@ -174,7 +174,7 @@ else ifeq ($(platform), wiiu)
 	PLATFORM_DEFINES += -DGEKKO -DWIIU -DHW_RVL -mwup -mcpu=750 -meabi -mhard-float
 	PLATFORM_DEFINES += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 	HAVE_RZLIB := 1
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # Nintendo Switch (libtransistor)
 else ifeq ($(platform), switch)
@@ -196,14 +196,14 @@ else ifeq ($(platform), ctr)
 	HAVE_RZLIB := 1
 	DISABLE_ERROR_LOGGING := 1
 	ARM = 1
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 	
 # Emscripten
 else ifeq ($(platform), emscripten)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).bc
 	fpic := -fPIC
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
-	STATIC_LINKING := 1
+	STATIC_LINKING=1
 
 # Playstation Vita
 else ifeq ($(platform), vita)
@@ -211,7 +211,7 @@ else ifeq ($(platform), vita)
 	CC = arm-vita-eabi-gcc
 	AR = arm-vita-eabi-ar
 	CXXFLAGS += -Wl,-q -Wall -O3
-	STATIC_LINKING = 1
+	STATIC_LINKING=1
 
 # GCW0
 else ifeq ($(platform), gcw0)
@@ -471,7 +471,7 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-ifeq ($(STATIC_LINKING), 1)
+ifeq ($(STATIC_LINKING),1)
 	$(AR) rcs $@ $(OBJECTS)
 else
 	$(LD) $(fpic) $(SHARED) $(LDFLAGS) $(LINKOUT)$@ $(OBJECTS) $(LIBS)
