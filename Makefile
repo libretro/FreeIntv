@@ -33,7 +33,12 @@ endif
 CORE_DIR	+= .
 TARGET_NAME := freeintv
 SOURCE_DIR := src
+
+ifeq (,$(findstring msvc,$(platform)))
 LIBM			= -lm
+endif
+
+LIBS += $(LIBM)
 
 ifeq ($(ARCHFLAGS),)
 ifeq ($(archs),ppc)
@@ -447,17 +452,33 @@ OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
 CFLAGS	+= -Wall -D__LIBRETRO__ $(INCLUDES) $(fpic)
 CXXFLAGS += -Wall -D__LIBRETRO__ $(INCLUDES) $(fpic)
 
+OBJOUT   = -o
+LINKOUT  = -o 
+
+ifneq (,$(findstring msvc,$(platform)))
+	OBJOUT = -Fo
+	LINKOUT = -out:
+ifeq ($(STATIC_LINKING),1)
+	LD ?= lib.exe
+	STATIC_LINKING=0
+else
+	LD = link.exe
+endif
+else
+	LD = $(CC)
+endif
+
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING), 1)
 	$(AR) rcs $@ $(OBJECTS)
 else
-	$(CXX) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LDFLAGS)
+	$(LD) $(fpic) $(SHARED) $(LDFLAGS) $(LINKOUT)$@ $(OBJECTS) $(LIBS)
 endif
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(fpic) -c -o $@ $<
+	$(CC) $(CFLAGS) $(fpic) -c $(OBJOUT)$@ $<
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)

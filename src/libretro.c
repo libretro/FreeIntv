@@ -78,13 +78,18 @@ void quit(int state)
 	MemoryInit();
 }
 
-static void Keyboard(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
+static void Keyboard(bool down, unsigned keycode,
+      uint32_t character, uint16_t key_modifiers)
 {
-	// Keyboard Input
+	/* Keyboard Input */
 }
 
 void retro_init(void)
 {
+   char execPath[PATH_MAX_LENGTH];
+	char gromPath[PATH_MAX_LENGTH];
+	struct retro_keyboard_callback kb = { Keyboard };
+
 	// init buffers, structs
 	memset(frame, 0, frameSize);
 
@@ -98,17 +103,14 @@ void retro_init(void)
 	Environ(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, &SystemPath);
 
 	// load exec
-	char execPath[PATH_MAX_LENGTH];
 	fill_pathname_join(execPath, SystemPath, "exec.bin", PATH_MAX_LENGTH);
 	loadExec(execPath);
 
 	// load grom
-	char gromPath[PATH_MAX_LENGTH];
 	fill_pathname_join(gromPath, SystemPath, "grom.bin", PATH_MAX_LENGTH);
 	loadGrom(gromPath);
 
 	// Setup keyboard input
-	struct retro_keyboard_callback kb = { Keyboard };
 	Environ(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &kb);
 }
 
@@ -303,6 +305,8 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
+   int pixelformat = RETRO_PIXEL_FORMAT_XRGB8888;
+
 	memset(info, 0, sizeof(*info));
 	info->geometry.base_width   = MaxWidth;
 	info->geometry.base_height  = MaxHeight;
@@ -312,9 +316,11 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 	info->timing.fps = DefaultFPS;
 	info->timing.sample_rate = 44100.0;
-	//info->timing.sample_rate = 48000.0;
-	//info->timing.sample_rate = 224010;
-	int pixelformat = RETRO_PIXEL_FORMAT_XRGB8888;
+
+#if 0
+	info->timing.sample_rate = 48000.0;
+	info->timing.sample_rate = 224010;
+#endif
 	Environ(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixelformat);
 }
 

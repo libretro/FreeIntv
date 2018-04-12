@@ -1,4 +1,7 @@
-SOURCES_C += $(SOURCE_DIR)/freeintv_libretro.c \
+LIBRETRO_COMM_DIR = $(SOURCE_DIR)/deps/libretro-common
+
+SOURCES_C := \
+	$(SOURCE_DIR)/libretro.c \
 	$(SOURCE_DIR)/intv.c \
 	$(SOURCE_DIR)/memory.c \
 	$(SOURCE_DIR)/cp1610.c \
@@ -7,10 +10,16 @@ SOURCES_C += $(SOURCE_DIR)/freeintv_libretro.c \
 	$(SOURCE_DIR)/osd.c \
 	$(SOURCE_DIR)/psg.c \
 	$(SOURCE_DIR)/stic.c \
-	$(SOURCE_DIR)/deps/libretro-common/file/file_path.c \
-	$(SOURCE_DIR)/deps/libretro-common/compat/compat_strl.c \
-	$(SOURCE_DIR)/deps/libretro-common/compat/compat_strcasestr.c
+	$(LIBRETRO_COMM_DIR)/file/file_path.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_snprintf.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c
 
-SOURCES_CXX += 
+SOURCES_CXX := 
 
-INCLUDES += -Isrc/deps/libretro-common/include
+INCLUDES := -I$(LIBRETRO_COMM_DIR)/include
+
+ifneq (,$(findstring msvc200,$(platform)))
+INCLUDES += -I$(LIBRETRO_COMM_DIR)/include/compat/msvc
+endif

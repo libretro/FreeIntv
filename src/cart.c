@@ -43,9 +43,10 @@ int pos = 0; // current position in data
 
 int LoadCart(const char *path)
 {
-    printf("[INFO] [FREEINTV] Attempting to load cartridge ROM from: %s\n", path);		
 	unsigned char word[1];
 	FILE *fp;
+
+    printf("[INFO] [FREEINTV] Attempting to load cartridge ROM from: %s\n", path);		
 
 	size = 0;
 
@@ -101,8 +102,10 @@ int LoadCart(const char *path)
 
 int readWord(void)
 {
+   int val;
+
 	pos = pos * (pos<size);
-	int val = (data[pos]<<8) | data[pos+1];
+	val = (data[pos]<<8) | data[pos+1];
 	pos+=2;
 	return val;
 }
@@ -125,13 +128,15 @@ int isROM() // check for intellicart format rom
 
 int loadROM() // load intellicart format rom
 {
-	pos = 0;
-	int i, t;
-	int segments = readWord() & 0xFF; // number of non-contiguous rom segments (drop magic number)
-	pos++; // 1's compliment of segments (ignore)
-
 	int start;
 	int stop;
+	int i, t;
+   int segments;
+
+	pos = 0;
+	segments = readWord() & 0xFF; // number of non-contiguous rom segments (drop magic number)
+	pos++; // 1's compliment of segments (ignore)
+
 	for(i=0; i<segments; i++)
 	{
 		t = readWord(); // high bytes of segment start and stop addresses
