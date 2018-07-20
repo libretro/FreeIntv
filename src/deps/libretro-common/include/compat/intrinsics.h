@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2017 The RetroArch team
+/* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (intrinsics.h).
@@ -66,7 +66,7 @@ static INLINE int compat_ctz(unsigned x)
    _BitScanReverse((unsigned long*)&r, x);
    return (int)r;
 #else
-/* Only checks at nibble granularity, 
+/* Only checks at nibble granularity,
  * because that's what we need. */
    if (x & 0x000f)
       return 0;
