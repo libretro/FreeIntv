@@ -216,7 +216,7 @@ void load9()
 	// [memattr] $8800 - $8FFF = RAM 8 // is this automatic too??? 
 }
 
-int fingerprints[344] =
+int fingerprints[] =
 {
 15702, 0, // 4-TRIS (2001) (Joseph Zbiciak)
 11072, 0, // SDK-1600 Movable Object Demo (2002) (Joseph Zbiciak)
