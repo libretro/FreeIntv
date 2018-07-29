@@ -21,8 +21,9 @@
 const double PI = 3.14159265358979323846;
 
 // 16-way DISC directions, clockwise from North
-// ---------------------N    NNE  NE   ENE   E    ESE  SE   SSE   S    SSW  SW  WSW    W    WNW  NW   NNW
-int discDirections[16]={ 0xFB,0xEB,0xE9,0xF9, 0xFD,0xED,0xEC,0xFC, 0xFE,0xEE,0xE6,0xF6, 0xF7,0xE7,0xE3,0xF3 };
+// -----------------------N    NNE  NE   ENE   E    ESE  SE   SSE   S    SSW  SW  WSW    W    WNW  NW   NNW
+int discDirections[16] ={ 0xFB,0xEB,0xE9,0xF9, 0xFD,0xED,0xEC,0xFC, 0xFE,0xEE,0xE6,0xF6, 0xF7,0xE7,0xE3,0xF3 };
+int keypadDirections[8]={ 0xBE,     0xDE,      0xDD,     0xDB,      0xBB,     0x7B,      0x7D,     0x7E};
 
 // keypad states: 1,2,3, 4,5,6, 7,8,9, C,0,E
 int keypadStates[12]={ 0x7E,0xBE,0xDE, 0x7D,0xBD,0xDD, 0x7B,0xBB,0xDB, 0x77,0xB7,0xD7 };
@@ -53,6 +54,8 @@ int getControllerState(int joypad[], int player)
 	// converts joypad input for use by system  
 	int Lx = 0; // left analog X
 	int Ly = 0; // left analog Y
+	int Rx = 0; // right analog X
+	int Ry = 0; // right analog Y
 	double theta; // analog joy angle
 	int norm; // theta, normalized 
 
@@ -85,10 +88,26 @@ int getControllerState(int joypad[], int player)
 		// normalize
 		if(theta<0.0) { theta = 0.0; }
 		norm = floor((theta/(2*PI))*15.0);
-		norm -= 4; 
+		norm -= 3; 
 		if(norm<0) { norm += 16; }
 		state = state & discDirections[norm & 0x0F];
 	}
+
+	// Right-analog to keypad mapping (for Tron Deadly Discs)
+	Rx = joypad[16] / 8192;
+	Ry = joypad[17] / 8192;
+	if(Rx != 0 || Ry != 0)
+	{
+		// find angle 
+		theta = atan2((double)Ry, (double)Rx) + PI;
+		// normalize
+		if(theta<0.0) { theta = 0.0; }
+		norm = floor((theta/(2*PI))*7.0);
+		norm -= 1; 
+		if(norm<0) { norm += 8; }
+		state = state & keypadDirections[norm & 0x07];
+	}
+
 	return state;
 }
 
