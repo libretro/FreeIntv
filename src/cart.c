@@ -203,7 +203,7 @@ void load7()
 
 void load8()
 {
-	loadRange(0x5000, 0x6000);
+	loadRange(0x5000, 0x5FFF);
 	loadRange(0x7000, 0x7FFF);
 }
 
@@ -307,7 +307,6 @@ int fingerprints[] =
 10644, 0, // Lock 'N' Chase (1982) (Mattel)
 10090, 0, // Lock 'N' Chase (Improved) (1982) (Mattel)
 10842, 0, // Loco-Motion (1982) (Mattel)
-11349, 8, // MTE201 Intellivision Test Cartridge (1978) (Mattel)
 10304, 0, // Magic Carousel (Prototype) (1983) (Intv Corp)
 12439, 0, // Masters of the Universe-The Power of He-Man! (1983) (Mattel)
 9802,  0, // Maze Demo #1 (2000) (JRMZ Electronics)
@@ -326,6 +325,7 @@ int fingerprints[] =
 10251, 0, // Mountain Madness - Super Pro Skiing (1987) (Intv Corp)
 9275,  0, // Mouse Trap (1982) (Coleco)
 10506, 0, // Mr. Basic Meets Bits 'N Bytes (1983) (Mattel)
+11349, 8, // MTE201 Intellivision Test Cartridge (1978) (Mattel)
 10637, 0, // NASL Soccer (1979) (Mattel)
 9563,  0, // NBA Basketball (1978) (Mattel)
 10626, 0, // NFL Football (1978) (Mattel)
