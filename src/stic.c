@@ -35,6 +35,9 @@ unsigned int cbuff[352*224]; // collision buffer
 unsigned int delayH = 16; // Horizontal Delay
 unsigned int delayV = 16; // Vertical Delay
 
+int extendTop = 0;
+int extendLeft = 0;
+
 unsigned int colors[16] =
 {
 	0x0C0005, /* 0x000000; */ // Black
@@ -63,6 +66,7 @@ void STICReset()
 	SR1 = 0;
 	Cycles = 0;
 	DisplayEnabled = 0;
+	VerticalDelay = 0;
 }
 
 void STICDrawFrame()
@@ -74,9 +78,15 @@ void STICDrawFrame()
 		cbuff[i]=0;
 	}
 
-	delayH = 16+(Memory[0x30]<<1); //16-Memory[0x30];
+	VerticalDelay = Memory[0x31];
 
-	delayV = 16+(Memory[0x31]<<1); //16-Memory[0x31];
+	extendTop = 16*((Memory[0x32]>>1)&0x01);
+	
+	extendLeft = 16*(Memory[0x32]&0x01);
+
+	delayH = 16+((Memory[0x30]<<1)&0xF);
+
+	delayV = 16+((Memory[0x31]<<1)&0xF);
 
 	// draw displayed area
 	drawBackground();
@@ -121,8 +131,7 @@ void drawBorder()
 	int j;
 	int cbit = 1<<9; // bit 9 - border collision 
 	int color = colors[Memory[0x2C]]; // border color
-	int extendTop = 16*((Memory[0x32]>>1)&0x01);
-	int extendLeft = 16*(Memory[0x32]&0x01);
+	
 	for(i=0; i<16+extendTop; i++)
 	{
 		for(j=0; j<352; j++)

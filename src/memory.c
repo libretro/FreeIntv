@@ -26,30 +26,29 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {
 	val = val & 0xFFFF;
 
-	if(adr>=0x100 && adr<=0x1FF)
+	if(adr>=0x100 && adr<=0x1FF) // this range is only 8-bits wide
 	{
 		val = val & 0xFF;
 	}
 
-	Memory[adr & 0xFFFF] = val;
-
-	//STIC Alias
-	if((adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
-	{ 
-		Memory[adr & 0x3FFF] = val;
-	}
-
-	//GRAM Alias
-	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
-	{ 
-		Memory[adr & 0x3FFF] = val;
-	}
-
-	//PSG Registers
-	if(adr>=0x01F0 && adr<=0x1FD)
+	// STIC Alias 
+	if((adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F)) 
 	{
-		PSGNotify(adr, val);
+		adr &=0xFF;
 	}
+	// GRAM Alias 
+	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
+	{
+		adr &=0x3FFF;
+	}
+
+	// VBlank1 = 2900 cycles
+	// VBlank2 = 3796 cycles
+	// only write to STIC during VBlank1
+	if(adr>=0x0 && adr<=0x7F && VBlank1<=0 && DisplayEnabled) { return; }
+	
+	// only write to GRAM during VBlank
+	if(adr>=0x3800 && adr<=0x3FFF && VBlank1<=0 && VBlank2<=0 && DisplayEnabled) { return; }
 
 	if(VBlank1>0)
 	{
@@ -64,9 +63,21 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 			STICMode = 0;
 		}
 	}
+
+	Memory[adr & 0xFFFF] = val;
+
+	//PSG Registers
+	if(adr>=0x01F0 && adr<=0x1FD)
+	{
+		PSGNotify(adr, val);
+	}
 }
+
 int readMem(int adr) // Read (should handle hooks/alias)
 {
+	// It's safe to map ROM over GRAM aliases
+	// 
+
 	int val = Memory[adr & 0xFFFF];
 
 	if(adr>=0x100 && adr<=0x1FF)
@@ -74,11 +85,13 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		val = val & 0xFF;
 	}
 
+	// read sensitive addresses
 	if(VBlank1>0)
 	{
 		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
 		{
 			STICMode = 1;
+			val = 0; // CPU can't see reads from STIC registers during vblank
 		}
 	}
 	return val;

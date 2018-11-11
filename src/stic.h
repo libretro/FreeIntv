@@ -23,6 +23,7 @@ int VBlank1; // counter for VBlank period 1
 int VBlank2; // counter for VBlank period 2
 int Cycles; // number of cycles since last STIC interput
 int DisplayEnabled; // determines if frame should be updated or not
+int VerticalDelay;
 
 unsigned int frame[352*224]; // frame buffer
 
