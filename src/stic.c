@@ -105,21 +105,27 @@ void STICDrawFrame()
 	for(i=0; i<8; i++)
 	{
 		// clear self-interactions 
-		if(((Memory[0x18+i]>>i)&0x01)==1)
-		{
-			Memory[0x18+i] = Memory[0x18+i] ^ (1<<i);
-		}
-		// skip non-interacting sprites
-		if(((Memory[0x00+i]>>8)&0x01)==0) { continue; }
+		Memory[0x18+i] &= (1<<i)^0x3FFF;
 
 		// copy collisions to colliding sprites
 		for(j=0; j<8; j++)
 		{
 			if(j==i) { continue; }
-			if(((Memory[0x00+j]>>8)&0x01)==0) { continue; } // skip non-interacting sprites
 			if(((Memory[0x18+j]>>i) & 1) == 1)
 			{
 				Memory[0x18+i] |= (1<<j);
+			}
+		}
+	}
+	// clear any non-interacting sprite interactions //
+	for(i=0; i<8; i++)
+	{
+		if(((Memory[0x00+i]>>8)&0x01)==0)
+		{
+			Memory[0x18+i] &= 0x3C00;
+			for(j=0; j<8; j++)
+			{
+				Memory[0x18+j] &= (1<<i)^0x3FFF;
 			}
 		}
 	}
@@ -255,7 +261,7 @@ void drawSprites() // MOBs
 
 					if(((Rx>>9)&0x01)==1) // visible
 					{
-						showpixel = !((pixel==0) | ((priority==1) & (((cbuff[n]>>8)&0x01)==1)));
+						showpixel = (pixel==1) & ((priority==0) | ((priority==1) & (((cbuff[n]>>8)&0x01)==1)));
 						frame[n] = showpixel ? fgcolor : frame[n];
 						frame[n+1] = showpixel ? fgcolor : frame[n+1];
 						// draw four pixels wide if sizeX==1
@@ -407,7 +413,7 @@ void drawBackground()
 						frame[a+1] = sc;
 						frame[a+352] = sc;
 						frame[a+352+1] = sc;
-						if(((gdata>>k)&1)==1)
+						if(((gdata>>k)&1)==0)
 						{
 							cbuff[a] |= cbit;
 							cbuff[a+1] |= cbit;
