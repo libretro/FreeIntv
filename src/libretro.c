@@ -97,6 +97,7 @@ void retro_init(void)
 	controllerInit();
 
 	// reset console
+	Init();
 	Reset();
 
 	// get paths

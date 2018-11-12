@@ -89,12 +89,17 @@ void loadGrom(const char* path)
 	}
 }
 
+void Init()
+{
+	CP1610Init();
+	MemoryInit();
+}
+
 void Reset()
 {
 	SR1 = 0;
 	Cycles = 2782;
-	CP1610Init();
-	MemoryInit();
+	CP1610Reset();
 	STICReset();
 	PSGInit();
 }

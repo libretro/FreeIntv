@@ -27,6 +27,8 @@ void loadGrom(const char *path);
 
 void Run(void);
 
+void Init(void);
+
 void Reset(void);
 
 #endif
