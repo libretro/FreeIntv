@@ -99,11 +99,11 @@ endif
 DEFINES := -DIOS
 
 ifeq ($(platform),ios-arm64)
-	CC = cc -arch armv7 -isysroot $(IOSSDK)
-	LD = cc -arch armv7 -isysroot $(IOSSDK)
-else
 	CC = cc -arch arm64 -isysroot $(IOSSDK)
 	LD = cc -arch arm64 -isysroot $(IOSSDK)
+else
+	CC = cc -arch armv7 -isysroot $(IOSSDK)
+	LD = cc -arch armv7 -isysroot $(IOSSDK)
 endif
 
 ifeq ($(platform),$(filter $(platform),ios9 ios-arm64))
