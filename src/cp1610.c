@@ -421,7 +421,7 @@ int SARC(int v) // Shift Arithmetic Right Through Carry
 	Flag_Carry = bit0;
 	Flag_Sign = (R[reg]>>7) & 1;
 	Flag_Zero = R[reg]==0;
-	return 6+(2*(dist)); // 6 <<1 or 8 <<2
+	return 6+(2*(dist-1)); // 6 <<1 or 8 <<2
 }
 int MOVR(int v) // Move Register
 {
