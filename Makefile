@@ -205,7 +205,7 @@ else ifeq ($(platform), wiiu)
 	CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 	AR = $(DEVKITPPC)/bin/powerpc-eabi-ar$(EXE_EXT)
 	ENDIANNESS_DEFINES := -DMSB_FIRST
-	PLATFORM_DEFINES += -DGEKKO -DWIIU -DHW_RVL -mwup -mcpu=750 -meabi -mhard-float
+	PLATFORM_DEFINES += -DGEKKO -DWIIU -DHW_RVL -mcpu=750 -meabi -mhard-float
 	PLATFORM_DEFINES += -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 	HAVE_RZLIB := 1
 	STATIC_LINKING=1
@@ -507,7 +507,7 @@ else ifneq (,$(findstring windows_msvc2017,$(platform)))
 # Current Windows builds via mingw/gcc
 else
 	TARGET := $(TARGET_NAME)_libretro.dll
-	CC = gcc
+	CC ?= gcc
 	SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 	CFLAGS += -D__WIN32__ -Wno-missing-field-initializers
 endif
