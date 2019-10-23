@@ -46,6 +46,8 @@ int extendLeft = 0;
 unsigned int CSP; // Color Stack Pointer
 unsigned int color7 = 0xFFFCFF; // Copy of color 7 (for color squares mode)
 unsigned int cscolors[4]; // color squares colors
+unsigned int fgcard[20]; // cached colors for cards on current row
+unsigned int bgcard[20]; // (used for normal color stack mode)
 unsigned int colors[16] =
 {
 	0x0C0005, /* 0x000000; */ // Black
@@ -216,6 +218,8 @@ void drawBackgroundColorStack(int scanline)
 	row = row * 20; // find BACKTAB offset 
 
 	cardrow = scanline % 8; // which line of this row of cards to draw
+
+	if(row==0 && cardrow==0) { CSP = 0x28; } // reset CSP on display of first card on screen
 	
 	// Draw cards
 	for (col=0; col<20; col++) // for each card on the current row...
@@ -258,11 +262,16 @@ void drawBackgroundColorStack(int scanline)
 		else // Color Stack Mode
 		{
 			gram = (card>>11) & 0x01; // GRAM or GROM?	
-			advcolor = (card>>13) & 0x01; // do we need to advance the CSP?
-			CSP = (CSP+advcolor) & 0x2B; // cycles through 0x28-0x2B
+			if(cardrow == 0) // only advance CSP once per card, cache card colors for later scanlines
+			{
+				advcolor = (card>>13) & 0x01; // do we need to advance the CSP?
+				CSP = (CSP+advcolor) & 0x2B; // cycles through 0x28-0x2B
+				fgcard[col] = colors[(card&0x07)|((card>>9)&0x08)]; // bits 12, 2, 1, 0
+				bgcard[col] = colors[Memory[CSP] & 0x0F];
+			}
 
-			fgcolor = colors[(card&0x07)|((card>>9)&0x08)]; // bits 12, 2, 1, 0
-			bgcolor = colors[Memory[CSP] & 0x0F];
+			fgcolor = fgcard[col];
+			bgcolor = bgcard[col];
 
 			cardnum = (card>>3) & 0xFF;
 			if(gram) { cardnum = cardnum & 0x3F; }
