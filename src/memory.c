@@ -76,22 +76,36 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 int readMem(int adr) // Read (should handle hooks/alias)
 {
 	// It's safe to map ROM over GRAM aliases
-	// 
 
 	int val = Memory[adr & 0xFFFF];
 
-	if(adr>=0x100 && adr<=0x1FF)
+	if(adr>=0x100 && adr<=0x1FF) // 8-Bit Scratch RAM
 	{
 		val = val & 0xFF;
 	}
-
-	// read sensitive addresses
-	if(VBlank1>0)
+	
+	if(VBlank1>0 || !DisplayEnabled)
 	{
-		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
+		if(adr<=0x3F) // are STIC registers only avaliable during vblank1? 
+		{
+			val = Memory[adr] & 0x3FFF; // STIC registers are 14-bits wide
+			// STIC register reads are strange, unused bits are always set to 1 
+			if(adr<=0x7)               { val = val | 0x3800; } // 0000 - 0007 : 0011 1--- ---- ----
+			if(adr>=0x08 && adr<=0x0F) { val = val | 0x3000; } // 0008 - 000F : 0011 ---- ---- ----
+			//                                                 // 0010 - 0017 : 00-- ---- ---- ----
+			if(adr>=0x18 && adr<=0x1F) { val = val | 0x3C00; } // 0018 - 001F : 0011 11-- ---- ----
+			if(adr>=0x20 && adr<=0x27) { val =       0x3FFF; } // 0020 - 0027 : 0011 1111 1111 1111
+			if(adr>=0x28 && adr<=0x2C) { val = val | 0x3FF0; } // 0028 - 002C : 0011 1111 1111 ----
+			if(adr>=0x2D && adr<=0x2F) { val =       0x3FFF; } // 002D - 002F : 0011 1111 1111 1111
+			if(adr>=0x30 && adr<=0x31) { val = val | 0x3FF8; } // 0030 - 0031 : 0011 1111 1111 1---
+			if(adr>=0x32             ) { val = val | 0x3FFC; } // 0032        : 0011 1111 1111 11--
+			if(adr>=0x33 && adr<=0x3F) { val =       0x3FFF; } // 0030 - 0031 : 0011 1111 1111 1111
+		}
+
+		// read sensitive addresses
+		if( adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021 )
 		{
 			STICMode = 1;
-			val = 0; // CPU can't see reads from STIC registers during vblank
 		}
 	}
 	return val;
@@ -100,7 +114,15 @@ int readMem(int adr) // Read (should handle hooks/alias)
 void MemoryInit()
 {
 	int i;
-	for(i=0x0000; i<=0x003F; i++) { Memory[i] = 0x3FFF; } // STIC Registers
+	for(i=0x0000; i<=0x0007; i++) { Memory[i] = 0x3800; } // STIC Registers
+	for(i=0x0008; i<=0x000F; i++) { Memory[i] = 0x3000; }
+	for(i=0x0010; i<=0x0017; i++) { Memory[i] = 0x0000; }
+	for(i=0x0018; i<=0x001F; i++) { Memory[i] = 0x3C00; }
+	for(i=0x0020; i<=0x003F; i++) { Memory[i] = 0x3FFF; }
+	for(i=0x0028; i<=0x002C; i++) { Memory[i] = 0x3FF0; }
+	Memory[0x30] = 0x3FF8;
+	Memory[0x31] = 0x3FF8;
+	Memory[0x32] = 0x3FFC;
 	for(i=0x0040; i<=0x007F; i++) { Memory[i] = 0x0000; }
 	for(i=0x0080; i<=0x00FF; i++) { Memory[i] = 0xFFFF; }
 	for(i=0x0100; i<=0x035F; i++) { Memory[i] = 0x0000; } // Scratch, PSG (1F0-1FF), System Ram

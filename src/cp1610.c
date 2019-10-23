@@ -69,7 +69,7 @@ int readIndirect(int reg) // Read Indirect, handle SDBD, update autoincriment re
 	}
 	else
 	{
-		if(reg==4 || reg==5 || reg==7)
+		if(reg==4 || reg==5 || reg==7) // autoincrement registers (incremented twice for double byte data)
 		{
 			R[reg] = (R[reg]+1) & 0xFFFF;
 		}

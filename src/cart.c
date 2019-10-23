@@ -78,16 +78,16 @@ int LoadCart(const char *path)
             printf("[INFO] [FREEINTV] Intelllicart format not detected. Determining load method via database.\n");		
             switch(getLoadMethod())
             {
-                    case 0: printf("[INFO] [FREEINTV] Cartridge database match: memory map 0\n"); load0(); break;
-                    case 1: printf("[INFO] [FREEINTV] Cartridge database match: memory map 1\n"); load1(); break;
-                    case 2: printf("[INFO] [FREEINTV] Cartridge database match: memory map 2\n"); load2(); break;
-                    case 3: printf("[INFO] [FREEINTV] Cartridge database match: memory map 3\n"); load3(); break;
-                    case 4: printf("[INFO] [FREEINTV] Cartridge database match: memory map 4\n"); load4(); break;
-                    case 5: printf("[INFO] [FREEINTV] Cartridge database match: memory map 5\n"); load5(); break;
-                    case 6: printf("[INFO] [FREEINTV] Cartridge database match: memory map 6\n"); load6(); break;
-                    case 7: printf("[INFO] [FREEINTV] Cartridge database match: memory map 7\n"); load7(); break;
-                    case 8: printf("[INFO] [FREEINTV] Cartridge database match: memory map 8\n"); load8(); break;
-                    case 9: printf("[INFO] [FREEINTV] Cartridge database match: memory map 9\n"); load9(); break;
+                    case 0: load0(); break;
+                    case 1: load1(); break;
+                    case 2: load2(); break;
+                    case 3: load3(); break;
+                    case 4: load4(); break;
+                    case 5: load5(); break;
+                    case 6: load6(); break;
+                    case 7: load7(); break;
+                    case 8: load8(); break;
+                    case 9: load9(); break;
                     default: printf("[INFO] [FREEINTV] No database match. Using default cartridge memory map.\n"); load0();
             }
         }
@@ -131,7 +131,7 @@ int loadROM() // load intellicart format rom
 	int start;
 	int stop;
 	int i, t;
-   int segments;
+	int segments;
 
 	pos = 0;
 	segments = readWord() & 0xFF; // number of non-contiguous rom segments (drop magic number)
@@ -420,21 +420,22 @@ int fingerprints[] =
 int getLoadMethod() // lazy, but it works
 {
 	int i;
-	int method = 0;
 	int fingerprint = 0;
 	// find fingerprint
 	for(i=0; i<256; i++)
 	{
 		fingerprint = fingerprint + data[i];
 	}
-	printf("[INFO][FREEINT] Cartridge fingerprint code: %i\n", fingerprint);
+	printf("[INFO] [FREEINTV] Cartridge fingerprint code: %i\n", fingerprint);
 	
-	for (i=0; i<344; i+=2)
+	// find load method
+	for (i=0; i<380; i+=2)
 	{
 		if(fingerprint==fingerprints[i])
 		{
-			method = fingerprints[i+1];
+			printf("[INFO] [FREEINTV] Cartridge database match: memory map %i\n", fingerprints[i+1]);
+			return fingerprints[i+1];
 		}
 	}
-	return method;
+	return -1;
 }

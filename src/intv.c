@@ -98,7 +98,7 @@ void Init()
 void Reset()
 {
 	SR1 = 0;
-	Cycles = 2782;
+	Cycles = 14934;
 	CP1610Reset();
 	STICReset();
 	PSGInit();
@@ -129,6 +129,10 @@ int exec(void) // Run one instruction
 
 	if(Cycles>=14934) // STIC generates an interupt every 14934 cycles
 	{
+		if(DisplayEnabled==1)
+		{
+			STICDrawFrame();	
+		}
 		Cycles = Cycles - 14934; 
 		SR1 = 2907 - Cycles; // hold  SR1 output low for 2907 cycles
 		VBlank1 = 2900 - Cycles;
@@ -159,8 +163,6 @@ int exec(void) // Run one instruction
 			VBlank2 = 0;
 			if(DisplayEnabled==1)
 			{
-				// Render Frame //
-				STICDrawFrame();
 				//STIC steals cycles on busreq-- 57 + 110*12 + (44 when vertical delay = 0)
 				Cycles += 1377;
 				PSGTick(1377);
@@ -170,6 +172,7 @@ int exec(void) // Run one instruction
 					PSGTick(44);
 				}
 			}
+		
 			return 0;
 		}
 	}
