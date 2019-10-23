@@ -337,6 +337,7 @@ void drawSprites(int scanline) // MOBs
 		if(gram==1) { card = card & 0x3F; } // ignore bits 6 and 7 if card is in GRAM
 		gaddress = 0x3000 + (card<<3) + (0x800 * gram);
 
+		yRes  = (Ry>>7) & 0x01;
 		if(yRes==1)
 		{
 			// for double-y resolution sprites, the first card drops bit 0 from address
@@ -350,7 +351,6 @@ void drawSprites(int scanline) // MOBs
 		flipY = (Ry>>11) & 0x01;
 		posX  = Rx & 0xFF;
 		posY  = Ry & 0x7F;
-		yRes  = (Ry>>7) & 0x01;
 		priority = (Ra>>13) & 0x01;
 
 		// if sprite x coordinate is 0 or >167, it's disabled
