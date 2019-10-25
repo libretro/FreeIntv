@@ -26,29 +26,30 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {
 	val = val & 0xFFFF;
 
-	if(adr>=0x100 && adr<=0x1FF) // this range is only 8-bits wide
+	if(adr>=0x100 && adr<=0x1FF)
 	{
 		val = val & 0xFF;
 	}
 
-	// STIC Alias 
-	if((adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F)) 
-	{
-		adr &=0xFF;
-	}
-	// GRAM Alias 
-	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
-	{
-		adr &=0x3FFF;
+	Memory[adr & 0xFFFF] = val;
+
+	//STIC Alias
+	if((adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
+	{ 
+		Memory[adr & 0x3FFF] = val;
 	}
 
-	// VBlank1 = 2900 cycles
-	// VBlank2 = 3796 cycles
-	// only write to STIC during VBlank1
-	if(adr>=0x0 && adr<=0x7F && VBlank1<=0 && DisplayEnabled) { return; }
-	
-	// only write to GRAM during VBlank
-	if(adr>=0x3800 && adr<=0x3FFF && VBlank1<=0 && VBlank2<=0 && DisplayEnabled) { return; }
+	//GRAM Alias
+	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
+	{ 
+		Memory[adr & 0x3FFF] = val;
+	}
+
+	//PSG Registers
+	if(adr>=0x01F0 && adr<=0x1FD)
+	{
+		PSGNotify(adr, val);
+	}
 
 	if(VBlank1>0)
 	{
@@ -63,14 +64,6 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
 			STICMode = 0;
 		}
 	}
-
-	Memory[adr & 0xFFFF] = val;
-
-	//PSG Registers
-	if(adr>=0x01F0 && adr<=0x1FD)
-	{
-		PSGNotify(adr, val);
-	}
 }
 
 int readMem(int adr) // Read (should handle hooks/alias)
@@ -79,14 +72,14 @@ int readMem(int adr) // Read (should handle hooks/alias)
 
 	int val = Memory[adr & 0xFFFF];
 
-	if(adr>=0x100 && adr<=0x1FF) // 8-Bit Scratch RAM
+	if(adr>=0x100 && adr<=0x1FF)
 	{
 		val = val & 0xFF;
 	}
-	
-	if(VBlank1>0 || !DisplayEnabled)
+
+	if(VBlank1>0)
 	{
-		if(adr<=0x3F) // are STIC registers only avaliable during vblank1? 
+		if(adr<=0x3F)
 		{
 			val = Memory[adr] & 0x3FFF; // STIC registers are 14-bits wide
 			// STIC register reads are strange, unused bits are always set to 1 
@@ -103,7 +96,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		}
 
 		// read sensitive addresses
-		if( adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021 )
+		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
 		{
 			STICMode = 1;
 		}

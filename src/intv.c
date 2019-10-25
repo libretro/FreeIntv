@@ -89,19 +89,19 @@ void loadGrom(const char* path)
 	}
 }
 
+void Reset()
+{
+	SR1 = 0;
+	CP1610Init();
+	MemoryInit();
+	STICReset();
+	PSGInit();
+}
+
 void Init()
 {
 	CP1610Init();
 	MemoryInit();
-}
-
-void Reset()
-{
-	SR1 = 0;
-	Cycles = 14934;
-	CP1610Reset();
-	STICReset();
-	PSGInit();
 }
 
 void Run()
@@ -127,38 +127,28 @@ int exec(void) // Run one instruction
 	// Tick PSG
 	PSGTick(ticks);
 
-	if(Cycles>=14934) // STIC generates an interupt every 14934 cycles
+	if(Cycles>=14934) // STIC generates an interput every 14934 cycles
 	{
-		if(DisplayEnabled==1)
-		{
-			STICDrawFrame();	
-		}
-		Cycles = Cycles - 14934; 
-		SR1 = 2907 - Cycles; // hold  SR1 output low for 2907 cycles
-		VBlank1 = 2900 - Cycles;
+		Cycles = Cycles - 14934;
+		SR1 = 3791; // hold  SR1 output low for 3791 cycles
 		DisplayEnabled = 0;
+		VBlank1 = 2900 - Cycles;
+		VBlank2 = 3792 + VBlank1;
 	}
-
 	if(SR1>0) 
 	{
 		SR1 = SR1 - ticks;
 		if(SR1<0) { SR1 = 0; }
 	}
-
 	if(VBlank1>0) 
 	{
 		VBlank1 = VBlank1 - ticks;
-		if(VBlank1<=0)
-		{
-			VBlank2 = 3796 + VBlank1;
-			VBlank1 = 0;
-		}
+		if(VBlank1<0) { VBlank1 = 0; }
 	}
-
 	if(VBlank2>0)
 	{
 		VBlank2 = VBlank2 - ticks;
-		if(VBlank2<=0)
+		if(VBlank2<0)
 		{
 			VBlank2 = 0;
 			if(DisplayEnabled==1)
@@ -171,8 +161,10 @@ int exec(void) // Run one instruction
 					Cycles += 44;
 					PSGTick(44);
 				}
+				
+				// Render Frame //
+				STICDrawFrame();
 			}
-		
 			return 0;
 		}
 	}

@@ -193,7 +193,7 @@ int getKeypadState(int player, int joypad[], int joypre[])
 {
 	int cursorX = cursor[player*2];
 	int cursorY = cursor[player*2+1];
-	int state = 0xFF;
+	int state = 0x0;
 
 	// move cursor only on button down
 	if(joypre[0]==0 && joypad[0]!=0) { cursorY--; if(cursorY<0) { cursorY = 3; } } // up
