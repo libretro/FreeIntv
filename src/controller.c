@@ -55,6 +55,8 @@ const double PI = 3.14159265358979323846;
 #define D_NNW 0x0C
 
 
+int controllerSwap;
+
 // 16-way DISC directions, clockwise from North
 int discDirections[16] ={ D_N, D_NNE, D_NE, D_ENE, D_E, D_ESE, D_SE, D_SSE, D_S, D_SSW, D_SW, D_WSW, D_W, D_WNW, D_NW, D_NNW };
 int keypadDirections[8]={ K_2, K_3, K_6, K_9, K_8, K_7, K_4, K_1 };

@@ -19,9 +19,9 @@
 #include <stdint.h>
 
 // Circular Buffer holds up to two frames:
-int16_t PSGBuffer[7467]; // 14934 cpu cycles/frame ; 3733.5 psg cycles/frame
-int PSGBufferPos; // points to next location in output buffer
-int PSGBufferSize;
+extern int16_t PSGBuffer[7467]; // 14934 cpu cycles/frame ; 3733.5 psg cycles/frame
+extern int PSGBufferPos; // points to next location in output buffer
+extern int PSGBufferSize;
 
 void PSGInit(void); 
 void PSGFrame(void); // Notify New Frame

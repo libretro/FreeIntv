@@ -31,8 +31,15 @@ void drawBackgroundColorStack(int scanline);
 // http://spatula-city.org/~im14u2c/intv/jzintv-1.0-beta3/doc/programming/stic.txt
 // http://spatula-city.org/~im14u2c/intv/tech/master.html
 
-//unsigned int STICMode = 1; // 0-foreground/background, 1-color stack/color squares 
-//unsigned int frame[352*224]; // frame buffer
+unsigned int STICMode;
+
+int VBlank1;
+int VBlank2;
+int Cycles;
+int DisplayEnabled;
+int VerticalDelay;
+
+unsigned int frame[352*224];
 
 unsigned int scanBuffer[768]; // buffer for current scanline (352+32)*2
 unsigned int collBuffer[768]; // buffer for collision -- made larger than needed to save checks

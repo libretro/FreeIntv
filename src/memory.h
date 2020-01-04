@@ -17,7 +17,7 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-unsigned int Memory[0x10000];
+extern unsigned int Memory[0x10000];
 
 void MemoryInit(void);
 

@@ -20,7 +20,7 @@
 
 #include <stdio.h>
 
-// unsigned int Memory[0x10000];
+unsigned int Memory[0x10000];
 
 void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {

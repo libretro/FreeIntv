@@ -17,7 +17,7 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-int controllerSwap;
+extern int controllerSwap;
 
 void controllerInit(void);
 
