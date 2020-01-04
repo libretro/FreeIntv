@@ -24,6 +24,8 @@
 #include "controller.h"
 #include "cart.h"
 
+int SR1;
+
 int exec(void);
 
 void LoadGame(const char* path) // load cart rom //

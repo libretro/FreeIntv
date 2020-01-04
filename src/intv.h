@@ -17,7 +17,7 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-int SR1; // SR1 line for interupt
+extern int SR1; // SR1 line for interupt
 
 void LoadGame(const char *path);
 

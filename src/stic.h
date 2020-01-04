@@ -17,15 +17,15 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-unsigned int STICMode; // 0-foreground/background, 1-color stack/color squares 
+extern unsigned int STICMode; // 0-foreground/background, 1-color stack/color squares 
 
-int VBlank1; // counter for VBlank period 1
-int VBlank2; // counter for VBlank period 2
-int Cycles; // number of cycles since last STIC interput
-int DisplayEnabled; // determines if frame should be updated or not
-int VerticalDelay;
+extern int VBlank1; // counter for VBlank period 1
+extern int VBlank2; // counter for VBlank period 2
+extern int Cycles; // number of cycles since last STIC interput
+extern int DisplayEnabled; // determines if frame should be updated or not
+extern int VerticalDelay;
 
-unsigned int frame[352*224]; // frame buffer
+extern unsigned int frame[352*224]; // frame buffer
 
 void STICDrawFrame(void);
 void STICReset(void);

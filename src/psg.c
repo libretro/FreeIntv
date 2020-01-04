@@ -20,9 +20,9 @@
 #include "psg.h"
 #include "memory.h"
 
-//int PSGBufferSize = 7467;
-//int16_t PSGBuffer[7467]; // 14934 cpu cycles/frame ; 3733.5 psg cycles/frame ...
-//int PSGBufferPos; // points to next location in output buffer
+int PSGBufferSize;
+int16_t PSGBuffer[7467];
+int PSGBufferPos;
 
 int Volume[16] = { 0, 92, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144, 8192, 10922 };
 

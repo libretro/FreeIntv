@@ -1,5 +1,7 @@
 LIBRETRO_COMM_DIR = $(SOURCE_DIR)/deps/libretro-common
 
+INCFLAGS := -Isrc
+
 SOURCES_C := \
 	$(SOURCE_DIR)/libretro.c \
 	$(SOURCE_DIR)/intv.c \

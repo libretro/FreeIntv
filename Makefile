@@ -276,6 +276,7 @@ else ifeq ($(platform), ctr)
 # Emscripten
 else ifeq ($(platform), emscripten)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).bc
+	AR = emar
 	fpic := -fPIC
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 	STATIC_LINKING=1
@@ -523,6 +524,7 @@ else
 	CFLAGS += -D__WIN32__ -Wno-missing-field-initializers
 endif
 
+CFLAGS += $(INCFLAGS)
 LDFLAGS += $(LIBM)
 
 ifneq ($(platform), sncps3)
