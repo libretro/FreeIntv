@@ -281,6 +281,14 @@ else ifeq ($(platform), emscripten)
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 	STATIC_LINKING=1
 
+# Playstation PSP
+else ifeq ($(platform), psp1)
+	TARGET := $(TARGET_NAME)_libretro_$(platform).a
+	CC = psp-gcc
+	AR = psp-ar
+	CFLAGS += -G0
+	STATIC_LINKING=1
+
 # Playstation Vita
 else ifeq ($(platform), vita)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
