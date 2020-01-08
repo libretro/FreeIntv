@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (compat_snprintf.c).
+ * The following license statement only applies to this file (fopen_utf8.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,66 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* THIS FILE HAS NOT BEEN VALIDATED ON PLATFORMS BESIDES MSVC */
-#ifdef _MSC_VER
-
+#include <compat/fopen_utf8.h>
+#include <encodings/utf.h>
 #include <stdio.h>
-#include <stdarg.h>
+#include <stdlib.h>
 
-#if _MSC_VER < 1800
-#define va_copy(dst, src) ((dst) = (src))
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
+#ifndef LEGACY_WIN32
+#define LEGACY_WIN32
+#endif
 #endif
 
-#if _MSC_VER < 1300
-#define _vscprintf c89_vscprintf_retro__
+#ifdef _WIN32
+#undef fopen
 
-static int c89_vscprintf_retro__(const char *format, va_list pargs)
+void *fopen_utf8(const char * filename, const char * mode)
 {
-   int retval;
-   va_list argcopy;
-   va_copy(argcopy, pargs);
-   retval = vsnprintf(NULL, 0, format, argcopy);
-   va_end(argcopy);
-   return retval;
-}
-#endif
+#if defined(LEGACY_WIN32)
+   FILE             *ret = NULL;
+   char * filename_local = utf8_to_local_string_alloc(filename);
 
-/* http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010 */
-
-int c99_vsnprintf_retro__(char *outBuf, size_t size, const char *format, va_list ap)
-{
-   int count = -1;
-
-   if (size != 0)
-   {
-#if (_MSC_VER <= 1310)
-      count = _vsnprintf(outBuf, size - 1, format, ap);
+   if (!filename_local)
+      return NULL;
+   ret = fopen(filename_local, mode);
+   if (filename_local)
+      free(filename_local);
+   return ret;
 #else
-      count = _vsnprintf_s(outBuf, size, size - 1, format, ap);
+   wchar_t * filename_w = utf8_to_utf16_string_alloc(filename);
+   wchar_t * mode_w = utf8_to_utf16_string_alloc(mode);
+   FILE* ret = _wfopen(filename_w, mode_w);
+   free(filename_w);
+   free(mode_w);
+   return ret;
 #endif
-   }
-
-   if (count == -1)
-       count = _vscprintf(format, ap);
-
-   if (count == size)
-   {
-      /* there was no room for a NULL, so truncate the last character */
-      outBuf[size - 1] = '\0';
-   }
-
-   return count;
-}
-
-int c99_snprintf_retro__(char *outBuf, size_t size, const char *format, ...)
-{
-   int count;
-   va_list ap;
-
-   va_start(ap, format);
-   count = c99_vsnprintf_retro__(outBuf, size, format, ap);
-   va_end(ap);
-
-   return count;
 }
 #endif
