@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "libretro.h"
+#include <libretro.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
