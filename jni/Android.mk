@@ -2,7 +2,6 @@ LOCAL_PATH := $(call my-dir)
 
 CORE_DIR    := $(LOCAL_PATH)/..
 SOURCE_DIR  := $(CORE_DIR)/src
-INCFLAGS    := -I$(SOURCE_DIR)/deps/libretro-common/include
 INCLUDES    :=
 SOURCES_C   :=
 SOURCES_CXX :=

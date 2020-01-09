@@ -1,6 +1,7 @@
 LIBRETRO_COMM_DIR = $(SOURCE_DIR)/deps/libretro-common
 
-INCFLAGS := -Isrc
+INCFLAGS := -I$(SOURCE_DIR) \
+				-I$(LIBRETRO_COMM_DIR)/include
 
 SOURCES_CXX :=
 SOURCES_C   := \
