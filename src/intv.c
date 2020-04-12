@@ -23,6 +23,7 @@
 #include "psg.h"
 #include "controller.h"
 #include "cart.h"
+#include "osd.h"
 
 int SR1;
 
@@ -32,11 +33,11 @@ void LoadGame(const char* path) // load cart rom //
 {
 	if(LoadCart(path))
 	{
-		frame[0] = 0x00FF00;
+		OSD_drawText(3, 3, "Load Cart: OKAY");
 	}
 	else
 	{
-		frame[0] = 0xFF0000;
+		OSD_drawText(3, 3, "Load Cart: FAIL");
 	}
 }
 
@@ -55,13 +56,13 @@ void loadExec(const char* path)
 		}
 
 		fclose(fp);
-		frame[2] = 0x00FF00;
+		OSD_drawText(3, 1, "Load EXEC: OKAY");
 		printf("[INFO] [FREEINTV] Succeeded loading Executive BIOS from: %s\n", path);		
 	}
 	else
 	{
+		OSD_drawText(3, 1, "Load EXEC: FAIL");
 		printf("[ERROR] [FREEINTV] Failed loading Executive BIOS from: %s\n", path);
-		frame[2] = 0xFF0000;
 	}
 }
 
@@ -80,21 +81,21 @@ void loadGrom(const char* path)
 		}
 
 		fclose(fp);
-		frame[4] = 0x00FF00;
+		OSD_drawText(3, 2, "Load GROM: OKAY");
 		printf("[INFO] [FREEINTV] Succeeded loading Graphics BIOS from: %s\n", path);
 		
 	}
 	else
 	{
+		OSD_drawText(3, 2, "Load GROM: FAIL");
 		printf("[ERROR] [FREEINTV] Failed loading Graphics BIOS from: %s\n", path);
-		frame[4] = 0xFF0000;
 	}
 }
 
 void Reset()
 {
 	SR1 = 0;
-	CP1610Init();
+	CP1610Reset();
 	MemoryInit();
 	STICReset();
 	PSGInit();
@@ -132,10 +133,9 @@ int exec(void) // Run one instruction
 	if(Cycles>=14934) // STIC generates an interput every 14934 cycles
 	{
 		Cycles = Cycles - 14934;
-		SR1 = 3791; // hold  SR1 output low for 3791 cycles
+		SR1 = 2907 - Cycles; // hold  SR1 output low for 2901 cycles
 		DisplayEnabled = 0;
 		VBlank1 = 2900 - Cycles;
-		VBlank2 = 3792 + VBlank1;
 	}
 	if(SR1>0) 
 	{
@@ -145,12 +145,16 @@ int exec(void) // Run one instruction
 	if(VBlank1>0) 
 	{
 		VBlank1 = VBlank1 - ticks;
-		if(VBlank1<0) { VBlank1 = 0; }
+		if(VBlank1<0)
+		{
+			VBlank2 = 3796 + VBlank1;
+			VBlank1 = 0;
+		}
 	}
 	if(VBlank2>0)
 	{
 		VBlank2 = VBlank2 - ticks;
-		if(VBlank2<0)
+		if(VBlank2<=0)
 		{
 			VBlank2 = 0;
 			if(DisplayEnabled==1)

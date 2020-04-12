@@ -19,6 +19,8 @@
 
 extern int controllerSwap;
 
+extern int keypadStates[];
+
 void controllerInit(void);
 
 int getControllerState(int joypad[], int player);

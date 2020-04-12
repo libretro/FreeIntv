@@ -17,14 +17,40 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-// On-Screen Display //
+// On-Screen Display - Intellivision //
 
-void drawText(int x, int y, const char *text);
+void OSD_drawText(int x, int y, const char *text);
 
-void drawPaused(void);
+void OSD_drawPaused(void);
 
-void drawLeftRight(void);
+void OSD_drawLeftRight(void);
 
-void drawRightLeft(void);
+void OSD_drawRightLeft(void);
+
+// On-Screen Display - General //
+
+void OSD_setDisplay(unsigned int frame[], unsigned int width, unsigned int height);
+
+void OSD_setColor(unsigned int color);
+
+void OSD_setBackground(unsigned int color);
+
+void OSD_HLine(int x, int y, int len);
+
+void OSD_VLine(int x, int y, int len);
+
+void OSD_Box(int x1, int y1, int width, int height);
+
+void OSD_FillBox(int x1, int y1, int width, int height);
+
+void OSD_drawLetter(int x, int y, int c);
+
+void OSD_drawText(int x, int y, const char *text);
+
+void OSD_drawTextFree(int x, int y, const char *text);
+
+void OSD_drawTextBG(int x, int y, const char *text);
+
+void OSD_drawTextCenterBG(int y, const char *text);
 
 #endif

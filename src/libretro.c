@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <libretro.h>
+#include "libretro.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
@@ -58,6 +58,10 @@ int joypre1[18]; // joypad 1 previous state
 
 bool paused = false;
 
+bool keyboardChange = false;
+bool keyboardDown = false;
+int  keyboardState = 0;
+
 // at 44.1khz, read 735 samples (44100/60) 
 // at 48khz, read 800 samples (48000/60)
 // e.g. audioInc = 3733.5 / 735
@@ -67,10 +71,9 @@ int audioSamples = 735;
 double audioBufferPos = 0.0;
 double audioInc = 1;
 
-unsigned int frameWidth = 352;
-unsigned int frameHeight = 224;
-unsigned int frameSize = 78848;
-//unsigned int frame[78848];
+unsigned int frameWidth = MaxWidth;
+unsigned int frameHeight = MaxHeight;
+unsigned int frameSize =  MaxWidth * MaxHeight; //78848
 
 void quit(int state)
 {
@@ -82,16 +85,37 @@ static void Keyboard(bool down, unsigned keycode,
       uint32_t character, uint16_t key_modifiers)
 {
 	/* Keyboard Input */
+	keyboardDown = down;
+	keyboardChange = true; 
+	switch (character)
+	{
+		case 48: keyboardState = keypadStates[10]; break; // 0
+		case 49: keyboardState = keypadStates[0]; break; // 1
+		case 50: keyboardState = keypadStates[1]; break; // 2
+		case 51: keyboardState = keypadStates[2]; break; // 3
+		case 52: keyboardState = keypadStates[3]; break; // 4
+		case 53: keyboardState = keypadStates[4]; break; // 5
+		case 54: keyboardState = keypadStates[5]; break; // 6
+		case 55: keyboardState = keypadStates[6]; break; // 7
+		case 56: keyboardState = keypadStates[7]; break; // 8
+		case 57: keyboardState = keypadStates[8]; break; // 9
+		case 91: keyboardState = keypadStates[9]; break; // C [
+		case 93: keyboardState = keypadStates[11]; break; // E ]
+		default: 
+			keyboardChange = false;
+			keyboardDown = false;
+	}
 }
 
 void retro_init(void)
 {
-   char execPath[PATH_MAX_LENGTH];
+	char execPath[PATH_MAX_LENGTH];
 	char gromPath[PATH_MAX_LENGTH];
 	struct retro_keyboard_callback kb = { Keyboard };
 
 	// init buffers, structs
 	memset(frame, 0, frameSize);
+	OSD_setDisplay(frame, MaxWidth, MaxHeight);
 
 	// setup controller swap
 	controllerInit();
@@ -196,8 +220,8 @@ void retro_run(void)
 		paused = !paused;
 		if(paused)
 		{
-			drawPaused();
-			drawText(14, 21, "HELP - PRESS A");
+			OSD_drawPaused();
+			OSD_drawTextCenterBG(21, "HELP - PRESS A");
 		}
 	}
 
@@ -206,20 +230,20 @@ void retro_run(void)
 		// help menu //
 		if(joypad0[4]==1 || joypad1[4]==1)
 		{
-			drawText(3,  4, "                                      ");
-			drawText(3,  5, "               - HELP -               ");
-			drawText(3,  6, "                                      ");
-			drawText(3,  7, " A      - RIGHT ACTION BUTTON         ");
-			drawText(3,  8, " B      - LEFT ACTION BUTTON          ");
-			drawText(3,  9, " Y      - TOP ACTION BUTTON           ");
-			drawText(3, 10, " X      - LAST SELECTED KEYPAD BUTTON ");
-			drawText(3, 11, " L/R    - SHOW KEYPAD                 ");
-			drawText(3, 12, "                                      ");
-			drawText(3, 13, " START  - PAUSE GAME                  ");
-			drawText(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS "); // 38 of 43
-			drawText(3, 15, "                                      ");
-			drawText(3, 16, " FREEINTV 1.0          LICENSE GPL V3 ");
-			drawText(3, 17, "                                      ");
+			OSD_drawTextBG(3,  4, "                                      ");
+			OSD_drawTextBG(3,  5, "               - HELP -               ");
+			OSD_drawTextBG(3,  6, "                                      ");
+			OSD_drawTextBG(3,  7, " A      - RIGHT ACTION BUTTON         ");
+			OSD_drawTextBG(3,  8, " B      - LEFT ACTION BUTTON          ");
+			OSD_drawTextBG(3,  9, " Y      - TOP ACTION BUTTON           ");
+			OSD_drawTextBG(3, 10, " X      - LAST SELECTED KEYPAD BUTTON ");
+			OSD_drawTextBG(3, 11, " L/R    - SHOW KEYPAD                 ");
+			OSD_drawTextBG(3, 12, "                                      ");
+			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
+			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
+			OSD_drawTextBG(3, 15, "                                      ");
+			OSD_drawTextBG(3, 16, " FREEINTV 1.1          LICENSE GPL V3 ");
+			OSD_drawTextBG(3, 17, "                                      ");
 		}
 	}
 	else
@@ -244,6 +268,12 @@ void retro_run(void)
 		{
 			showKeypad1 = false;
 			setControllerInput(1, getControllerState(joypad1, 1));
+		}
+
+		if(keyboardDown || keyboardChange)
+		{
+			setControllerInput(0, keyboardState);
+			keyboardChange = false;
 		}
 
 		// grab frame
@@ -277,11 +307,11 @@ void retro_run(void)
 		}
 		if(controllerSwap==1)
 		{
-			drawLeftRight();
+			OSD_drawLeftRight();
 		}
 		else
 		{
-			drawRightLeft();
+			OSD_drawRightLeft();
 		}
 	}
 
@@ -299,7 +329,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
 	info->library_name = "FreeIntv";
-	info->library_version = "1.0";
+	info->library_version = "1.1";
 	info->valid_extensions = "int|bin|rom";
 	info->need_fullpath = true;
 }
