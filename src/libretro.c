@@ -367,10 +367,17 @@ void retro_reset(void)
 	Reset();
 }
 
+RETRO_API void *retro_get_memory_data(unsigned id)
+{
+	return Memory;
+}
+RETRO_API size_t retro_get_memory_size(unsigned id)
+{
+	return 0x10000;
+}
+
 /* Stubs */
 unsigned int retro_api_version(void) { return RETRO_API_VERSION; }
-void *retro_get_memory_data(unsigned id) { return NULL; }
-size_t retro_get_memory_size(unsigned id){ return 0; }
 size_t retro_serialize_size(void) { return 0; }
 bool retro_serialize(void *data, size_t size) { return false; }
 bool retro_unserialize(const void *data, size_t size) { return false; }
