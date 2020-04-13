@@ -369,11 +369,20 @@ void retro_reset(void)
 
 RETRO_API void *retro_get_memory_data(unsigned id)
 {
-	return Memory;
+	if(id==RETRO_MEMORY_SYSTEM_RAM)
+	{
+		return Memory;
+	}
+	return 0;
 }
+
 RETRO_API size_t retro_get_memory_size(unsigned id)
 {
-	return 0x10000;
+	if(id==RETRO_MEMORY_SYSTEM_RAM)
+	{
+		return 0x10000;
+	}
+	return 0;
 }
 
 /* Stubs */
