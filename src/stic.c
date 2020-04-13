@@ -399,14 +399,14 @@ void drawSprites(int scanline) // MOBs
 			{
 				spriterow = (7+(8*yRes)) - spriterow;
 				gaddress = gaddress + spriterow; 
-				gdata  = Memory[gaddress];
-				gdata2 = Memory[gaddress - (sizeY==0)];
+				gdata  = Memory[gaddress] & 0xFF;
+				gdata2 = Memory[gaddress - (sizeY==0)] & 0xFF;
 			}
 			else
 			{
 				gaddress = gaddress + spriterow; 
-				gdata  = Memory[gaddress];
-				gdata2 = Memory[gaddress + (sizeY==0)];
+				gdata  = Memory[gaddress] & 0xFF;
+				gdata2 = Memory[gaddress + (sizeY==0)] & 0xFF;
 			}
 
 			if(flipX)
