@@ -466,6 +466,12 @@ int getLoadMethod() // lazy, but it works
 		if(fingerprint==fingerprints[i])
 		{
 			printf("[INFO] [FREEINTV] Cartridge database match: memory map %i\n", fingerprints[i+1]);
+			if(fingerprint==11349)
+			{
+				// Baseball or MTE Test Cart?
+				if(size>8192) { return 8; } // load method 8 for MTE Test Cart
+				return 0; // default method for BaseBall
+			}
 			return fingerprints[i+1];
 		}
 	}
