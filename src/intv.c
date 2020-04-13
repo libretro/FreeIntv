@@ -33,11 +33,11 @@ void LoadGame(const char* path) // load cart rom //
 {
 	if(LoadCart(path))
 	{
-		OSD_drawText(3, 3, "Load Cart: OKAY");
+		OSD_drawText(3, 3, "LOAD CART: OKAY");
 	}
 	else
 	{
-		OSD_drawText(3, 3, "Load Cart: FAIL");
+		OSD_drawText(3, 3, "LOAD CART: FAIL");
 	}
 }
 
@@ -56,12 +56,12 @@ void loadExec(const char* path)
 		}
 
 		fclose(fp);
-		OSD_drawText(3, 1, "Load EXEC: OKAY");
+		OSD_drawText(3, 1, "LOAD EXEC: OKAY");
 		printf("[INFO] [FREEINTV] Succeeded loading Executive BIOS from: %s\n", path);		
 	}
 	else
 	{
-		OSD_drawText(3, 1, "Load EXEC: FAIL");
+		OSD_drawText(3, 1, "LOAD EXEC: FAIL");
 		printf("[ERROR] [FREEINTV] Failed loading Executive BIOS from: %s\n", path);
 	}
 }
@@ -81,13 +81,13 @@ void loadGrom(const char* path)
 		}
 
 		fclose(fp);
-		OSD_drawText(3, 2, "Load GROM: OKAY");
+		OSD_drawText(3, 2, "LOAD GROM: OKAY");
 		printf("[INFO] [FREEINTV] Succeeded loading Graphics BIOS from: %s\n", path);
 		
 	}
 	else
 	{
-		OSD_drawText(3, 2, "Load GROM: FAIL");
+		OSD_drawText(3, 2, "LOAD GROM: FAIL");
 		printf("[ERROR] [FREEINTV] Failed loading Graphics BIOS from: %s\n", path);
 	}
 }

@@ -16,9 +16,13 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "memory.h"
 #include "cart.h"
+#include "osd.h"
 
+int isIntellicart(void);
+int loadIntellicart(void);
 int isROM(void);
 int loadROM(void);
 int getLoadMethod(void);
@@ -65,33 +69,50 @@ int LoadCart(const char *path)
         if (ferror(fp))
         {
             printf("[ERROR] [FREEINTV] Cartridge load error indicator set\n");
+			return 0;
         }
         
-        if(isROM()) // intellicart format
+		char buffer[8] = {0,0,0,0,0,0,0,0};
+		itoa(size, buffer, 10);
+		OSD_drawText(8, 4, "SIZE:");
+		OSD_drawText(14, 4, buffer);
+
+        if(isIntellicart()) // intellicart format
         {
+			OSD_drawText(8, 4, "INTELLICART");
             printf("[INFO] [FREEINTV] Intellicart cartridge format detected\n");		
-            return loadROM();
+            return loadIntellicart();
         }
         else
         {
-            // check cartinfo database for load method
-            printf("[INFO] [FREEINTV] Intelllicart format not detected. Determining load method via database.\n");		
-            switch(getLoadMethod())
-            {
-                    case 0: load0(); break;
-                    case 1: load1(); break;
-                    case 2: load2(); break;
-                    case 3: load3(); break;
-                    case 4: load4(); break;
-                    case 5: load5(); break;
-                    case 6: load6(); break;
-                    case 7: load7(); break;
-                    case 8: load8(); break;
-                    case 9: load9(); break;
-                    default: printf("[INFO] [FREEINTV] No database match. Using default cartridge memory map.\n"); load0();
-            }
+			if(isROM())
+			{
+				OSD_drawText(8, 4, "INTELLICART");
+				OSD_drawText(8, 5, "MISSING A8!");
+				printf("[INFO] [FREEINTV] Possible Intellicart cartridge format detected\n");
+				return loadROM();
+			}
+			else
+			{
+				// check cartinfo database for load method
+				printf("[INFO] [FREEINTV] Raw ROM image. Determining load method via database.\n");		
+				switch(getLoadMethod())
+				{
+						case 0: load0(); break;
+						case 1: load1(); break;
+						case 2: load2(); break;
+						case 3: load3(); break;
+						case 4: load4(); break;
+						case 5: load5(); break;
+						case 6: load6(); break;
+						case 7: load7(); break;
+						case 8: load8(); break;
+						case 9: load9(); break;
+						default: printf("[INFO] [FREEINTV] No database match. Using default cartridge memory map.\n"); load0();
+				}
+			}
         }
-        return 1;
+        return 1; // loaded okay
 	}
     else
     {
@@ -120,13 +141,19 @@ void loadRange(int start, int stop)
 }
 
 // http://spatula-city.org/~im14u2c/intv/jzintv-1.0-beta3/doc/rom_fmt/IntellicartManual.booklet.pdf
-int isROM() // check for intellicart format rom
+int isIntellicart() // check for intellicart format rom
 {
 	// check magic number (used for intellicart baud rate detection)
 	return (data[0]==0xA8); 
 }
 
-int loadROM() // load intellicart format rom
+int isROM() // some Intellicart roms don't start with A8 for no apparent reason
+{
+	// the third byte should be the 1's compliment of the second byte
+	return data[1] == (data[2]^0xFF);
+}
+
+int loadIntellicart() // load intellicart format rom
 {
 	int start;
 	int stop;
@@ -147,6 +174,11 @@ int loadROM() // load intellicart format rom
 	}
 	// Enable tables (ignored)
 	return 1;
+}
+
+int loadROM() // load ROM formatted cart
+{
+	return loadIntellicart();
 }
 
 // http://atariage.com/forums/topic/203179-config-files-to-use-with-various-intellivision-titles/
