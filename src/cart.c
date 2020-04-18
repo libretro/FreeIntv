@@ -66,7 +66,6 @@ int LoadCart(const char *path)
         if (ferror(fp))
         {
             printf("[ERROR] [FREEINTV] Cartridge load error indicator set\n");
-			return 0;
         }
         
 		OSD_drawText(8, 4, "SIZE:");
