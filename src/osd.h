@@ -47,6 +47,8 @@ void OSD_drawLetter(int x, int y, int c);
 
 void OSD_drawText(int x, int y, const char *text);
 
+void OSD_drawInt(int x, int y, int num, int base);
+
 void OSD_drawTextFree(int x, int y, const char *text);
 
 void OSD_drawTextBG(int x, int y, const char *text);

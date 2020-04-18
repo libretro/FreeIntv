@@ -16,7 +16,6 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include "memory.h"
 #include "cart.h"
 #include "osd.h"
@@ -36,10 +35,6 @@ void load6(void);
 void load7(void);
 void load8(void);
 void load9(void);
-
-void itoa2(int num, char*buffer, int base); // we need to roll our own for PSP...
-
-const char *title[0x40];
 
 int data[0x20000]; // rom data loaded from file
 
@@ -74,10 +69,8 @@ int LoadCart(const char *path)
 			return 0;
         }
         
-		char buffer[16];
-		itoa2(size, buffer, 10);
 		OSD_drawText(8, 4, "SIZE:");
-		OSD_drawText(14, 4, buffer);
+		OSD_drawInt(14, 4, size, 10);
 
         if(isIntellicart()) // intellicart format
         {
@@ -478,39 +471,4 @@ int getLoadMethod() // lazy, but it works
 		}
 	}
 	return -1;
-}
-
-void itoa2(int num, char* buffer, int base)
-{
-	int i = 0;
-	int r = 0;
-	if(num<0)
-	{
-		num = 0-num;
-		buffer[i] = '-';
-		i++;
-	}
-	if(num==0)
-	{
-		buffer[i]='0';
-		i++;
-	}
-	else
-	{
-		while(num>0)
-		{
-			r = num % base;
-			num = (num-r) / base;
-			if(r>9)
-			{
-				buffer[i] = 'A' + r;
-			}
-			else
-			{
-				buffer[i] = '0' + r;
-			}
-			i++;
-		}
-	}
-	buffer[i] = '\0';
 }

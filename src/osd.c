@@ -345,3 +345,43 @@ void OSD_drawTextCenterBG(int y, const char *text)
 		OSD_drawTextFree(x+1, y+1, text);
 	}
 }
+
+void OSD_drawInt(int x, int y, int num, int base)
+{
+	char buffer[2] = {0,0};
+	int r = 0;
+
+	if(base>2) { base = 10; }
+
+	if(num<0)
+	{
+		num = 0-num;
+		buffer[0] = '-';
+		OSD_drawText(x, y, buffer);
+		x++;
+	}
+	if(num==0)
+	{
+		buffer[0] = '0';
+		OSD_drawText(x, y, buffer);
+		x++;
+	}
+	else
+	{
+		while(num>0)
+		{
+			r = num % base;
+			num = (num-r) / base;
+			if(r>9)
+			{
+				buffer[0] = 'A' + r;
+			}
+			else
+			{
+				buffer[0] = '0' + r;
+			}
+			OSD_drawText(x, y, buffer);
+			x++;
+		}
+	}
+}
