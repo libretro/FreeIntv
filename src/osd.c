@@ -350,6 +350,7 @@ void OSD_drawInt(int x, int y, int num, int base)
 {
 	char buffer[2] = {0,0};
 	int r = 0;
+	int t = num;
 
 	if(base>2) { base = 10; }
 
@@ -364,10 +365,16 @@ void OSD_drawInt(int x, int y, int num, int base)
 	{
 		buffer[0] = '0';
 		OSD_drawText(x, y, buffer);
-		x++;
 	}
 	else
 	{
+		x--;
+		while(t>0)
+		{
+			r = t % base;
+			t = (t-r) / base;
+			x++;
+		}
 		while(num>0)
 		{
 			r = num % base;
@@ -381,7 +388,7 @@ void OSD_drawInt(int x, int y, int num, int base)
 				buffer[0] = '0' + r;
 			}
 			OSD_drawText(x, y, buffer);
-			x++;
+			x--;
 		}
 	}
 }
