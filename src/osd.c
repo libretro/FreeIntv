@@ -220,14 +220,16 @@ void OSD_setBackground(unsigned int color)
 	DisplayColor[0] = color;
 }
 
-// Utility functions
+/* Utility functions */
 void OSD_HLine(int x, int y, int len)
 {
-	if(x<0 || y<0 || (y*DisplayWidth+x+len)>DisplaySize) { return; }
+	int i, offset;
+
+	if(x<0 || y<0 || (y*DisplayWidth+x+len)>DisplaySize)
+      return;
 	
-	int offset = (y*DisplayWidth)+x;
-	int i;
-	for(i=0; i<=len; i++)
+	offset = (y*DisplayWidth)+x;
+	for(i = 0; i <= len; i++)
 	{
 		Frame[offset] = DisplayColor[1];
 		offset = offset + 1;
@@ -235,11 +237,14 @@ void OSD_HLine(int x, int y, int len)
 }
 void OSD_VLine(int x, int y, int len)
 {
-	if(x<0 || y<0 || ((y+len)*DisplayWidth+x)>DisplaySize) { return; }
+   int i, offset;
+
+	if(x<0 || y<0 || ((y+len)*DisplayWidth+x)>DisplaySize)
+      return;
 	
-	int offset = (y*DisplayWidth)+x;
-	int i;
-	for(i=0; i<=len; i++)
+	offset = (y*DisplayWidth)+x;
+
+	for(i = 0; i <= len; i++)
 	{
 		Frame[offset] = DisplayColor[1];
 		offset = offset + DisplayWidth;
@@ -265,12 +270,14 @@ void OSD_FillBox(int x1, int y1, int width, int height)
 
 void OSD_drawLetter(int x, int y, int c)
 {
-	unsigned int t = DisplayColor[0];
 	int i, j;
-	int offset = (DisplayWidth*y)+x;
+	unsigned int t = DisplayColor[0];
+	int offset     = (DisplayWidth*y)+x;
 	
 	c = (c-32);
-	if(c<0 || c>58) { return; }
+	if(c<0 || c>58)
+      return;
+
 	c = c * 10;
 
 	for(i=0; i<10; i++)

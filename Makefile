@@ -313,16 +313,16 @@ else ifeq ($(platform), windows_msvc2010_x64)
 	CC  = cl.exe
 	CXX = cl.exe
 
-	PATH := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/bin/amd64"):$(PATH)
-	PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../IDE")
-	LIB := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/lib/amd64")
-	INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/include")
+PATH := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/bin/amd64"):$(PATH)
+PATH := $(PATH):$(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../IDE")
+INCLUDE := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/include")
+LIB := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/lib/amd64")
+BIN := $(shell IFS=$$'\n'; cygpath "$(VS100COMNTOOLS)../../VC/bin")
 
-	WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib/x64
-	WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib/x64
-
-	WindowsSdkDirInc := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
-	WindowsSdkDirInc ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
+WindowsSdkDir := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib/x64
+WindowsSdkDir ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')lib/x64
+WindowsSdkDirInc := $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
+WindowsSdkDirInc ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" -v "InstallationFolder" | grep -o '[A-Z]:\\.*')Include
 
 	INCFLAGS_PLATFORM = -I"$(WindowsSdkDirInc)"
 	export INCLUDE := $(INCLUDE)
@@ -532,8 +532,9 @@ else
 	CFLAGS += -D__WIN32__ -Wno-missing-field-initializers
 endif
 
-CFLAGS += $(INCFLAGS)
-LDFLAGS += $(LIBM)
+CFLAGS   += $(INCFLAGS)
+CXXFLAGS += $(INCFLAGS)
+LDFLAGS  += $(LIBM)
 
 ifneq ($(platform), sncps3)
 	ifeq (,$(findstring msvc,$(platform)))
@@ -584,17 +585,23 @@ else
 	LD = $(CC)
 endif
 
+INCFLAGS += $(INCFLAGS_PLATFORM)
+
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING),1)
-	$(AR) rcs $@ $(OBJECTS)
+ifneq (,$(findstring msvc,$(platform)))
+	$(LD) $(LINKOUT)$@ $(OBJECTS)
 else
-	$(LD) $(fpic) $(SHARED) $(LDFLAGS) $(LINKOUT)$@ $(OBJECTS) $(LIBS)
+	$(AR) rcs $@ $(OBJECTS)
+endif
+else
+	$(LD) $(LINKOUT)$@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
 endif
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(fpic) -c $(OBJOUT)$@ $<
+	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS) $(INCFLAGS) 
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)

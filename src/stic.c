@@ -95,7 +95,7 @@ int reverse[256] = // lookup table to reverse the bits in a byte //
 	0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
 };
 
-void STICReset()
+void STICReset(void)
 {
 	STICMode = 1;
 	VBlank1 = 0;
@@ -464,8 +464,9 @@ void drawSprites(int scanline) // MOBs
 	}
 }
 
-void STICDrawFrame()
+void STICDrawFrame(void)
 {
+	int row, offset;
 	int i, j;
 
 	extendTop = (Memory[0x32]>>1)&0x01;
@@ -477,8 +478,6 @@ void STICDrawFrame()
 	delayH = 8 + ((Memory[0x30])&0x7);
 
 	delayH = delayH * 2;
-
-	int row, offset;
 
 	offset = 0;
 	for(row=0; row<112; row++)
