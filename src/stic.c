@@ -51,10 +51,32 @@ int extendTop = 0;
 int extendLeft = 0;
 
 unsigned int CSP; // Color Stack Pointer
-unsigned int color7 = 0xFFFCFF; // Copy of color 7 (for color squares mode)
 unsigned int cscolors[4]; // color squares colors
 unsigned int fgcard[20]; // cached colors for cards on current row
 unsigned int bgcard[20]; // (used for normal color stack mode)
+#if defined(ABGR1555)
+unsigned int color7 = 0xFFFCFF; // Copy of color 7 (for color squares mode)
+unsigned int colors[16] =
+{
+	0x05000C, /* 0x000000; */ // Black
+	0xFF2D00, /* 0x0000FF; */ // Blue
+	0x003EFF, /* 0xFF0000; */ // Red
+	0x64D4C9, /* 0xCBFF65; */ // Tan
+	0x0F7800, /* 0x007F00; */ // Dark Green
+	0x20A700, /* 0x00FF00; */ // Light Green 
+	0x27EAFA, /* 0xFFFF00; */ // Yellow
+	0xFFFCFF, /* 0xFFFFFF; */ // White
+	0xA8A8A7, /* 0x7F7F7F; */ // Gray
+	0xFFCB5A, /* 0x00FFFF; */ // Cyan
+	0x00A6FF, /* 0xFF9F00; */ // Orange
+	0x00583C, /* 0x7F7F00; */ // Brown
+	0x7632FF, /* 0xFF3FFF; */ // Pink
+	0xFF95BD, /* 0x7F7FFF; */ // Violet
+	0x30CD6C, /* 0x7FFF00; */ // Bright green
+	0x7D1AC8  /* 0xFF007F; */ // Magenta
+};
+#else
+unsigned int color7 = 0xFFFCFF; // Copy of color 7 (for color squares mode)
 unsigned int colors[16] =
 {
 	0x0C0005, /* 0x000000; */ // Black
@@ -74,6 +96,7 @@ unsigned int colors[16] =
 	0x6CCD30, /* 0x7FFF00; */ // Bright green
 	0xC81A7D  /* 0xFF007F; */ // Magenta
 };
+#endif
 
 int reverse[256] = // lookup table to reverse the bits in a byte //
 {
