@@ -286,7 +286,7 @@ else ifeq ($(platform), ps2)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
 	CC = ee-gcc
 	AR = ee-ar
-	CFLAGS += -G0 -DABGR1555
+	CFLAGS += -G0 -DABGR1555 -DPS2
 	STATIC_LINKING=1
 
 # Playstation PSP
