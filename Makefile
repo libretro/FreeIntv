@@ -336,7 +336,6 @@ WindowsSdkDirInc ?= $(shell reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Wi
 	export INCLUDE := $(INCLUDE)
 	export LIB := $(LIB);$(WindowsSdkDir)
 	TARGET := $(TARGET_NAME)_libretro.dll
-	PSS_STYLE :=2
 	LDFLAGS += -DLL
 	LIBS =
 
@@ -360,7 +359,6 @@ else ifeq ($(platform), windows_msvc2010_x86)
 	export INCLUDE := $(INCLUDE)
 	export LIB := $(LIB);$(WindowsSdkDir)
 	TARGET := $(TARGET_NAME)_libretro.dll
-	PSS_STYLE :=2
 	LDFLAGS += -DLL
 	LIBS =
 
@@ -380,7 +378,6 @@ else ifeq ($(platform), windows_msvc2005_x86)
 	export INCLUDE := $(INCLUDE);$(INETSDK)/Include;src/libretro/libretro-common/include/compat/msvc
 	export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib
 	TARGET := $(TARGET_NAME)_libretro.dll
-	PSS_STYLE :=2
 	LDFLAGS += -DLL
 	CFLAGS += -D_CRT_SECURE_NO_DEPRECATE
 	LIBS =
@@ -395,7 +392,6 @@ else ifeq ($(platform), xbox1_msvc2003)
 
 	export INCLUDE := $(XDK)/xbox/include
 	export LIB := $(XDK)/xbox/lib
-	PSS_STYLE :=2
 	CFLAGS   += -D_XBOX -D_XBOX1
 	CXXFLAGS += -D_XBOX -D_XBOX1
 	STATIC_LINKING=1
@@ -416,7 +412,6 @@ WindowsSdkDir := $(INETSDK)
 export INCLUDE := $(INCLUDE);$(INETSDK)/Include;libretro-common/include/compat/msvc
 export LIB := $(LIB);$(WindowsSdkDir);$(INETSDK)/Lib
 TARGET := $(TARGET_NAME)_libretro.dll
-PSS_STYLE :=2
 LDFLAGS += -DLL
 CFLAGS += -D_CRT_SECURE_NO_DEPRECATE
 WINDOWS_VERSION=1
@@ -431,7 +426,6 @@ else ifeq ($(platform), xbox360_msvc2010)
 
 	export INCLUDE := $(XEDK)/include/xbox
 	export LIB := $(XEDK)/lib/xbox
-	PSS_STYLE :=2
 	CFLAGS   += -D_XBOX -D_XBOX360
 	CXXFLAGS += -D_XBOX -D_XBOX360
 	STATIC_LINKING=1
@@ -529,7 +523,6 @@ else ifneq (,$(findstring windows_msvc2017,$(platform)))
 	export INCLUDE := $(INCLUDE);$(WindowsSDKSharedIncludeDir);$(WindowsSDKUCRTIncludeDir);$(WindowsSDKUMIncludeDir)
 	export LIB := $(LIB);$(WindowsSDKUCRTLibDir);$(WindowsSDKUMLibDir)
 	TARGET := $(TARGET_NAME)_libretro.dll
-	PSS_STYLE :=2
 	LDFLAGS += -DLL
 
 # Current Windows builds via mingw/gcc
