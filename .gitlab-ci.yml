@@ -38,7 +38,7 @@ include:
   - project: 'libretro-infrastructure/ci-templates'
     file: '/wii-static.yml'
  
-  # Nintendo Wii
+  # Nintendo WiiU
   - project: 'libretro-infrastructure/ci-templates'
     file: '/wiiu-static.yml'
  
