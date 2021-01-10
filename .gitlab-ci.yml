@@ -42,6 +42,10 @@ include:
     file: '/ios9.yml'
 
   ################################## CONSOLES ################################
+  # Nintendo 3DS
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/ctr-static.yml'
+    
   # Nintendo GameCube
   - project: 'libretro-infrastructure/ci-templates'
     file: '/ngc-static.yml'
@@ -160,7 +164,13 @@ libretro-build-ps2:
   extends:
     - .libretro-ps2-static-retroarch-master
     - .core-defs
-    
+
+# Nintendo 3DS
+libretro-build-ctr:
+  extends:
+    - .libretro-ctr-static-retroarch-master
+    - .core-defs
+
 # Nintendo GameCube
 libretro-build-ngc:
   extends:
