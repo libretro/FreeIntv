@@ -244,7 +244,7 @@ else ifeq ($(platform), ctr)
 	AR = $(DEVKITARM)/bin/arm-none-eabi-ar$(EXE_EXT)
 	CFLAGS += -DARM11 -D_3DS
 	CFLAGS += -march=armv6k -mtune=mpcore -mfloat-abi=hard
-	CFLAGS += -Wall -mword-relocations
+	CFLAGS += -mword-relocations
 	CFLAGS += -fomit-frame-pointer -ffast-math
 	HAVE_RZLIB := 1
 	DISABLE_ERROR_LOGGING := 1
@@ -280,7 +280,7 @@ else ifeq ($(platform), vita)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
 	CC = arm-vita-eabi-gcc
 	AR = arm-vita-eabi-ar
-	CXXFLAGS += -Wl,-q -Wall -O3
+	CXXFLAGS += -Wl,-q -O3
 	STATIC_LINKING=1
 
 # GCW0
@@ -531,7 +531,7 @@ LDFLAGS  += $(LIBM)
 
 ifneq ($(platform), sncps3)
 	ifeq (,$(findstring msvc,$(platform)))
-		CFLAGS += -Wall -Wno-sign-compare -Wunused \
+		CFLAGS += -Wno-sign-compare -Wunused \
 		-Wpointer-arith -Wbad-function-cast -Wcast-align -Waggregate-return \
 		-Wshadow -Wstrict-prototypes \
 		-Wformat-security -Wwrite-strings \
@@ -540,9 +540,7 @@ ifneq ($(platform), sncps3)
 endif
 
 ifeq ($(DEBUG), 1)
-	CFLAGS += -O0 -Wall -Wno-unused -g
-else
-	CFLAGS += -O2 -DNDEBUG
+	CFLAGS += -Wno-unused
 endif
 
 ifeq (,$(findstring msvc,$(platform)))
@@ -552,15 +550,25 @@ endif
 ifeq ($(DEBUG), 1)
 	CXXFLAGS += -O0 -g
 else
-	CXXFLAGS += -O3
+	CXXFLAGS += -O2 -DNDEBUG
+endif
+
+ifneq (,$(findstring msvc,$(platform)))
+ifeq ($(DEBUG), 1)
+	CFLAGS   += -MTd
+	CXXFLAGS += -MTd
+else
+	CFLAGS   += -MT
+	CXXFLAGS += -MT
+endif
 endif
 
 include Makefile.common
 
 OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
 
-CFLAGS	+= -Wall -D__LIBRETRO__ $(INCLUDES) $(fpic)
-CXXFLAGS += -Wall -D__LIBRETRO__ $(INCLUDES) $(fpic)
+CFLAGS	+= -D__LIBRETRO__ $(INCLUDES) $(fpic)
+CXXFLAGS += -D__LIBRETRO__ $(INCLUDES) $(fpic)
 
 OBJOUT   = -o
 LINKOUT  = -o 
