@@ -87,10 +87,24 @@ else ifneq (,$(findstring osx,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
+
+   ifeq ($(CROSS_COMPILE),1)
+		TARGET_RULE   = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
+		CFLAGS   += $(TARGET_RULE)
+		CPPFLAGS += $(TARGET_RULE)
+		CXXFLAGS += $(TARGET_RULE)
+		LDFLAGS  += $(TARGET_RULE)
+   endif
+
+	CFLAGS  += $(ARCHFLAGS)
+	CXXFLAGS  += $(ARCHFLAGS)
+	LDFLAGS += $(ARCHFLAGS)
+
 else ifneq (,$(findstring ios,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro_ios.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
+        MINVERSION :=
 
 ifeq ($(IOSSDK),)
 	IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
@@ -107,12 +121,12 @@ else
 endif
 
 ifeq ($(platform),$(filter $(platform),ios9 ios-arm64))
-	CC	+= -miphoneos-version-min=8.0
-	CXXFLAGS += -miphoneos-version-min=8.0
+	MINVERSION = -miphoneos-version-min=8.0
 else
-	CC	+= -miphoneos-version-min=5.0
-	CXXFLAGS += -miphoneos-version-min=5.0
+	MINVERSION = -miphoneos-version-min=5.0
 endif
+        CFLAGS   += $(MINVERSION)
+        CXXFLAGS += $(MINVERSION)
 
 else ifeq ($(platform), tvos-arm64)
 	TARGET := $(TARGET_NAME)_libretro_tvos.dylib
@@ -122,6 +136,9 @@ else ifeq ($(platform), tvos-arm64)
 ifeq ($(IOSSDK),)
 	IOSSDK := $(shell xcodebuild -version -sdk appletvos Path)
 endif
+
+	CC = cc -arch arm64 -isysroot $(IOSSDK)
+	LD = cc -arch arm64 -isysroot $(IOSSDK)
 
 DEFINES := -DIOS
 
@@ -219,7 +236,7 @@ else ifeq ($(platform), classic_armv7_a7)
 	SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
 	CFLAGS += -Ofast \
 	-fdata-sections -ffunction-sections -Wl,--gc-sections \
-	-fno-stack-protector -fno-ident -fomit-frame-pointer \
+	-fno-stack-protector -fno-ident \
 	-falign-functions=1 -falign-jumps=1 -falign-loops=1 \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops \
 	-fmerge-all-constants -fno-math-errno \
@@ -245,7 +262,7 @@ else ifeq ($(platform), ctr)
 	CFLAGS += -DARM11 -D_3DS
 	CFLAGS += -march=armv6k -mtune=mpcore -mfloat-abi=hard
 	CFLAGS += -mword-relocations
-	CFLAGS += -fomit-frame-pointer -ffast-math
+	CFLAGS += -ffast-math
 	HAVE_RZLIB := 1
 	DISABLE_ERROR_LOGGING := 1
 	ARM = 1
@@ -544,7 +561,7 @@ ifeq ($(DEBUG), 1)
 endif
 
 ifeq (,$(findstring msvc,$(platform)))
-	CFLAGS += -fomit-frame-pointer -fstrict-aliasing
+	CFLAGS += -fstrict-aliasing
 endif
 
 ifeq ($(DEBUG), 1)
