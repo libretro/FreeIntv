@@ -54,20 +54,6 @@ endif
 
 LIBS += $(LIBM)
 
-ifeq ($(ARCHFLAGS),)
-ifeq ($(archs),ppc)
-	ARCHFLAGS = -arch ppc -arch ppc64
-else
-	ARCHFLAGS = -arch i386 -arch x86_64
-endif
-endif
-
-ifeq ($(platform), osx)
-ifndef ($(NOUNIVERSAL))
-	CXXFLAGS += $(ARCHFLAGS)
-	LFLAGS += $(ARCHFLAGS)
-endif
-endif
 
 ifeq ($(STATIC_LINKING),1)
 EXT := a
@@ -87,6 +73,20 @@ else ifneq (,$(findstring osx,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
+
+ifeq ($(UNIVERSAL),1)
+ifeq ($(ARCHFLAGS),)
+ifeq ($(archs),ppc)
+	ARCHFLAGS = -arch ppc -arch ppc64
+else ifeq ($(archs),arm64)
+	ARCHFLAGS = -arch arm64 -arch x86_64
+else
+	ARCHFLAGS = -arch i386 -arch x86_64
+endif
+endif
+	CXXFLAGS += $(ARCHFLAGS)
+	LFLAGS += $(ARCHFLAGS)
+endif
 
    ifeq ($(CROSS_COMPILE),1)
 		TARGET_RULE   = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
