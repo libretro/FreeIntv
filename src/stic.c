@@ -257,8 +257,10 @@ void drawBackgroundColorStack(int scanline)
         
         if(((card>>11)&0x03)==2) // Color Squares Mode
         {
+            if (cardrow == 0)
+                bgcard[col] = colors[Memory[CSP] & 0x0F];
             // set colors
-            colors[7] = colors[Memory[CSP] & 0x0F]; // color 7 is top of color stack
+            colors[7] = bgcard[col]; // color 7 is top of color stack
             color1 = card & 0x07;
             color2 = (card>>3) & 0x07;
             if(cardrow>=4) // switch to lower squares colors
@@ -290,7 +292,6 @@ void drawBackgroundColorStack(int scanline)
         }
         else // Color Stack Mode
         {
-            gram = (card>>11) & 0x01; // GRAM or GROM?
             if(cardrow == 0) // only advance CSP once per card, cache card colors for later scanlines
             {
                 advcolor = (card>>13) & 0x01; // do we need to advance the CSP?
@@ -298,6 +299,8 @@ void drawBackgroundColorStack(int scanline)
                 fgcard[col] = colors[(card&0x07)|((card>>9)&0x08)]; // bits 12, 2, 1, 0
                 bgcard[col] = colors[Memory[CSP] & 0x0F];
             }
+            
+            gram = (card>>11) & 0x01; // GRAM or GROM?
             
             fgcolor = fgcard[col];
             bgcolor = bgcard[col];
