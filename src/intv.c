@@ -141,24 +141,6 @@ int exec(void) // Run one instruction
         stic_phase = (stic_phase + 1) & 15;
         switch (stic_phase) {
             case 0:
-#if 0
-            {
-                static int frames;
-                static int debug;
-                static char buffer[256];
-                static FILE *a;
-                
-                frames++;
-                if (frames == 60) {
-                    frames = 0;
-                    sprintf(buffer, "/Users/oscartoledo/Documents/debug%d.bin", debug);
-                    a = fopen(buffer, "wb");
-                    fwrite(&Memory[0], 1, sizeof(Memory), a);
-                    fclose(a);
-                    debug++;
-                }
-            }
-#endif
                 stic_reg = 1;
                 stic_gram = 1;
                 phase_len += 2900;

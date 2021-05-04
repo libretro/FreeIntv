@@ -138,8 +138,12 @@ void drawBorder(int scanline)
 	int cbit = 1<<9; // bit 9 - border collision 
 	int color = colors[Memory[0x2C]]; // border color
 	
-	if(scanline>112) { return; }
-	if(scanline<(8+(8*extendTop)) || scanline>=104) // top and bottom border
+	if(scanline>=112) { return; }
+    if (extendTop != 0)
+        i = 16;
+    else
+        i = delayV;
+	if(scanline<i || scanline>=104) // top and bottom border
 	{
 		for(i=0; i<352; i++)
 		{
