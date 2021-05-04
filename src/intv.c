@@ -129,50 +129,76 @@ int exec(void) // Run one instruction
 
 	// Tick PSG
 	PSGTick(ticks);
-
-	if(Cycles>=14934) // STIC generates an interput every 14934 cycles
-	{
-		Cycles = Cycles - 14934;
-		SR1 = 2907 - Cycles; // hold  SR1 output low for 2901 cycles
-		DisplayEnabled = 0;
-		VBlank1 = 2900 - Cycles;
-	}
-	if(SR1>0) 
-	{
-		SR1 = SR1 - ticks;
-		if(SR1<0) { SR1 = 0; }
-	}
-	if(VBlank1>0) 
-	{
-		VBlank1 = VBlank1 - ticks;
-		if(VBlank1<0)
-		{
-			VBlank2 = 3796 + VBlank1;
-			VBlank1 = 0;
-		}
-	}
-	if(VBlank2>0)
-	{
-		VBlank2 = VBlank2 - ticks;
-		if(VBlank2<=0)
-		{
-			VBlank2 = 0;
-			if(DisplayEnabled==1)
-			{
-				//STIC steals cycles on busreq-- 57 + 110*12 + (44 when vertical delay = 0)
-				Cycles += 1377;
-				PSGTick(1377);
-				if(VerticalDelay==0)
-				{
-					Cycles += 44;
-					PSGTick(44);
-				}
-				
-				// Render Frame //
-				STICDrawFrame();
-			}
-			return 0;
-		}
-	}
-	return 1;
+    
+    if(SR1>0)
+    {
+        SR1 = SR1 - ticks;
+        if(SR1<0) { SR1 = 0; }
+    }
+    
+    phase_len -= ticks;
+    if (phase_len < 0) {
+        stic_phase = (stic_phase + 1) & 15;
+        switch (stic_phase) {
+            case 0:
+                stic_reg = 1;
+                stic_gram = 1;
+                phase_len += 2900;
+                SR1 = phase_len;
+                if (stic_vid_enable == 1) {
+                    // Render Frame //
+                    STICDrawFrame();  // Solve this
+                    return 0;
+                }
+                break;
+            case 1:
+                phase_len += 3796 - 2900;
+                stic_vid_enable = DisplayEnabled;
+                DisplayEnabled = 0;
+                if (stic_vid_enable)
+                    stic_reg = 0;
+                stic_gram = 1;
+                break;
+            case 2:
+                delayV = ((Memory[0x31])&0x7);
+                delayH = ((Memory[0x30])&0x7);
+                phase_len += 120 + 114 * delayV + delayH;
+                if (stic_vid_enable) {
+                    stic_gram = 0;
+                    phase_len -= 68;
+                    Cycles += 68;
+                    PSGTick(68);
+                }
+                break;
+            default:
+                phase_len += 912;
+                if (stic_vid_enable) {
+                    phase_len -= 108;
+                    Cycles += 108;
+                    PSGTick(108);
+                }
+                break;
+            case 14:
+                delayV = ((Memory[0x31])&0x7);
+                delayH = ((Memory[0x30])&0x7);
+                phase_len += 912 - 114 * delayV - delayH;
+                if (stic_vid_enable) {
+                    phase_len -= 108;
+                    Cycles += 108;
+                    PSGTick(108);
+                }
+                break;
+            case 15:
+                delayV = ((Memory[0x31])&0x7);
+                phase_len += 57 + 17;
+                if (stic_vid_enable && delayV == 0) {
+                    phase_len -= 38;
+                    Cycles += 38;
+                    PSGTick(38);
+                }
+                break;
+                
+        }
+    }
+    return 1;
 }

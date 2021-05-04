@@ -57,29 +57,28 @@ void CP1610Reset()
 
 int readIndirect(int reg) // Read Indirect, handle SDBD, update autoincriment registers
 {
-	int val = 0;
-	int adr = 0;
-
-	if(reg==6) { R[reg] = R[reg] - 1; } // decriment R6 (SP) before read
-	adr = R[reg];
-
-	if(Flag_DoubleByteData==0)
-	{
-		val = readMem(adr);
-	}
-	else
-	{
-		if(reg==4 || reg==5 || reg==7) // autoincrement registers (incremented twice for double byte data)
-		{
-			R[reg] = (R[reg]+1) & 0xFFFF;
-		}
-		val = ((readMem(adr+1) & 0xFF)<<8) | (readMem(adr) & 0xFF);
-	}
-	if(reg==4 || reg==5 || reg==7) // autoincrement registers R4-R7 excluding SP (R6)
-	{
-		R[reg] = (R[reg]+1) & 0xFFFF;
-	}
-	return val;
+    int val = 0;
+    int adr = 0;
+    
+    if(reg==6) { R[reg] = R[reg] - 1; } // decriment R6 (SP) before read
+    adr = R[reg];
+    
+    val = readMem(adr);
+    if(reg==4 || reg==5 || reg==7) // autoincrement registers R4-R7 excluding SP (R6)
+    {
+        R[reg] = (R[reg]+1) & 0xFFFF;
+    }
+    if(Flag_DoubleByteData == 1) {
+        val &= 0xff;
+        if(reg==4 || reg==5 || reg==7) // autoincrement registers (incremented twice for double byte data)
+        {
+            val |= ((readMem(adr+1) & 0xFF)<<8);
+            R[reg] = (R[reg]+1) & 0xFFFF;
+        } else {
+            val |= val << 8;
+        }
+    }
+    return val;
 }
 
 void writeIndirect(int reg, int val)
@@ -114,12 +113,6 @@ void SetFlagsSZ(int reg)
 	Flag_Zero = R[reg]==0;
 }
 
-void SetFlagsCSZ(int reg)
-{
-	Flag_Carry = (R[reg] & 0x10000) != 0;
-	SetFlagsSZ(reg);
-}
-
 int AddSetSZOC(int A, int B)
 {
 	int signa = A & 0x8000;
@@ -143,7 +136,7 @@ int SubSetOC(int A, int B)
 	int result = (A + (B ^ 0xFFFF) + 1); // A - B using 1's compliment;
 	int signr =  result & 0x8000;
 	Flag_Carry = (result & 0x10000)!=0;
-	Flag_Overflow = (signb==signr && signa!=signb) ? 1 : 0;
+	Flag_Overflow = (signa!=signb && signa!=signr) ? 1 : 0;
 	return result & 0xFFFF;
 }
 
@@ -190,6 +183,7 @@ int CP1610Tick(int debug)
 			SR1 = 0;
 			writeIndirect(SP, R[PC]); // push PC...
 			R[PC] = 0x1004; // Jump
+            ticks += 12;
 		}
 	}
 
@@ -223,39 +217,41 @@ int TCI(int v)  { return 4; } // Terminate Current Interrupt (not used)
 int CLRC(int v) { Flag_Carry = 0; return 4; } // Clear Carry
 int SETC(int v) { Flag_Carry = 1; return 4; } // Set Carry
 
+#define EXTRA_IF_R6R7(reg)  (reg >= 6 ? 1 : 0)
+
 int INCR(int v) // Increment Register
 {
 	int reg = v & 0x07;
-	R[reg] = (R[reg]+1) & 0xFFFF;
+	R[reg] = R[reg]+1;
 	SetFlagsSZ(reg);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(reg);
 }
 int DECR(int v) // Decrement Register
 {
 	int reg = v & 0x07;
-	//R[reg] = (R[reg]-1) & 0xFFFF;
-	R[reg] = (R[reg] + 0xFFFF) & 0xFFFF;
+	R[reg] = R[reg]-1;
 	SetFlagsSZ(reg);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(reg);
 }
 int COMR(int v) // Complement Register (One's Compliment)
 {
 	int reg = v & 0x07;
 	R[reg] = R[reg] ^ 0xFFFF;
 	SetFlagsSZ(reg);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(reg);
 }
 int NEGR(int v) // Negate Register (Two's Compliment)
 {
 	int reg = v & 0x07;
-	R[reg] = AddSetSZOC((R[reg] ^ 0xFFFF), 1);
-	return 6;
+	R[reg] = SubSetOC(0, R[reg]);
+    SetFlagsSZ(reg);
+    return 6 + EXTRA_IF_R6R7(reg);
 }
 int ADCR(int v) // Add Carry to Register
 {
 	int reg = v & 0x07;
 	R[reg] = AddSetSZOC(R[reg], Flag_Carry);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(reg);
 }
 int GSWD(int v) // Get the Status Word szoc:0000:szoc:0000
 {
@@ -429,15 +425,14 @@ int MOVR(int v) // Move Register
 	int dreg = v & 0x7;
 	R[dreg] = R[sreg];
 	SetFlagsSZ(dreg);
-	if(dreg >= 6) { return 7; }
-	return 6;
+    return 6 + EXTRA_IF_R6R7(dreg);
 }
 int ADDR(int v) // Add Registers
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
 	R[dreg] = AddSetSZOC(R[dreg], R[sreg]);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(dreg);
 }
 int SUBR(int v) // Subtract Registers
 {
@@ -445,7 +440,7 @@ int SUBR(int v) // Subtract Registers
 	int dreg = v & 0x7;
 	R[dreg] = SubSetOC(R[dreg], R[sreg]);
 	SetFlagsSZ(dreg);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(dreg);
 }
 int CMPR(int v) // Compare Registers
 {
@@ -454,7 +449,7 @@ int CMPR(int v) // Compare Registers
 	int res = SubSetOC(R[dreg], R[sreg]);
 	Flag_Sign = (res & 0x8000)!=0;
 	Flag_Zero = res==0;
-	return 6;
+    return 6 + EXTRA_IF_R6R7(dreg);
 }
 int ANDR(int v) // And Registers
 {
@@ -462,7 +457,7 @@ int ANDR(int v) // And Registers
 	int dreg = v & 0x7;
 	R[dreg] = R[dreg] & R[sreg];
 	SetFlagsSZ(dreg);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(dreg);
 }
 int XORR(int v) // Xor Registers
 {
@@ -470,7 +465,7 @@ int XORR(int v) // Xor Registers
 	int dreg = v & 0x7;
 	R[dreg] = R[dreg] ^ R[sreg];
 	SetFlagsSZ(dreg);
-	return 6;
+    return 6 + EXTRA_IF_R6R7(dreg);
 }
 int Branch(int v) // Branch - B, BC, BOV, BPL, BEQ, BLT, BLE, BUSC, NOPP, BNC, BNOV, BMI, BNEQ, BGE, BGT, BESC, BEXT
 {
@@ -532,13 +527,7 @@ int MVOa(int v) // MVO@ - Move Out Indirect  0000:0010:01aa:asss
 	writeIndirect(areg, R[sreg]);
 	return 9;
 }
-int PSHR(int v) // Push Register
-{
-	int reg = v & 0x7;
-	writeIndirect(SP, R[reg]);
-	return 9;
-}
-int MVOI(int v) // Move Out Immediate 0000:0010:0111:1sss 
+int MVOI(int v) // Move Out Immediate 0000:0010:0111:1sss
 {
 	return(MVOa(v)); // call indirect copies R[sss] to address in R[PC]
 }
@@ -553,15 +542,7 @@ int MVIa(int v) // Move In Indirect 0000:0010:10aa:addd
 	int areg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;	
 	R[dreg] = readIndirect(areg);
-	if(Flag_DoubleByteData == 1) { return 10; }
-	if(areg==6) { return 11; }
-	return 8; 
-}
-int PULR(int v) // Pull Register 0000:0010:1011:0ddd
-{
-	int reg = v & 0x7;
-	R[reg] = readIndirect(SP);
-	return 11; 
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
 }
 int MVII(int v) // Move In Immediate (copies operand to register)
 {
@@ -585,9 +566,7 @@ int ADDa(int v) // Add Indirect
 	int dreg = v & 0x07;
 	int val = readIndirect(areg);
 	R[dreg] = AddSetSZOC(R[dreg], val);
-	if(Flag_DoubleByteData==1) { return 10; }
-	if(dreg==6) { return 11; }
-	return 8;
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
 }
 int ADDI(int v) // Add Immediate
 {
@@ -609,9 +588,7 @@ int SUBa(int v)  // Subtract Indirect
 	int val = readIndirect(areg);
 	R[dreg] = SubSetOC(R[dreg], val);
 	SetFlagsSZ(dreg);
-	if(Flag_DoubleByteData==1) { return 10; }
-	if(dreg==6) { return 11; }
-	return 8;
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
 }
 int SUBI(int v) // Subtract Immediate
 {
@@ -635,9 +612,7 @@ int CMPa(int v)
 	int res = SubSetOC(R[dreg], val);
 	Flag_Sign = (res & 0x8000)!=0;
 	Flag_Zero = res==0;
-	if(Flag_DoubleByteData==1) { return 10; }
-	if(dreg==6) { return 11; }
-	return 8;
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
 }
 int CMPI(int v) // CMP Immediate
 {
@@ -659,9 +634,7 @@ int ANDa(int v) // And Indirect
 	int val = readIndirect(areg);
 	R[dreg] = R[dreg] & val;
 	SetFlagsSZ(dreg);
-	if(Flag_DoubleByteData==1) { return 10; }
-	if(dreg==6) { return 11; }
-	return 8;
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
 }
 int ANDI(int v) // And Immediate
 {
@@ -683,9 +656,7 @@ int XORa(int v) // Xor Indirect
 	int val = readIndirect(areg);
 	R[dreg] = R[dreg] ^ val;
 	SetFlagsSZ(dreg);
-	if(Flag_DoubleByteData==1) { return 10; }
-	if(dreg==6) { return 11; }
-	return 8;
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
 }
 int XORI(int v) // Xor Immediate
 {
@@ -743,11 +714,11 @@ void CP1610Init()
 	addInstruction(0x0200, 0x023F, 1, "Branch", Branch); // B, BC, BOV, BPL, BEQ, BLT, BLE, BUSC, NOPP, BNC, BNOV, BMI, BNEQ, BGE, BGT, BESC, BEXT
 	addInstruction(0x0240, 0x0247, 0, "MVO   ", MVO   );
 	addInstruction(0x0248, 0x026F, 0, "MVO@  ", MVOa  ); // error in wiki for all aaa@ and aaaI instructions
-	addInstruction(0x0270, 0x0277, 0, "PSHR  ", PSHR  ); // 
+	addInstruction(0x0270, 0x0277, 0, "PSHR  ", MVOa  ); //
 	addInstruction(0x0278, 0x027F, 0, "MVOI  ", MVOI  ); //
 	addInstruction(0x0280, 0x0287, 1, "MVI   ", MVI   );
 	addInstruction(0x0288, 0x02AF, 1, "MVI@  ", MVIa  ); 
-	addInstruction(0x02B0, 0x02B7, 1, "PULR  ", PULR  );
+	addInstruction(0x02B0, 0x02B7, 1, "PULR  ", MVIa  );
 	addInstruction(0x02B8, 0x02BF, 1, "MVII  ", MVII  ); 
 	addInstruction(0x02C0, 0x02C7, 1, "ADD   ", ADD   ); 
 	addInstruction(0x02C8, 0x02F7, 1, "ADD@  ", ADDa  );
@@ -762,6 +733,6 @@ void CP1610Init()
 	addInstruction(0x0388, 0x03B7, 1, "AND@  ", ANDa  );
 	addInstruction(0x03B8, 0x03BF, 1, "ANDI  ", ANDI  );
 	addInstruction(0x03C0, 0x03C7, 1, "XOR   ", XOR   );
-	addInstruction(0x03C8, 0x03F8, 1, "XOR@  ", XORa  );
-	addInstruction(0x03F7, 0x03FF, 1, "XORI  ", XORI  );
+	addInstruction(0x03C8, 0x03F7, 1, "XOR@  ", XORa  );
+	addInstruction(0x03F8, 0x03FF, 1, "XORI  ", XORI  );
 }

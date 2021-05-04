@@ -24,46 +24,47 @@ unsigned int Memory[0x10000];
 
 void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {
-	val = val & 0xFFFF;
-
-	if(adr>=0x100 && adr<=0x1FF)
-	{
-		val = val & 0xFF;
-	}
-
-	Memory[adr & 0xFFFF] = val;
-
-	//STIC Alias
-	if((adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
-	{ 
-		Memory[adr & 0x3FFF] = val;
-	}
-
-	//GRAM Alias
-	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
-	{ 
-		Memory[adr & 0x3FFF] = val;
-	}
-
-	//PSG Registers
-	if(adr>=0x01F0 && adr<=0x1FD)
-	{
-		PSGNotify(adr, val);
-	}
-
-	if(VBlank1>0)
-	{
-		// STIC Display Enable
-		if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
-		{
-			DisplayEnabled = 1;
-		}
-		// STIC Mode Select 
-		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-		{
-			STICMode = 0;
-		}
-	}
+    val = val & 0xFFFF;
+    
+    if(adr>=0x100 && adr<=0x1FF)
+    {
+        val = val & 0xFF;
+    }
+    
+    // STIC Display Enable
+    if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
+    {
+        if (stic_reg != 0)
+            DisplayEnabled = 1;
+    }
+    // STIC Mode Select
+    if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
+    {
+        if (stic_reg != 0)
+            STICMode = 0;
+    }
+    //STIC Alias
+    if((adr>=0x0000 && adr<=0x003F) || (adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
+    {
+        if (stic_reg != 0)
+            Memory[adr & 0x3F] = val;
+        return;
+    }
+    //GRAM Alias
+    if((adr>=0x3800 && adr<=0x3fff) || (adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
+    {
+        if (stic_gram != 0)
+            Memory[adr & 0x39FF] = val;
+        return;
+    }
+    
+    Memory[adr & 0xFFFF] = val;
+    
+    //PSG Registers
+    if(adr>=0x01F0 && adr<=0x1FD)
+    {
+        PSGNotify(adr, val);
+    }
 }
 
 int readMem(int adr) // Read (should handle hooks/alias)
@@ -77,7 +78,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		val = val & 0xFF;
 	}
 
-	if(VBlank1>0)
+	if(stic_reg != 0)
 	{
 		if(adr<=0x3F)
 		{
