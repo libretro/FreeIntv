@@ -20,6 +20,7 @@
 #include "stic.h"
 
 #include <stdio.h>
+#include <string.h>
 
 void drawBackground(void);
 void drawSprites(int scanline);
@@ -139,18 +140,30 @@ void drawBorder(int scanline)
 	int color = colors[Memory[0x2C]]; // border color
 	
 	if(scanline>=112) { return; }
+    if (scanline == delayV - 1 || scanline == 104) {
+        for(i=7 * 2; i < (9 + 160) * 2; i += 2)
+        {
+            collBuffer[i] = cbit;
+            collBuffer[i+384] = cbit;
+        }
+    } else {
+        i = 7 * 2;
+        collBuffer[i] = cbit;
+        collBuffer[i + 384] = cbit;
+        i = (8 + 160) * 2;
+        collBuffer[i] = cbit;
+        collBuffer[i + 384] = cbit;
+    }
     if (extendTop != 0)
         i = 16;
     else
         i = delayV;
-	if(scanline<i || scanline>=104) // top and bottom border
+    if(scanline<i || scanline>=104) // top and bottom border
 	{
 		for(i=0; i<352; i++)
 		{
 			scanBuffer[i] = color;
 			scanBuffer[i+384] = color;
-			collBuffer[i] = cbit;
-			collBuffer[i+384] = cbit;
 		}
 	}
 	else // left and right border
@@ -161,10 +174,6 @@ void drawBorder(int scanline)
 			scanBuffer[i+336] = color;
 			scanBuffer[i+384] = color;
 			scanBuffer[i+384+336] = color;
-			collBuffer[i] = cbit;
-			collBuffer[i+336] = cbit;
-			collBuffer[i+384] = cbit;
-			collBuffer[i+384+336] = cbit;
 		}
 	}
 }
@@ -211,9 +220,7 @@ void drawBackgroundFGBG(int scanline)
 				scanBuffer[x+384+1] = fgcolor;
 				// write to collision buffer 
 				collBuffer[x] |= cbit;
-				collBuffer[x+1] |= cbit;
 				collBuffer[x+384] |= cbit;
-				collBuffer[x+384+1] |= cbit;		
 			}
 			else
 			{
@@ -326,9 +333,7 @@ void drawBackgroundColorStack(int scanline)
                     scanBuffer[x+384+1] = fgcolor;
                     // write to collision buffer 
                     collBuffer[x] |= cbit;
-                    collBuffer[x+1] |= cbit;
                     collBuffer[x+384] |= cbit;
-                    collBuffer[x+384+1] |= cbit;		
                 }
                 else
                 {
@@ -379,7 +384,8 @@ void drawSprites(int scanline) // MOBs
 
 		gram = (Ra>>11) & 0x01;
 		card = (Ra>>3) & 0xFF;
-		if(gram==1) { card = card & 0x3F; } // ignore bits 6 and 7 if card is in GRAM
+        // Ignore bits 6 and 7 if card is in GRAM or in Foreground/Background mode
+		if(STICMode==0 || gram==1) { card = card & 0x3F; }
 		gaddress = 0x3000 + (card<<3) + (0x800 * gram);
 
 		yRes  = (Ry>>7) & 0x01;
@@ -400,7 +406,7 @@ void drawSprites(int scanline) // MOBs
 
 		// if sprite x coordinate is 0 or >167, it's disabled
 		// if it's not visible and not interactive, it's disabled
-		if(posX==0 || posX>167 || ((Rx>>8)&0x03)==0) { continue; }
+		if(posX==0 || posX>=167 || ((Rx>>8)&0x03)==0 || posY>=104) { continue; }
 
 		// sprite height varies by sizeY and yRes.  When yRes is set, the size doubles.
 		// sizeY will be 0,1,2,3, corresponding to heights of 4,8, 16, and 32
@@ -408,9 +414,9 @@ void drawSprites(int scanline) // MOBs
 		gfxheight = (4<<sizeY)<<yRes; // yres=0: 4,8,16,32 ; yres=1: 8,16,32,64
 		
 		// clear collisions in column 167 //
-		collBuffer[167] = 0;
-		collBuffer[167+384] = 0;
-
+		collBuffer[167 * 2] = 0;
+        collBuffer[167 * 2 + 384] = 0;
+        
 		if( (scanline>=posY) && (scanline<(posY+gfxheight)) ) // if sprite is on current row
 		{ 	
 			// find sprite graphics data for current row
@@ -449,30 +455,22 @@ void drawSprites(int scanline) // MOBs
 
 			for(j=0; j<2; j++)
 			{
-				for(k=7; k>=0; k--)
+				for(k=7; k>=0; k--, x+=2+(2*sizeX))
 				{
 					if(((gdata>>k) & 1)==0) // skip ahead if pixel is not visible
 					{
-						x+=2+(2*sizeX);
 						continue;
 					} 
 					
 					// set collision and collision buffer bits //
 					if((Rx>>8)&1) // if sprite is interactive
 					{
-						Memory[0x18+i] |= collBuffer[x];
-						Memory[0x18+i] |= collBuffer[x+1];
-						Memory[0x18+i] |= collBuffer[x+2*sizeX];
-						Memory[0x18+i] |= collBuffer[x+3*sizeX];
 						collBuffer[x] |= cbit;
-						collBuffer[x+1] |= cbit;
 						collBuffer[x+2*sizeX] |= cbit; // for double width
-						collBuffer[x+3+sizeX] |= cbit;
 					}
 					
 					if(priority && ((collBuffer[x]>>8)&1)) // don't draw if sprite is behind background
 					{
-						x+=2+(2*sizeX);
 						continue;
 					} 
 					
@@ -483,9 +481,8 @@ void drawSprites(int scanline) // MOBs
 						scanBuffer[x+1] = fgcolor;
 						scanBuffer[x+2*sizeX] = fgcolor; // for double width
 						scanBuffer[x+3*sizeX] = fgcolor;
-						x+=2+(2*sizeX);
 					}
-				}
+                }
 				gdata = gdata2;  // for second half-pixel row  //
 				x = (delayH-16) + 384 + (posX * 2); // for second half-pixel row //
 			}
@@ -510,7 +507,9 @@ void STICDrawFrame(void)
 	offset = 0;
 	for(row=0; row<112; row++)
 	{
-		// draw border for collision
+        memset(&collBuffer[0], 0, sizeof(collBuffer));
+
+        // draw border for collision
 		drawBorder(row);
 
 		// draw backtab
@@ -526,42 +525,25 @@ void STICDrawFrame(void)
 			}
 		}
 
-		// draw MOBs
-		drawSprites((row-delayV)+8);
-
+        if (row>=delayV - 1 && row<(97 + delayV)) {
+            // draw MOBs
+            drawSprites((row-delayV)+8);
+        }
+        
 		// draw border
 		drawBorder(row);
 
-		for(i=0; i<352; i++) // write scan line to frame buffer
-		{
-			frame[offset] = scanBuffer[i];
-			frame[offset+352] = scanBuffer[i+384];
-			offset++;
-		}
-		offset+=352;
-
-		for(i=0; i<768; i++)
-		{
-			scanBuffer[i] = 0; // clear scanBuffer;
-			collBuffer[i] = 0; // clear collbuffer;
-		}
-	}
-
-	// complete collisions e.g.:
-	// if MOB2 hits MOB1, MOB1 should also hit MOB2
-	for(i=0; i<8; i++)
-	{
-		// clear any self-interactions
-		Memory[0x18+i] &= (1<<i)^0x3FFF;
-
-		// copy collisions to colliding sprites
-		for(j=0; j<8; j++)
-		{
-			if(i==j) { continue; }
-			if(((Memory[0x18+i]>>j) & 1) == 1)
-			{
-				Memory[0x18+j] |= (1<<i);
-			}
-		}
+        for (i = 14; i < 169 * 2; i += 2) {
+            if (collBuffer[i] == 0)
+                continue;
+            for (j = 0; j < 8; j++) {
+                if (((collBuffer[i] >> j) & 1) != 0) {
+                    Memory[0x18 + j] |= collBuffer[i] & ~(1 << j);
+                }
+            }
+        }
+        memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
+        memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
+        offset += 352 * 2;
 	}
 }
