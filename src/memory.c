@@ -22,77 +22,107 @@
 
 unsigned int Memory[0x10000];
 
+int stic_and[64] = {
+    0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff,
+    0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
+    0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff,
+    0x03fe, 0x03fd, 0x03fb, 0x03f7, 0x03ef, 0x03df, 0x03bf, 0x037f,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x000f, 0x000f, 0x000f, 0x000f, 0x000f, 0x0000, 0x0000, 0x0000,
+    0x0007, 0x0007, 0x0003, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+};
+
+int stic_or[64] = {
+    0x3800, 0x3800, 0x3800, 0x3800, 0x3800, 0x3800, 0x3800, 0x3800,
+    0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000, 0x3000,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00, 0x3c00,
+    0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff,
+    0x3ff0, 0x3ff0, 0x3ff0, 0x3ff0, 0x3ff0, 0x3fff, 0x3fff, 0x3fff,
+    0x3ff8, 0x3ff8, 0x3ffc, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff,
+    0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff,
+};
+
 void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {
-	val = val & 0xFFFF;
-
-	if(adr>=0x100 && adr<=0x1FF)
-	{
-		val = val & 0xFF;
-	}
-
-	Memory[adr & 0xFFFF] = val;
-
-	//STIC Alias
-	if((adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
-	{ 
-		Memory[adr & 0x3FFF] = val;
-	}
-
-	//GRAM Alias
-	if((adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
-	{ 
-		Memory[adr & 0x3FFF] = val;
-	}
-
-	//PSG Registers
-	if(adr>=0x01F0 && adr<=0x1FD)
-	{
-		PSGNotify(adr, val);
-	}
-
-	if(VBlank1>0)
-	{
-		// STIC Display Enable
-		if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
-		{
-			DisplayEnabled = 1;
-		}
-		// STIC Mode Select 
-		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-		{
-			STICMode = 0;
-		}
-	}
+    val &= 0xFFFF;
+    adr &= 0xFFFF;
+    
+    // Ignore writes to protected ROM spaces
+    // Note: B17 Bomber manages to write on EXEC ROM (it will crash if unprotected)
+    switch (adr >> 11) {
+        case 0x02:  /* Exec ROM */
+        case 0x03:
+        case 0x06:  /* GROM */
+        case 0x0a:  /* 5000-57FF */
+        case 0x0b:  /* 5800-5FFF */
+        case 0x0c:  /* 6000-67FF */
+        case 0x0d:  /* 6800-6FFF */
+            return; /* Ignore */
+        case 0x07:  /* GRAM */
+        case 0x0f:
+        case 0x17:
+        case 0x1f:
+            if (stic_gram != 0)
+                Memory[adr & 0x39FF] = val;
+            return;
+    }
+    if(adr>=0x100 && adr<=0x1FF)
+    {
+        val = val & 0xFF;
+        Memory[adr] = val;
+        //PSG Registers
+        if(adr>=0x01F0 && adr<=0x1FD)
+        {
+            PSGNotify(adr, val);
+        }
+        return;
+    }
+    
+    // STIC Display Enable
+    if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
+    {
+        if (stic_reg != 0)
+            DisplayEnabled = 1;
+    }
+    // STIC Mode Select
+    if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
+    {
+        if (stic_reg != 0)
+            STICMode = 0;
+    }
+    //STIC Alias
+    if((adr>=0x0000 && adr<=0x003F) || (adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
+    {
+        if (stic_reg != 0)
+            Memory[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
+        return;
+    }
+    
+    Memory[adr] = val;
+    
 }
 
 int readMem(int adr) // Read (should handle hooks/alias)
 {
 	// It's safe to map ROM over GRAM aliases
 
-	int val = Memory[adr & 0xFFFF];
+    int val;
+    
+    adr &= 0xffff;
+    val = Memory[adr];
 
 	if(adr>=0x100 && adr<=0x1FF)
 	{
 		val = val & 0xFF;
 	}
 
-	if(VBlank1>0)
+	if(stic_reg != 0)
 	{
 		if(adr<=0x3F)
 		{
-			val = Memory[adr] & 0x3FFF; // STIC registers are 14-bits wide
-			// STIC register reads are strange, unused bits are always set to 1 
-			if(adr<=0x7)               { val = val | 0x3800; } // 0000 - 0007 : 0011 1--- ---- ----
-			if(adr>=0x08 && adr<=0x0F) { val = val | 0x3000; } // 0008 - 000F : 0011 ---- ---- ----
-			//                                                 // 0010 - 0017 : 00-- ---- ---- ----
-			if(adr>=0x18 && adr<=0x1F) { val = val | 0x3C00; } // 0018 - 001F : 0011 11-- ---- ----
-			if(adr>=0x20 && adr<=0x27) { val =       0x3FFF; } // 0020 - 0027 : 0011 1111 1111 1111
-			if(adr>=0x28 && adr<=0x2C) { val = val | 0x3FF0; } // 0028 - 002C : 0011 1111 1111 ----
-			if(adr>=0x2D && adr<=0x2F) { val =       0x3FFF; } // 002D - 002F : 0011 1111 1111 1111
-			if(adr>=0x30 && adr<=0x31) { val = val | 0x3FF8; } // 0030 - 0031 : 0011 1111 1111 1---
-			if(adr>=0x32             ) { val = val | 0x3FFC; } // 0032        : 0011 1111 1111 11--
-			if(adr>=0x33 && adr<=0x3F) { val =       0x3FFF; } // 0030 - 0031 : 0011 1111 1111 1111
+            val = (Memory[adr] & stic_and[adr]) | stic_or[adr];
 		}
 
 		// read sensitive addresses

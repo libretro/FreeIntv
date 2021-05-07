@@ -20,6 +20,7 @@
 #include "stic.h"
 
 #include <stdio.h>
+#include <string.h>
 
 void drawBackground(void);
 void drawSprites(int scanline);
@@ -33,11 +34,13 @@ void drawBackgroundColorStack(int scanline);
 
 unsigned int STICMode;
 
-int VBlank1;
-int VBlank2;
-int Cycles;
+int stic_phase;
+int stic_vid_enable;
+int stic_reg;
+int stic_gram;
+int phase_len;
+
 int DisplayEnabled;
-int VerticalDelay;
 
 unsigned int frame[352*224];
 
@@ -121,12 +124,11 @@ int reverse[256] = // lookup table to reverse the bits in a byte //
 void STICReset(void)
 {
 	STICMode = 1;
-	VBlank1 = 0;
-	VBlank2 = 0;
 	SR1 = 0;
-	Cycles = 0;
 	DisplayEnabled = 0;
 	CSP = 0x28;
+    stic_phase = 15;
+    phase_len = 2782;
 }
 
 void drawBorder(int scanline)
@@ -135,15 +137,31 @@ void drawBorder(int scanline)
 	int cbit = 1<<9; // bit 9 - border collision 
 	int color = colors[Memory[0x2C]]; // border color
 	
-	if(scanline>112) { return; }
-	if(scanline<(8+(8*extendTop)) || scanline>=104) // top and bottom border
+	if(scanline>=112) { return; }
+    if (scanline == delayV - 1 || scanline == 104) {
+        for(i=7 * 2; i < (9 + 160) * 2; i += 2)
+        {
+            collBuffer[i] = cbit;
+            collBuffer[i+384] = cbit;
+        }
+    } else {
+        i = 7 * 2;
+        collBuffer[i] = cbit;
+        collBuffer[i + 384] = cbit;
+        i = (8 + 160) * 2;
+        collBuffer[i] = cbit;
+        collBuffer[i + 384] = cbit;
+    }
+    if (extendTop != 0)
+        i = 16;
+    else
+        i = delayV;
+    if(scanline<i || scanline>=104) // top and bottom border
 	{
 		for(i=0; i<352; i++)
 		{
 			scanBuffer[i] = color;
 			scanBuffer[i+384] = color;
-			collBuffer[i] = cbit;
-			collBuffer[i+384] = cbit;
 		}
 	}
 	else // left and right border
@@ -154,10 +172,6 @@ void drawBorder(int scanline)
 			scanBuffer[i+336] = color;
 			scanBuffer[i+384] = color;
 			scanBuffer[i+384+336] = color;
-			collBuffer[i] = cbit;
-			collBuffer[i+336] = cbit;
-			collBuffer[i+384] = cbit;
-			collBuffer[i+384+336] = cbit;
 		}
 	}
 }
@@ -170,8 +184,6 @@ void drawBackgroundFGBG(int scanline)
 	int card;     // BACKTAB card info
 	unsigned int bgcolor;
 	unsigned int fgcolor;
-	int gram;     // 0-GROM, 1-GRAM
-	int cardnum;  // card number (GRAM/GROM index)
 	int gaddress; // card graphic address
 	int gdata;    // current card graphic byte
 	int cbit = 1<<8;   // bit 8 - collision bit for Background
@@ -191,9 +203,7 @@ void drawBackgroundFGBG(int scanline)
 		fgcolor = colors[card & 0x07];
 		bgcolor = colors[((card>>9)&0x03) | ((card>>11)&0x04) | ((card>>9)&0x08)]; // bits 12,13,10,9
 		
-		gram = (card>>11) & 0x01; // card is in 0-GROM or 1-GRAM
-		cardnum = (card>>3) & 0x3F;
-		gaddress = 0x3000 + (cardnum<<3) + (0x800 * gram);
+        gaddress = 0x3000 + (card & 0x09f8);
 		
 		gdata = Memory[gaddress + cardrow]; // fetch current line of current card graphic
 
@@ -208,9 +218,7 @@ void drawBackgroundFGBG(int scanline)
 				scanBuffer[x+384+1] = fgcolor;
 				// write to collision buffer 
 				collBuffer[x] |= cbit;
-				collBuffer[x+1] |= cbit;
 				collBuffer[x+384] |= cbit;
-				collBuffer[x+384+1] |= cbit;		
 			}
 			else
 			{
@@ -227,115 +235,117 @@ void drawBackgroundFGBG(int scanline)
 
 void drawBackgroundColorStack(int scanline)
 {
-	int i;
-	unsigned int color1, color2;
-	int cbit1, cbit2; 
-	int row, col; // row offset and column of current card
-	int cardrow;  // which of the 8 rows of the current card to draw
-	int card;     // BACKTAB card info
-	unsigned int bgcolor;
-	unsigned int fgcolor;
-	int gram;     // 0-GROM, 1-GRAM
-	int cardnum;  // card number (GRAM/GROM index)
-	int gaddress; // card graphic address
-	int gdata;    // current card graphic byte
-	int advcolor; // Flag - Advance CSP
-	int cbit = 1<<8;   // bit 8 - collision bit for Background
-	int x = delayH; // current pixel offset 
-
-	// Tiled background is 20x12, cards are 8x8
-	row = (scanline / 8); // Which tile row? (Background is 96 lines high)
-	row = row * 20; // find BACKTAB offset 
-
-	cardrow = scanline % 8; // which line of this row of cards to draw
-
-	if(row==0 && cardrow==0) { CSP = 0x28; } // reset CSP on display of first card on screen
-	
-	// Draw cards
-	for (col=0; col<20; col++) // for each card on the current row...
-	{
-		card = Memory[0x200+row+col]; // card info from BACKTAB
-
-		if(((card>>11)&0x03)==2) // Color Squares Mode
-		{
-			// set colors
-			colors[7] = colors[Memory[CSP] & 0x0F]; // color 7 is top of color stack
-			color1 = card & 0x07;
-			color2 = (card>>3) & 0x07;	
-			if(cardrow>=4) // switch to lower squares colors
-			{
-				color1 = (card>>6) & 0x07;	                 // color 3
-				color2 = ((card>>11)&0x04)|((card>>9)&0x03); // color 4
-			}
-			// color 7 does not interact with sprites
-			cbit1 = cbit2 = cbit;
-			if(color1==7) { cbit1=0; }
-			if(color2==7) { cbit2=0; }
-			color1 = colors[color1]; // set to rgb24 color
-			color2 = colors[color2];
-			colors[7] = color7; // restore color 7
-			// draw squares
-			for(i=0; i<8; i++)
-			{
-				scanBuffer[x+i] = color1;
-				scanBuffer[x+i+8] = color2;
-				scanBuffer[x+i+384] = color1;
-				scanBuffer[x+i+384+8] = color2;
-				collBuffer[x+i] |= cbit1;
-				collBuffer[x+i+8] |= cbit2;
-				collBuffer[x+i+384] |= cbit1;
-				collBuffer[x+i+384+8] |= cbit2;
-			}
-			x+=16;
-
-		}
-		else // Color Stack Mode
-		{
-			gram = (card>>11) & 0x01; // GRAM or GROM?	
-			if(cardrow == 0) // only advance CSP once per card, cache card colors for later scanlines
-			{
-				advcolor = (card>>13) & 0x01; // do we need to advance the CSP?
-				CSP = (CSP+advcolor) & 0x2B; // cycles through 0x28-0x2B
-				fgcard[col] = colors[(card&0x07)|((card>>9)&0x08)]; // bits 12, 2, 1, 0
-				bgcard[col] = colors[Memory[CSP] & 0x0F];
-			}
-
-			fgcolor = fgcard[col];
-			bgcolor = bgcard[col];
-
-			cardnum = (card>>3) & 0xFF;
-			if(gram) { cardnum = cardnum & 0x3F; }
-
-			gaddress = 0x3000 + (cardnum<<3) + (0x800 * gram);
-			
-			gdata = Memory[gaddress + cardrow]; // fetch current line of current card graphic
-			for(i=7; i>=0; i--) // draw one line of card graphic
-			{
-				if(((gdata>>i)&1)==1)
-				{
-					// draw pixel
-					scanBuffer[x] = fgcolor;
-					scanBuffer[x+1] = fgcolor;
-					scanBuffer[x+384] = fgcolor;
-					scanBuffer[x+384+1] = fgcolor;
-					// write to collision buffer 
-					collBuffer[x] |= cbit;
-					collBuffer[x+1] |= cbit;
-					collBuffer[x+384] |= cbit;
-					collBuffer[x+384+1] |= cbit;		
-				}
-				else
-				{
-					// draw background
-					scanBuffer[x] = bgcolor;
-					scanBuffer[x+1] = bgcolor;
-					scanBuffer[x+384] = bgcolor;
-					scanBuffer[x+384+1] = bgcolor;
-				}
-				x+=2;
-			}
-		}
-	}
+    int i;
+    unsigned int color1, color2;
+    int cbit1, cbit2;
+    int row, col; // row offset and column of current card
+    int cardrow;  // which of the 8 rows of the current card to draw
+    int card;     // BACKTAB card info
+    unsigned int bgcolor;
+    unsigned int fgcolor;
+    int gaddress; // card graphic address
+    int gdata;    // current card graphic byte
+    int advcolor; // Flag - Advance CSP
+    int cbit = 1<<8;   // bit 8 - collision bit for Background
+    int x = delayH; // current pixel offset
+    
+    // Tiled background is 20x12, cards are 8x8
+    row = (scanline / 8); // Which tile row? (Background is 96 lines high)
+    row = row * 20; // find BACKTAB offset
+    
+    cardrow = scanline % 8; // which line of this row of cards to draw
+    
+    if(row==0 && cardrow==0) { CSP = 0x28; } // reset CSP on display of first card on screen
+    
+    // Draw cards
+    for (col=0; col<20; col++) // for each card on the current row...
+    {
+        card = Memory[0x200+row+col]; // card info from BACKTAB
+        
+        if(((card>>11)&0x03)==2) // Color Squares Mode
+        {
+            if (cardrow == 0)
+                bgcard[col] = colors[Memory[CSP] & 0x0F];
+            // set colors
+            colors[7] = bgcard[col]; // color 7 is top of color stack
+            color1 = card & 0x07;
+            color2 = (card>>3) & 0x07;
+            if(cardrow>=4) // switch to lower squares colors
+            {
+                color1 = (card>>6) & 0x07;	                 // color 3
+                color2 = ((card>>11)&0x04)|((card>>9)&0x03); // color 4
+            }
+            // color 7 does not interact with sprites
+            cbit1 = cbit2 = cbit;
+            if(color1==7) { cbit1=0; }
+            if(color2==7) { cbit2=0; }
+            color1 = colors[color1]; // set to rgb24 color
+            color2 = colors[color2];
+            colors[7] = color7; // restore color 7
+            // draw squares
+            for(i=0; i<8; i += 2)
+            {
+                scanBuffer[x] = color1;
+                scanBuffer[x+1] = color1;
+                scanBuffer[x+8] = color2;
+                scanBuffer[x+9] = color2;
+                scanBuffer[x+384] = color1;
+                scanBuffer[x+384+1] = color1;
+                scanBuffer[x+384+8] = color2;
+                scanBuffer[x+384+9] = color2;
+                collBuffer[x] |= cbit1;
+                collBuffer[x+8] |= cbit2;
+                collBuffer[x+384] |= cbit1;
+                collBuffer[x+384+8] |= cbit2;
+                x+=2;
+            }
+            x+=8;
+            
+        }
+        else // Color Stack Mode
+        {
+            if(cardrow == 0) // only advance CSP once per card, cache card colors for later scanlines
+            {
+                advcolor = (card>>13) & 0x01; // do we need to advance the CSP?
+                CSP = (CSP+advcolor) & 0x2B; // cycles through 0x28-0x2B
+                fgcard[col] = colors[(card&0x07)|((card>>9)&0x08)]; // bits 12, 2, 1, 0
+                bgcard[col] = colors[Memory[CSP] & 0x0F];
+            }
+            
+            fgcolor = fgcard[col];
+            bgcolor = bgcard[col];
+            
+            if (((card >> 11) & 0x01) != 0) // Limit GRAM to 64 cards
+                gaddress = 0x3000 + (card & 0x09f8);
+            else
+                gaddress = 0x3000 + (card & 0x0ff8);
+            
+            gdata = Memory[gaddress + cardrow]; // fetch current line of current card graphic
+            for(i=7; i>=0; i--) // draw one line of card graphic
+            {
+                if(((gdata>>i)&1)==1)
+                {
+                    // draw pixel
+                    scanBuffer[x] = fgcolor;
+                    scanBuffer[x+1] = fgcolor;
+                    scanBuffer[x+384] = fgcolor;
+                    scanBuffer[x+384+1] = fgcolor;
+                    // write to collision buffer 
+                    collBuffer[x] |= cbit;
+                    collBuffer[x+384] |= cbit;
+                }
+                else
+                {
+                    // draw background
+                    scanBuffer[x] = bgcolor;
+                    scanBuffer[x+1] = bgcolor;
+                    scanBuffer[x+384] = bgcolor;
+                    scanBuffer[x+384+1] = bgcolor;
+                }
+                x+=2;
+            }
+        }
+    }
 }
 
 void drawSprites(int scanline) // MOBs
@@ -347,7 +357,6 @@ void drawSprites(int scanline) // MOBs
 	int gdata;      // current byte of sprite data
 	int gdata2;     // current byte of sprite data (second row for half-height sprites)
 	int card;       // card number - Ra bits 10-3
-	int gram;       // sprite is in 1-GRAM or 0-GROM (Ra bit 11)
 	int sizeX;      // 0-normal, 1-double width (Rx bit 10)
 	int sizeY;      // 0-half height, 1-normal, 2-double, 3-quadrupal (Ry bits 9, 8)
 	int flipX;      // (Ry bit 10)
@@ -365,46 +374,47 @@ void drawSprites(int scanline) // MOBs
 
 	for(i=7; i>=0; i--) // draw sprites 0-7 in reverse order
 	{
-		cbit = 1<<i; // set collision bit
-
 		Rx = Memory[0x00+i]; // 14 bits ; -- -SVI xxxx xxxx ; Size, Visible, Interactive, X Position
 		Ry = Memory[0x08+i]; // 14 bits ; -- YX42 Ryyy yyyy ; Flip Y, Flip X, Size 4, Size 2, Y Resolution, Y Position
 		Ra = Memory[0x10+i]; // 14 bits ; PF Gnnn nnnn nFFF ; Priority, FG Color Bit 3, GRAM, n Card #, FG Color Bits 2-0
 
-		gram = (Ra>>11) & 0x01;
-		card = (Ra>>3) & 0xFF;
-		if(gram==1) { card = card & 0x3F; } // ignore bits 6 and 7 if card is in GRAM
-		gaddress = 0x3000 + (card<<3) + (0x800 * gram);
-
-		yRes  = (Ry>>7) & 0x01;
-		if(yRes==1)
-		{
-			// for double-y resolution sprites, the first card drops bit 0 from address
-			gaddress = gaddress & 0xFFFE;
-		}
-
-		fgcolor = colors[((Ra>>9)&0x08)|(Ra&0x07)];
-		sizeX = (Rx>>10) & 0x01;
-		sizeY = (Ry>>8) & 0x03;
-		flipX = (Ry>>10) & 0x01;
-		flipY = (Ry>>11) & 0x01;
 		posX  = Rx & 0xFF;
 		posY  = Ry & 0x7F;
-		priority = (Ra>>13) & 0x01;
 
 		// if sprite x coordinate is 0 or >167, it's disabled
 		// if it's not visible and not interactive, it's disabled
-		if(posX==0 || posX>167 || ((Rx>>8)&0x03)==0) { continue; }
+		if(posX==0 || posX>=167 || ((Rx>>8)&0x03)==0 || posY>=104) { continue; }
 
-		// sprite height varies by sizeY and yRes.  When yRes is set, the size doubles.
+        cbit = 1<<i; // set collision bit
+
+        card = Ra & 0x0ff8;
+        yRes  = (Ry>>7) & 0x01;
+        if(yRes==1)
+        {
+            // for double-y resolution sprites, the card number is always even
+            card = card & 0xFFF0;
+        }
+
+        // Limit card number to 64 if in GRAM or in Foreground/Background mode
+        if(STICMode==0 || ((Ra>>11) & 0x01) == 1) { card = card & 0x09f8; }
+        gaddress = 0x3000 + card;
+        
+        fgcolor = colors[((Ra>>9)&0x08)|(Ra&0x07)];
+        sizeX = (Rx>>10) & 0x01;
+        sizeY = (Ry>>8) & 0x03;
+        flipX = (Ry>>10) & 0x01;
+        flipY = (Ry>>11) & 0x01;
+        priority = (Ra>>13) & 0x01;
+        
+        // sprite height varies by sizeY and yRes.  When yRes is set, the size doubles.
 		// sizeY will be 0,1,2,3, corresponding to heights of 4,8, 16, and 32
 		// we can find this by left-shifting 4 by sizeY as 4<<0==4, ..., 4<<3==32 
 		gfxheight = (4<<sizeY)<<yRes; // yres=0: 4,8,16,32 ; yres=1: 8,16,32,64
 		
 		// clear collisions in column 167 //
-		collBuffer[167] = 0;
-		collBuffer[167+384] = 0;
-
+		collBuffer[167 * 2] = 0;
+        collBuffer[167 * 2 + 384] = 0;
+        
 		if( (scanline>=posY) && (scanline<(posY+gfxheight)) ) // if sprite is on current row
 		{ 	
 			// find sprite graphics data for current row
@@ -443,30 +453,22 @@ void drawSprites(int scanline) // MOBs
 
 			for(j=0; j<2; j++)
 			{
-				for(k=7; k>=0; k--)
+				for(k=7; k>=0; k--, x+=2+(2*sizeX))
 				{
 					if(((gdata>>k) & 1)==0) // skip ahead if pixel is not visible
 					{
-						x+=2+(2*sizeX);
 						continue;
 					} 
 					
 					// set collision and collision buffer bits //
 					if((Rx>>8)&1) // if sprite is interactive
 					{
-						Memory[0x18+i] |= collBuffer[x];
-						Memory[0x18+i] |= collBuffer[x+1];
-						Memory[0x18+i] |= collBuffer[x+2*sizeX];
-						Memory[0x18+i] |= collBuffer[x+3*sizeX];
 						collBuffer[x] |= cbit;
-						collBuffer[x+1] |= cbit;
 						collBuffer[x+2*sizeX] |= cbit; // for double width
-						collBuffer[x+3+sizeX] |= cbit;
 					}
 					
 					if(priority && ((collBuffer[x]>>8)&1)) // don't draw if sprite is behind background
 					{
-						x+=2+(2*sizeX);
 						continue;
 					} 
 					
@@ -477,9 +479,8 @@ void drawSprites(int scanline) // MOBs
 						scanBuffer[x+1] = fgcolor;
 						scanBuffer[x+2*sizeX] = fgcolor; // for double width
 						scanBuffer[x+3*sizeX] = fgcolor;
-						x+=2+(2*sizeX);
 					}
-				}
+                }
 				gdata = gdata2;  // for second half-pixel row  //
 				x = (delayH-16) + 384 + (posX * 2); // for second half-pixel row //
 			}
@@ -492,20 +493,21 @@ void STICDrawFrame(void)
 	int row, offset;
 	int i, j;
 
-	extendTop = (Memory[0x32]>>1)&0x01;
+    extendTop = (Memory[0x32]>>1)&0x01;
 	
 	extendLeft = (Memory[0x32])&0x01;
 
-	delayV = 8 + ((Memory[0x31])&0x7);
-
-	delayH = 8 + ((Memory[0x30])&0x7);
+    delayV = 8 + ((Memory[0x31])&0x7);
+    delayH = 8 + ((Memory[0x30])&0x7);
 
 	delayH = delayH * 2;
 
 	offset = 0;
 	for(row=0; row<112; row++)
 	{
-		// draw border for collision
+        memset(&collBuffer[0], 0, sizeof(collBuffer));
+
+        // draw border for collision
 		drawBorder(row);
 
 		// draw backtab
@@ -521,42 +523,25 @@ void STICDrawFrame(void)
 			}
 		}
 
-		// draw MOBs
-		drawSprites((row-delayV)+8);
-
+        if (row>=delayV - 1 && row<(97 + delayV)) {
+            // draw MOBs
+            drawSprites((row-delayV)+8);
+        }
+        
 		// draw border
 		drawBorder(row);
 
-		for(i=0; i<352; i++) // write scan line to frame buffer
-		{
-			frame[offset] = scanBuffer[i];
-			frame[offset+352] = scanBuffer[i+384];
-			offset++;
-		}
-		offset+=352;
-
-		for(i=0; i<768; i++)
-		{
-			scanBuffer[i] = 0; // clear scanBuffer;
-			collBuffer[i] = 0; // clear collbuffer;
-		}
-	}
-
-	// complete collisions e.g.:
-	// if MOB2 hits MOB1, MOB1 should also hit MOB2
-	for(i=0; i<8; i++)
-	{
-		// clear any self-interactions
-		Memory[0x18+i] &= (1<<i)^0x3FFF;
-
-		// copy collisions to colliding sprites
-		for(j=0; j<8; j++)
-		{
-			if(i==j) { continue; }
-			if(((Memory[0x18+i]>>j) & 1) == 1)
-			{
-				Memory[0x18+j] |= (1<<i);
-			}
-		}
+        for (i = 14; i < 169 * 2; i += 2) {
+            if (collBuffer[i] == 0)
+                continue;
+            for (j = 0; j < 8; j++) {
+                if (((collBuffer[i] >> j) & 1) != 0) {
+                    Memory[0x18 + j] |= collBuffer[i] & ~(1 << j);
+                }
+            }
+        }
+        memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
+        memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
+        offset += 352 * 2;
 	}
 }

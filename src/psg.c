@@ -132,15 +132,19 @@ void PSGFrame()
 	PSGBufferPos = 0;
 }
 
+int psg_masks[16] = {
+    0xff, 0xff, 0xff, 0xff,
+    0x0f, 0x0f, 0x0f, 0xff,
+    0xff, 0x1f, 0x0f, 0x3f,
+    0x3f, 0x3f, 0xff, 0xff,
+};
+
 void PSGNotify(int adr, int val) // PSG Registers Modified 0x01F0-0x1FD (called from writeMem)
 {
+    Memory[adr] &= psg_masks[adr - 0x1f0];
 	readRegisters();
-
-	if(adr==0x1F0 || adr==0x1F4) { CountA = 0; }
-	if(adr==0x1F1 || adr==0x1F5) { CountB = 0; }
-	if(adr==0x1F2 || adr==0x1F6) { CountC = 0; }
-
-	if(adr>=0x1FB && adr<=0x1FD) { Memory[adr] &= 0x001F; }
+    // Note: updating frequencies doesn't reset counters in real chip
+    //       (otherwise sound glitch happens in games)
 
 	// Envelope properties Trigger (write only register)
 	if (adr==0x1FA)  
@@ -227,10 +231,12 @@ void PSGTick(int ticks) // adds 1 sound sample per 4 cpu cycles to the buffer
 
 		// http://wiki.intellivision.us/index.php?title=PSG
 		// noise = (noise >> 1) ^ ((noise & 1) ? 0x14000 : 0);
+        // The wiki is wrong as MAME says the LFSR noise is
+        // bit 0 + bit 3 so the correct mask is 0x10004
 		if(CountN<=0)
 		{
 			CountN = NoiseP;
-			OutN = (OutN >> 1) ^ ((OutN & 1) * 0x14000); // Noise Generator
+			OutN = (OutN >> 1) ^ ((OutN & 1) * 0x10004); // Noise Generator
 		}
 
 		// http://wiki.intellivision.us/index.php?title=PSG

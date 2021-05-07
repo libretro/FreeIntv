@@ -109,70 +109,103 @@ void Init()
 
 void Run()
 {
-	// run for one frame 
+    // run for one frame
 	// exec will call drawFrame for us only when needed
 	while(exec()) { }
 }
 
 int exec(void) // Run one instruction 
 {
-	int ticks = CP1610Tick(0); // Tick CP-1610 CPU, runs one instruction, returns used cycles
-	Cycles = Cycles + ticks; 
+    int ticks;
+    
+    ticks = CP1610Tick(0); // Tick CP-1610 CPU, runs one instruction, returns used cycles
 
 	if(ticks==0)
 	{
-		// Halt Instruction found! //
-		printf("\n\n[ERROR] [FREEINTV] HALT! at %i\n", Cycles);
+        // DEBUG
+#if 0
+        {
+            FILE *debug_file;
+            extern unsigned int R[];
+
+            fprintf(stdout, "%04x:[%03x] %04x %04x %04x %04x %04x %04x %04x\n", R[7] - 1, readMem(R[7] - 1), R[0], R[1], R[2], R[3], R[4], R[5], R[6]);
+            fprintf(stdout, "%04x:[%03x] %04x %04x %04x %04x %04x %04x %04x\n", R[7], readMem(R[7]), R[0], R[1], R[2], R[3], R[4], R[5], R[6]);
+        }
+#endif
+        // Halt Instruction found! //
+		printf("\n\n[ERROR] [FREEINTV] HALT!\n");
 		exit(0);
 		return 0;
 	}
 
 	// Tick PSG
 	PSGTick(ticks);
-
-	if(Cycles>=14934) // STIC generates an interput every 14934 cycles
-	{
-		Cycles = Cycles - 14934;
-		SR1 = 2907 - Cycles; // hold  SR1 output low for 2901 cycles
-		DisplayEnabled = 0;
-		VBlank1 = 2900 - Cycles;
-	}
-	if(SR1>0) 
-	{
-		SR1 = SR1 - ticks;
-		if(SR1<0) { SR1 = 0; }
-	}
-	if(VBlank1>0) 
-	{
-		VBlank1 = VBlank1 - ticks;
-		if(VBlank1<0)
-		{
-			VBlank2 = 3796 + VBlank1;
-			VBlank1 = 0;
-		}
-	}
-	if(VBlank2>0)
-	{
-		VBlank2 = VBlank2 - ticks;
-		if(VBlank2<=0)
-		{
-			VBlank2 = 0;
-			if(DisplayEnabled==1)
-			{
-				//STIC steals cycles on busreq-- 57 + 110*12 + (44 when vertical delay = 0)
-				Cycles += 1377;
-				PSGTick(1377);
-				if(VerticalDelay==0)
-				{
-					Cycles += 44;
-					PSGTick(44);
-				}
-				
-				// Render Frame //
-				STICDrawFrame();
-			}
-			return 0;
-		}
-	}
-	return 1;
+    
+    if(SR1>0)
+    {
+        SR1 = SR1 - ticks;
+        if(SR1<0) { SR1 = 0; }
+    }
+    
+    phase_len -= ticks;
+    if (phase_len < 0) {
+        stic_phase = (stic_phase + 1) & 15;
+        switch (stic_phase) {
+            case 0: // Start of VBLANK
+                stic_reg = 1;   // STIC registers accessible
+                stic_gram = 1;  // GRAM accessible
+                phase_len += 2900;
+                SR1 = phase_len;
+                if (stic_vid_enable == 1) {
+                    // Render Frame //
+                    STICDrawFrame();  // Solve this
+                    return 0;
+                }
+                break;
+            case 1:
+                phase_len += 3796 - 2900;
+                stic_vid_enable = DisplayEnabled;
+                DisplayEnabled = 0;
+                if (stic_vid_enable)
+                    stic_reg = 0;   // STIC registers now inaccessible
+                stic_gram = 1;  // GRAM accessible
+                break;
+            case 2:
+                delayV = ((Memory[0x31])&0x7);
+                delayH = ((Memory[0x30])&0x7);
+                phase_len += 120 + 114 * delayV + delayH;
+                if (stic_vid_enable) {
+                    stic_gram = 0;  // GRAM now inaccessible
+                    phase_len -= 68;    // BUSRQ period (STIC reads RAM)
+                    PSGTick(68);
+                }
+                break;
+            default:
+                phase_len += 912;
+                if (stic_vid_enable) {
+                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
+                    PSGTick(108);
+                }
+                break;
+            case 14:
+                delayV = ((Memory[0x31])&0x7);
+                delayH = ((Memory[0x30])&0x7);
+                phase_len += 912 - 114 * delayV - delayH;
+                if (stic_vid_enable) {
+                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
+                    PSGTick(108);
+                }
+                break;
+            case 15:
+                delayV = ((Memory[0x31])&0x7);
+                phase_len += 57 + 17;
+                if (stic_vid_enable && delayV == 0) {
+                    phase_len -= 38;    // BUSRQ period (STIC reads RAM)
+                    PSGTick(38);
+                }
+                break;
+                
+        }
+    }
+    return 1;
 }
