@@ -132,15 +132,17 @@ void PSGFrame()
 	PSGBufferPos = 0;
 }
 
+int psg_masks[16] = {
+    0xff, 0xff, 0xff, 0xff,
+    0x0f, 0x0f, 0x0f, 0xff,
+    0xff, 0x1f, 0x0f, 0x3f,
+    0x3f, 0x3f, 0xff, 0xff,
+};
+
 void PSGNotify(int adr, int val) // PSG Registers Modified 0x01F0-0x1FD (called from writeMem)
 {
+    Memory[adr] &= psg_masks[adr - 0x1f0];
 	readRegisters();
-
-	if(adr==0x1F0 || adr==0x1F4) { CountA = 0; }
-	if(adr==0x1F1 || adr==0x1F5) { CountB = 0; }
-	if(adr==0x1F2 || adr==0x1F6) { CountC = 0; }
-
-	if(adr>=0x1FB && adr<=0x1FD) { Memory[adr] &= 0x001F; }
 
 	// Envelope properties Trigger (write only register)
 	if (adr==0x1FA)  
