@@ -119,7 +119,6 @@ int exec(void) // Run one instruction
     int ticks;
     
     ticks = CP1610Tick(0); // Tick CP-1610 CPU, runs one instruction, returns used cycles
-	Cycles = Cycles + ticks; 
 
 	if(ticks==0)
 	{
@@ -134,7 +133,7 @@ int exec(void) // Run one instruction
         }
 #endif
         // Halt Instruction found! //
-		printf("\n\n[ERROR] [FREEINTV] HALT! at %i\n", Cycles);
+		printf("\n\n[ERROR] [FREEINTV] HALT!\n");
 		exit(0);
 		return 0;
 	}
@@ -152,9 +151,9 @@ int exec(void) // Run one instruction
     if (phase_len < 0) {
         stic_phase = (stic_phase + 1) & 15;
         switch (stic_phase) {
-            case 0:
-                stic_reg = 1;
-                stic_gram = 1;
+            case 0: // Start of VBLANK
+                stic_reg = 1;   // STIC registers accessible
+                stic_gram = 1;  // GRAM accessible
                 phase_len += 2900;
                 SR1 = phase_len;
                 if (stic_vid_enable == 1) {
@@ -168,25 +167,23 @@ int exec(void) // Run one instruction
                 stic_vid_enable = DisplayEnabled;
                 DisplayEnabled = 0;
                 if (stic_vid_enable)
-                    stic_reg = 0;
-                stic_gram = 1;
+                    stic_reg = 0;   // STIC registers now inaccessible
+                stic_gram = 1;  // GRAM accessible
                 break;
             case 2:
                 delayV = ((Memory[0x31])&0x7);
                 delayH = ((Memory[0x30])&0x7);
                 phase_len += 120 + 114 * delayV + delayH;
                 if (stic_vid_enable) {
-                    stic_gram = 0;
-                    phase_len -= 68;
-                    Cycles += 68;
+                    stic_gram = 0;  // GRAM now inaccessible
+                    phase_len -= 68;    // BUSRQ period (STIC reads RAM)
                     PSGTick(68);
                 }
                 break;
             default:
                 phase_len += 912;
                 if (stic_vid_enable) {
-                    phase_len -= 108;
-                    Cycles += 108;
+                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
                 }
                 break;
@@ -195,8 +192,7 @@ int exec(void) // Run one instruction
                 delayH = ((Memory[0x30])&0x7);
                 phase_len += 912 - 114 * delayV - delayH;
                 if (stic_vid_enable) {
-                    phase_len -= 108;
-                    Cycles += 108;
+                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
                 }
                 break;
@@ -204,8 +200,7 @@ int exec(void) // Run one instruction
                 delayV = ((Memory[0x31])&0x7);
                 phase_len += 57 + 17;
                 if (stic_vid_enable && delayV == 0) {
-                    phase_len -= 38;
-                    Cycles += 38;
+                    phase_len -= 38;    // BUSRQ period (STIC reads RAM)
                     PSGTick(38);
                 }
                 break;

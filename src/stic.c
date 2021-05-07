@@ -40,7 +40,6 @@ int stic_reg;
 int stic_gram;
 int phase_len;
 
-int Cycles;
 int DisplayEnabled;
 
 unsigned int frame[352*224];
@@ -126,7 +125,6 @@ void STICReset(void)
 {
 	STICMode = 1;
 	SR1 = 0;
-	Cycles = 0;
 	DisplayEnabled = 0;
 	CSP = 0x28;
     stic_phase = 15;

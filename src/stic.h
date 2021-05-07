@@ -27,7 +27,6 @@ extern int phase_len;
 extern int delayV;
 extern int delayH;
 
-extern int Cycles; // number of cycles since last STIC interput
 extern int DisplayEnabled; // determines if frame should be updated or not
 
 extern unsigned int frame[352*224]; // frame buffer
