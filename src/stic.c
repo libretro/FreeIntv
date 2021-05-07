@@ -245,8 +245,6 @@ void drawBackgroundColorStack(int scanline)
     int card;     // BACKTAB card info
     unsigned int bgcolor;
     unsigned int fgcolor;
-    int gram;     // 0-GROM, 1-GRAM
-    int cardnum;  // card number (GRAM/GROM index)
     int gaddress; // card graphic address
     int gdata;    // current card graphic byte
     int advcolor; // Flag - Advance CSP
@@ -287,18 +285,23 @@ void drawBackgroundColorStack(int scanline)
             color2 = colors[color2];
             colors[7] = color7; // restore color 7
             // draw squares
-            for(i=0; i<8; i++)
+            for(i=0; i<8; i += 2)
             {
-                scanBuffer[x+i] = color1;
-                scanBuffer[x+i+8] = color2;
-                scanBuffer[x+i+384] = color1;
-                scanBuffer[x+i+384+8] = color2;
-                collBuffer[x+i] |= cbit1;
-                collBuffer[x+i+8] |= cbit2;
-                collBuffer[x+i+384] |= cbit1;
-                collBuffer[x+i+384+8] |= cbit2;
+                scanBuffer[x] = color1;
+                scanBuffer[x+1] = color1;
+                scanBuffer[x+8] = color2;
+                scanBuffer[x+9] = color2;
+                scanBuffer[x+384] = color1;
+                scanBuffer[x+384+1] = color1;
+                scanBuffer[x+384+8] = color2;
+                scanBuffer[x+384+9] = color2;
+                collBuffer[x] |= cbit1;
+                collBuffer[x+8] |= cbit2;
+                collBuffer[x+384] |= cbit1;
+                collBuffer[x+384+8] |= cbit2;
+                x+=2;
             }
-            x+=16;
+            x+=8;
             
         }
         else // Color Stack Mode
@@ -311,15 +314,13 @@ void drawBackgroundColorStack(int scanline)
                 bgcard[col] = colors[Memory[CSP] & 0x0F];
             }
             
-            gram = (card>>11) & 0x01; // GRAM or GROM?
-            
             fgcolor = fgcard[col];
             bgcolor = bgcard[col];
             
-            cardnum = (card>>3) & 0xFF;
-            if(gram) { cardnum = cardnum & 0x3F; }
-            
-            gaddress = 0x3000 + (cardnum<<3) + (0x800 * gram);
+            if (((card >> 11) & 0x01) != 0) // Limit GRAM to 64 cards
+                gaddress = 0x3000 + (card & 0x09f8);
+            else
+                gaddress = 0x3000 + (card & 0x0ff8);
             
             gdata = Memory[gaddress + cardrow]; // fetch current line of current card graphic
             for(i=7; i>=0; i--) // draw one line of card graphic
@@ -358,7 +359,6 @@ void drawSprites(int scanline) // MOBs
 	int gdata;      // current byte of sprite data
 	int gdata2;     // current byte of sprite data (second row for half-height sprites)
 	int card;       // card number - Ra bits 10-3
-	int gram;       // sprite is in 1-GRAM or 0-GROM (Ra bit 11)
 	int sizeX;      // 0-normal, 1-double width (Rx bit 10)
 	int sizeY;      // 0-half height, 1-normal, 2-double, 3-quadrupal (Ry bits 9, 8)
 	int flipX;      // (Ry bit 10)
@@ -376,39 +376,39 @@ void drawSprites(int scanline) // MOBs
 
 	for(i=7; i>=0; i--) // draw sprites 0-7 in reverse order
 	{
-		cbit = 1<<i; // set collision bit
-
 		Rx = Memory[0x00+i]; // 14 bits ; -- -SVI xxxx xxxx ; Size, Visible, Interactive, X Position
 		Ry = Memory[0x08+i]; // 14 bits ; -- YX42 Ryyy yyyy ; Flip Y, Flip X, Size 4, Size 2, Y Resolution, Y Position
 		Ra = Memory[0x10+i]; // 14 bits ; PF Gnnn nnnn nFFF ; Priority, FG Color Bit 3, GRAM, n Card #, FG Color Bits 2-0
 
-		gram = (Ra>>11) & 0x01;
-		card = (Ra>>3) & 0xFF;
-        // Ignore bits 6 and 7 if card is in GRAM or in Foreground/Background mode
-		if(STICMode==0 || gram==1) { card = card & 0x3F; }
-		gaddress = 0x3000 + (card<<3) + (0x800 * gram);
-
-		yRes  = (Ry>>7) & 0x01;
-		if(yRes==1)
-		{
-			// for double-y resolution sprites, the first card drops bit 0 from address
-			gaddress = gaddress & 0xFFFE;
-		}
-
-		fgcolor = colors[((Ra>>9)&0x08)|(Ra&0x07)];
-		sizeX = (Rx>>10) & 0x01;
-		sizeY = (Ry>>8) & 0x03;
-		flipX = (Ry>>10) & 0x01;
-		flipY = (Ry>>11) & 0x01;
 		posX  = Rx & 0xFF;
 		posY  = Ry & 0x7F;
-		priority = (Ra>>13) & 0x01;
 
 		// if sprite x coordinate is 0 or >167, it's disabled
 		// if it's not visible and not interactive, it's disabled
 		if(posX==0 || posX>=167 || ((Rx>>8)&0x03)==0 || posY>=104) { continue; }
 
-		// sprite height varies by sizeY and yRes.  When yRes is set, the size doubles.
+        cbit = 1<<i; // set collision bit
+
+        card = Ra & 0x0ff8;
+        yRes  = (Ry>>7) & 0x01;
+        if(yRes==1)
+        {
+            // for double-y resolution sprites, the card number is always even
+            card = card & 0xFFF0;
+        }
+
+        // Limit card number to 64 if in GRAM or in Foreground/Background mode
+        if(STICMode==0 || ((Ra>>11) & 0x01) == 1) { card = card & 0x09f8; }
+        gaddress = 0x3000 + card;
+        
+        fgcolor = colors[((Ra>>9)&0x08)|(Ra&0x07)];
+        sizeX = (Rx>>10) & 0x01;
+        sizeY = (Ry>>8) & 0x03;
+        flipX = (Ry>>10) & 0x01;
+        flipY = (Ry>>11) & 0x01;
+        priority = (Ra>>13) & 0x01;
+        
+        // sprite height varies by sizeY and yRes.  When yRes is set, the size doubles.
 		// sizeY will be 0,1,2,3, corresponding to heights of 4,8, 16, and 32
 		// we can find this by left-shifting 4 by sizeY as 4<<0==4, ..., 4<<3==32 
 		gfxheight = (4<<sizeY)<<yRes; // yres=0: 4,8,16,32 ; yres=1: 8,16,32,64

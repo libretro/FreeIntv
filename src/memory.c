@@ -49,6 +49,8 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
     val &= 0xFFFF;
     adr &= 0xFFFF;
     
+    // Ignore writes to protected ROM spaces
+    // Note: B17 Bomber manages to write on EXEC ROM (it will crash if unprotected)
     switch (adr >> 11) {
         case 0x02:  /* Exec ROM */
         case 0x03:
