@@ -494,8 +494,8 @@ void STICDrawFrame(void)
 {
 	int row, offset;
 	int i, j;
-    
-	extendTop = (Memory[0x32]>>1)&0x01;
+
+    extendTop = (Memory[0x32]>>1)&0x01;
 	
 	extendLeft = (Memory[0x32])&0x01;
 

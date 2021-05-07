@@ -109,19 +109,31 @@ void Init()
 
 void Run()
 {
-	// run for one frame 
+    // run for one frame
 	// exec will call drawFrame for us only when needed
 	while(exec()) { }
 }
 
 int exec(void) // Run one instruction 
 {
-	int ticks = CP1610Tick(0); // Tick CP-1610 CPU, runs one instruction, returns used cycles
+    int ticks;
+    
+    ticks = CP1610Tick(0); // Tick CP-1610 CPU, runs one instruction, returns used cycles
 	Cycles = Cycles + ticks; 
 
 	if(ticks==0)
 	{
-		// Halt Instruction found! //
+        // DEBUG
+#if 0
+        {
+            FILE *debug_file;
+            extern unsigned int R[];
+
+            fprintf(stdout, "%04x:[%03x] %04x %04x %04x %04x %04x %04x %04x\n", R[7] - 1, readMem(R[7] - 1), R[0], R[1], R[2], R[3], R[4], R[5], R[6]);
+            fprintf(stdout, "%04x:[%03x] %04x %04x %04x %04x %04x %04x %04x\n", R[7], readMem(R[7]), R[0], R[1], R[2], R[3], R[4], R[5], R[6]);
+        }
+#endif
+        // Halt Instruction found! //
 		printf("\n\n[ERROR] [FREEINTV] HALT! at %i\n", Cycles);
 		exit(0);
 		return 0;

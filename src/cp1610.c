@@ -149,27 +149,24 @@ int CP1610Tick(int debug)
 
 	int ticks = 0;
 
-	if(instruction > 0x03FF)
+    // DEBUG
+#if 0
+    {
+        FILE *debug_file;
+        
+        fprintf(stdout, "%04x:[%03x%c %04x %04x %04x %04x %04x %04x %04x %s %c%c%c%c%c%c\n", R[7], instruction, instruction > 0x03ff ? 'X' : ']', R[0], R[1], R[2], R[3], R[4], R[5], R[6], Nmemonic[instruction], Flag_Sign ? 'S' : '-', Flag_Carry ? 'C' : '-', Flag_Overflow ? 'O' : '-', Flag_Zero ? 'Z' : '-', Flag_InteruptEnable ? 'I' : '-', Flag_DoubleByteData ? 'D' : '-');
+    }
+#endif
+    
+    if(instruction > 0x03FF)
 	{
 		printf("[ERROR][FREEINT] Bad opcode: %i\n", instruction);
 	        // bad OpCode, Halt //
 		return 0;
 	}
 
-	// DEBUG
-/*
-	printf("[%03x] %04x %04x %04x %04x %04x %04x %04x %04x   ", instruction, R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7]);
-	printf("%s ", Nmemonic[instruction]);
-	if(Flag_Sign) { printf("S"); } else { printf("-"); }
-	if(Flag_Carry) { printf("C"); } else { printf("-"); }
-	if(Flag_Overflow) { printf("O"); } else { printf("-"); }
-	if(Flag_Zero) { printf("Z"); } else { printf("-"); }
-	if(Flag_InteruptEnable) { printf("I"); } else { printf("-"); }
-	if(Flag_DoubleByteData) { printf("D"); } else { printf("-"); }
-	printf("\n");
-*/
 	R[PC]++; // point PC/R7 at operand/next address
-
+    
 	ticks = OpCodes[instruction](instruction); // execute instruction
 
 	if(sdbd==1) { Flag_DoubleByteData = 0; } // reset SDBD

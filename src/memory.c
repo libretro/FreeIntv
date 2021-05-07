@@ -46,11 +46,36 @@ int stic_or[64] = {
 
 void writeMem(int adr, int val) // Write (should handle hooks/alias)
 {
-    val = val & 0xFFFF;
+    val &= 0xFFFF;
+    adr &= 0xFFFF;
     
+    switch (adr >> 11) {
+        case 0x02:  /* Exec ROM */
+        case 0x03:
+        case 0x06:  /* GROM */
+        case 0x0a:  /* 5000-57FF */
+        case 0x0b:  /* 5800-5FFF */
+        case 0x0c:  /* 6000-67FF */
+        case 0x0d:  /* 6800-6FFF */
+            return; /* Ignore */
+        case 0x07:  /* GRAM */
+        case 0x0f:
+        case 0x17:
+        case 0x1f:
+            if (stic_gram != 0)
+                Memory[adr & 0x39FF] = val;
+            return;
+    }
     if(adr>=0x100 && adr<=0x1FF)
     {
         val = val & 0xFF;
+        Memory[adr] = val;
+        //PSG Registers
+        if(adr>=0x01F0 && adr<=0x1FD)
+        {
+            PSGNotify(adr, val);
+        }
+        return;
     }
     
     // STIC Display Enable
@@ -72,28 +97,19 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
             Memory[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
         return;
     }
-    //GRAM Alias
-    if((adr>=0x3800 && adr<=0x3fff) || (adr>=0x7800 && adr<=0x7FFF) || (adr>=0xB800 && adr<=0xBFFF) || (adr>=0xF800 && adr<=0xFFFF))
-    {
-        if (stic_gram != 0)
-            Memory[adr & 0x39FF] = val;
-        return;
-    }
     
-    Memory[adr & 0xFFFF] = val;
+    Memory[adr] = val;
     
-    //PSG Registers
-    if(adr>=0x01F0 && adr<=0x1FD)
-    {
-        PSGNotify(adr, val);
-    }
 }
 
 int readMem(int adr) // Read (should handle hooks/alias)
 {
 	// It's safe to map ROM over GRAM aliases
 
-	int val = Memory[adr & 0xFFFF];
+    int val;
+    
+    adr &= 0xffff;
+    val = Memory[adr];
 
 	if(adr>=0x100 && adr<=0x1FF)
 	{
