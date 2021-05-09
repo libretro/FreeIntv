@@ -315,6 +315,8 @@ void retro_run(void)
 		}
 	}
 
+    if (intv_halt)
+        OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
 	// send frame to libretro
 	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 

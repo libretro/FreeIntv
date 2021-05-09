@@ -135,7 +135,7 @@ void drawBorder(int scanline)
 {
 	int i;
 	int cbit = 1<<9; // bit 9 - border collision 
-	int color = colors[Memory[0x2C]]; // border color
+	int color = colors[Memory[0x2C] & 0x0f]; // border color
 	
 	if(scanline>=112) { return; }
     if (scanline == delayV - 1 || scanline == 104) {
@@ -488,60 +488,76 @@ void drawSprites(int scanline) // MOBs
 	}
 }
 
-void STICDrawFrame(void)
+void STICDrawFrame(int enabled)
 {
 	int row, offset;
 	int i, j;
 
-    extendTop = (Memory[0x32]>>1)&0x01;
-	
-	extendLeft = (Memory[0x32])&0x01;
-
-    delayV = 8 + ((Memory[0x31])&0x7);
-    delayH = 8 + ((Memory[0x30])&0x7);
-
-	delayH = delayH * 2;
-
-	offset = 0;
-	for(row=0; row<112; row++)
-	{
-        memset(&collBuffer[0], 0, sizeof(collBuffer));
-
-        // draw border for collision
-		drawBorder(row);
-
-		// draw backtab
-		if(row>=delayV && row<(96+delayV))
-		{
-			if(STICMode==0) // Foreground/Background Mode
-			{
-				drawBackgroundFGBG(row-delayV);	
-			}
-			else // Color Stack Modes
-			{
-				drawBackgroundColorStack(row-delayV);	
-			}
-		}
-
-        if (row>=delayV - 1 && row<(97 + delayV)) {
-            // draw MOBs
-            drawSprites((row-delayV)+8);
+    offset = 0;
+    if (enabled == 0) {
+        for (row = 0; row < 112; row++)
+        {
+            int color = colors[Memory[0x2C] & 0x0f]; // border color
+            
+            for(i=0; i<352; i++)
+            {
+                scanBuffer[i] = color;
+                scanBuffer[i+384] = color;
+            }
+            memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
+            memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
+            offset += 352 * 2;
         }
+    } else {
+        extendTop = (Memory[0x32]>>1)&0x01;
         
-		// draw border
-		drawBorder(row);
-
-        for (i = 14; i < 169 * 2; i += 2) {
-            if (collBuffer[i] == 0)
-                continue;
-            for (j = 0; j < 8; j++) {
-                if (((collBuffer[i] >> j) & 1) != 0) {
-                    Memory[0x18 + j] |= collBuffer[i] & ~(1 << j);
+        extendLeft = (Memory[0x32])&0x01;
+        
+        delayV = 8 + ((Memory[0x31])&0x7);
+        delayH = 8 + ((Memory[0x30])&0x7);
+        
+        delayH = delayH * 2;
+        
+        for(row=0; row<112; row++)
+        {
+            memset(&collBuffer[0], 0, sizeof(collBuffer));
+            
+            // draw border for collision
+            drawBorder(row);
+            
+            // draw backtab
+            if(row>=delayV && row<(96+delayV))
+            {
+                if(STICMode==0) // Foreground/Background Mode
+                {
+                    drawBackgroundFGBG(row-delayV);
+                }
+                else // Color Stack Modes
+                {
+                    drawBackgroundColorStack(row-delayV);
                 }
             }
+            
+            if (row>=delayV - 1 && row<(97 + delayV)) {
+                // draw MOBs
+                drawSprites((row-delayV)+8);
+            }
+            
+            // draw border
+            drawBorder(row);
+            
+            for (i = 14; i < 169 * 2; i += 2) {
+                if (collBuffer[i] == 0)
+                    continue;
+                for (j = 0; j < 8; j++) {
+                    if (((collBuffer[i] >> j) & 1) != 0) {
+                        Memory[0x18 + j] |= collBuffer[i] & ~(1 << j);
+                    }
+                }
+            }
+            memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
+            memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
+            offset += 352 * 2;
         }
-        memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
-        memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
-        offset += 352 * 2;
-	}
+    }
 }
