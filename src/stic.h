@@ -31,7 +31,7 @@ extern int DisplayEnabled; // determines if frame should be updated or not
 
 extern unsigned int frame[352*224]; // frame buffer
 
-void STICDrawFrame(void);
+void STICDrawFrame(int);
 void STICReset(void);
 
 #endif

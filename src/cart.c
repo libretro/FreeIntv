@@ -68,12 +68,12 @@ int LoadCart(const char *path)
             printf("[ERROR] [FREEINTV] Cartridge load error indicator set\n");
         }
         
-		OSD_drawText(8, 4, "SIZE:");
-		OSD_drawInt(14, 4, size, 10);
+		OSD_drawText(8, 7, "SIZE:");
+		OSD_drawInt(14, 7, size, 10);
 
         if(isIntellicart()) // intellicart format
         {
-			OSD_drawText(8, 4, "INTELLICART");
+			OSD_drawText(8, 8, "INTELLICART");
             printf("[INFO] [FREEINTV] Intellicart cartridge format detected\n");		
             return loadIntellicart();
         }
@@ -81,8 +81,8 @@ int LoadCart(const char *path)
         {
 			if(isROM())
 			{
-				OSD_drawText(8, 4, "INTELLICART");
-				OSD_drawText(8, 5, "MISSING A8!");
+				OSD_drawText(8, 8, "INTELLICART");
+				OSD_drawText(8, 9, "MISSING A8!");
 				printf("[INFO] [FREEINTV] Possible Intellicart cartridge format detected\n");
 				return loadROM();
 			}

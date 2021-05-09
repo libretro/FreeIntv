@@ -187,7 +187,15 @@ int CP1610Tick(int debug)
 	return ticks;
 }
 
-int HLT(int v)  { return 0; } // Halt
+int HLT(int v)
+{
+    // Halt Instruction found! //
+    printf("\n\n[ERROR] [FREEINTV] HALT!\n");
+  
+    R[PC]--; // Repeat instruction forever instead of exiting without warning
+    return 0;
+}
+
 int SDBD(int v) { Flag_DoubleByteData = 1; return 4; } // Set Double Byte Data
 int EIS(int v)  { Flag_InteruptEnable = 1; return 4; } // Enable Interrupt System
 int DIS(int v)  { Flag_InteruptEnable = 0; return 4; } // Disable Interrupt System

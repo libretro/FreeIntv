@@ -26,6 +26,7 @@
 #include "osd.h"
 
 int SR1;
+int intv_halt;
 
 int exec(void);
 
@@ -62,6 +63,7 @@ void loadExec(const char* path)
 	else
 	{
 		OSD_drawText(3, 1, "LOAD EXEC: FAIL");
+        OSD_drawTextBG(3, 6, "PUT GROM/EXEC IN SYSTEM DIRECTORY");
 		printf("[ERROR] [FREEINTV] Failed loading Executive BIOS from: %s\n", path);
 	}
 }
@@ -88,6 +90,7 @@ void loadGrom(const char* path)
 	else
 	{
 		OSD_drawText(3, 2, "LOAD GROM: FAIL");
+        OSD_drawTextBG(3, 6, "PUT GROM/EXEC IN SYSTEM DIRECTORY");
 		printf("[ERROR] [FREEINTV] Failed loading Graphics BIOS from: %s\n", path);
 	}
 }
@@ -95,6 +98,7 @@ void loadGrom(const char* path)
 void Reset()
 {
 	SR1 = 0;
+    intv_halt = 0;
 	CP1610Reset();
 	MemoryInit();
 	STICReset();
@@ -120,7 +124,7 @@ int exec(void) // Run one instruction
     
     ticks = CP1610Tick(0); // Tick CP-1610 CPU, runs one instruction, returns used cycles
 
-	if(ticks==0)
+	if(ticks==0)    // Undefined instruction (>= 0x0400) or HLT
 	{
         // DEBUG
 #if 0
@@ -132,9 +136,7 @@ int exec(void) // Run one instruction
             fprintf(stdout, "%04x:[%03x] %04x %04x %04x %04x %04x %04x %04x\n", R[7], readMem(R[7]), R[0], R[1], R[2], R[3], R[4], R[5], R[6]);
         }
 #endif
-        // Halt Instruction found! //
-		printf("\n\n[ERROR] [FREEINTV] HALT!\n");
-		exit(0);
+        intv_halt = 1;
 		return 0;
 	}
 
@@ -156,12 +158,9 @@ int exec(void) // Run one instruction
                 stic_gram = 1;  // GRAM accessible
                 phase_len += 2900;
                 SR1 = phase_len;
-                if (stic_vid_enable == 1) {
-                    // Render Frame //
-                    STICDrawFrame();  // Solve this
-                    return 0;
-                }
-                break;
+                // Render Frame //
+                STICDrawFrame(stic_vid_enable);
+                return 0;
             case 1:
                 phase_len += 3796 - 2900;
                 stic_vid_enable = DisplayEnabled;
