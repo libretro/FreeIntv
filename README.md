@@ -4,6 +4,7 @@ FreeIntv is a libretro emulation core for the Mattel Intellivision designed to b
 ## Authors
 
 FreeIntv was created by David Richardson.
+The PSG and STIC emulation was made closer to hardware and optimized by Oscar Toledo G. (nanochess)
 
 ## License
 The FreeIntv core is licensed under GPLv3. More information at https://github.com/markwkidd/FreeIntv/blob/master/LICENSE.

@@ -141,16 +141,16 @@ void drawBorder(int scanline)
     if (scanline == delayV - 1 || scanline == 104) {
         for(i=7 * 2; i < (9 + 160) * 2; i += 2)
         {
-            collBuffer[i] = cbit;
-            collBuffer[i+384] = cbit;
+            collBuffer[i] |= cbit;
+            collBuffer[i+384] |= cbit;
         }
     } else {
         i = 7 * 2;
-        collBuffer[i] = cbit;
-        collBuffer[i + 384] = cbit;
+        collBuffer[i] |= cbit;
+        collBuffer[i + 384] |= cbit;
         i = (8 + 160) * 2;
-        collBuffer[i] = cbit;
-        collBuffer[i + 384] = cbit;
+        collBuffer[i] |= cbit;
+        collBuffer[i + 384] |= cbit;
     }
     if (extendTop != 0)
         i = 16;
@@ -411,10 +411,6 @@ void drawSprites(int scanline) // MOBs
 		// we can find this by left-shifting 4 by sizeY as 4<<0==4, ..., 4<<3==32 
 		gfxheight = (4<<sizeY)<<yRes; // yres=0: 4,8,16,32 ; yres=1: 8,16,32,64
 		
-		// clear collisions in column 167 //
-		collBuffer[167 * 2] = 0;
-        collBuffer[167 * 2 + 384] = 0;
-        
 		if( (scanline>=posY) && (scanline<(posY+gfxheight)) ) // if sprite is on current row
 		{ 	
 			// find sprite graphics data for current row
@@ -522,9 +518,6 @@ void STICDrawFrame(int enabled)
         {
             memset(&collBuffer[0], 0, sizeof(collBuffer));
             
-            // draw border for collision
-            drawBorder(row);
-            
             // draw backtab
             if(row>=delayV && row<(96+delayV))
             {
@@ -543,8 +536,11 @@ void STICDrawFrame(int enabled)
                 drawSprites((row-delayV)+8);
             }
             
-            // draw border
+            // draw border and set final collision bits
             drawBorder(row);
+            // clear collisions in column 167 //
+            collBuffer[167 * 2] = 0;
+            collBuffer[167 * 2 + 384] = 0;
             
             for (i = 14; i < 169 * 2; i += 2) {
                 if (collBuffer[i] == 0)
