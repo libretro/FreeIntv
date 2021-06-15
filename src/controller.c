@@ -138,7 +138,7 @@ int getControllerState(int joypad[], int player)
 	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
 	if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
-	if(joypad[6]!=0) { state |= K_E; }
+	if(joypad[6]!=0) { state |= K_0; }
 #else
 	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= B_LEFT; } // 0x9F - Button Left
