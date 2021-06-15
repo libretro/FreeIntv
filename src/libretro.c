@@ -252,7 +252,7 @@ void retro_run(void)
 			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
 			OSD_drawTextBG(3, 17, "                                      ");
 		}
-#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK)
+#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK) || defined(SLAPSHOT)
 		// These games have special mappings so the mapping details
 		// are offputting so just tell them to refer to manual or overlay.
 		// help menu //
