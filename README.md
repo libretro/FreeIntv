@@ -41,3 +41,6 @@ Mattel Intellivision games were often meant to be played with game-specific card
 | Start | Pause Game |
 | Select | Controller Swap |
 
+## Todo
+
+- Some games won't work well with modern game controllers without a keypad. These games have been remapped to facebuttons to be functional like Night Stalker, however these fixes are currently achieved with #IFDEF's. Need to replace these IFDEFS with some form of decent game detection so it automatically sets these new mappings.

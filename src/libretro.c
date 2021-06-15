@@ -221,12 +221,59 @@ void retro_run(void)
 		if(paused)
 		{
 			OSD_drawPaused();
+#ifdef XBOXPADSTYLEHELP
+			OSD_drawTextCenterBG(21, "HELP - PRESS B");
+#else
 			OSD_drawTextCenterBG(21, "HELP - PRESS A");
+#endif
 		}
 	}
 
 	if(paused)
 	{
+#ifdef XBOXPADSTYLE
+		// If core is being built for a device which uses XBOX style
+		// facebuttons instead of retropad. Reverse the mapping help
+		// help menu //
+		if(joypad0[4]==1 || joypad1[4]==1)
+		{
+			OSD_drawTextBG(3,  4, "                                      ");
+			OSD_drawTextBG(3,  5, "               - HELP -               ");
+			OSD_drawTextBG(3,  6, "                                      ");
+			OSD_drawTextBG(3,  7, " B      - RIGHT ACTION BUTTON         ");
+			OSD_drawTextBG(3,  8, " A      - LEFT ACTION BUTTON          ");
+			OSD_drawTextBG(3,  9, " X      - TOP ACTION BUTTON           ");
+			OSD_drawTextBG(3, 10, " Y      - LAST SELECTED KEYPAD BUTTON ");
+			OSD_drawTextBG(3, 11, " L/R    - SHOW KEYPAD                 ");
+			OSD_drawTextBG(3, 12, "                                      ");
+			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
+			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
+			OSD_drawTextBG(3, 15, "                                      ");
+			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
+			OSD_drawTextBG(3, 17, "                                      ");
+		}
+#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK)
+		// These games have special mappings so the mapping details
+		// are offputting so just tell them to refer to manual or overlay.
+		// help menu //
+		if(joypad0[4]==1 || joypad1[4]==1)
+		{
+			OSD_drawTextBG(3,  4, "                                      ");
+			OSD_drawTextBG(3,  5, "               - HELP -               ");
+			OSD_drawTextBG(3,  6, "                                      ");
+			OSD_drawTextBG(3,  7, "                                      ");
+			OSD_drawTextBG(3,  8, "         PLEASE CHECK MANUAL          ");
+			OSD_drawTextBG(3,  9, "              OR OVERLAY              ");
+			OSD_drawTextBG(3, 10, "                                      ");
+			OSD_drawTextBG(3, 11, " L/R    - SHOW KEYPAD                 ");
+			OSD_drawTextBG(3, 12, "                                      ");
+			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
+			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
+			OSD_drawTextBG(3, 15, "                                      ");
+			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
+			OSD_drawTextBG(3, 17, "                                      ");
+		}
+#else
 		// help menu //
 		if(joypad0[4]==1 || joypad1[4]==1)
 		{
@@ -242,9 +289,10 @@ void retro_run(void)
 			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
 			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
 			OSD_drawTextBG(3, 15, "                                      ");
-			OSD_drawTextBG(3, 16, " FREEINTV 1.1          LICENSE GPL V3 ");
+			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
 			OSD_drawTextBG(3, 17, "                                      ");
 		}
+#endif
 	}
 	else
 	{
@@ -297,7 +345,7 @@ void retro_run(void)
 		audioBufferPos = 0.0;
 		PSGFrame();
 	}
-
+#ifndef SHARKSHARK
 	// Swap Left/Right Controller
 	if(joypad0[9]==1 || joypad1[9]==1)
 	{
@@ -314,7 +362,7 @@ void retro_run(void)
 			OSD_drawRightLeft();
 		}
 	}
-
+#endif
     if (intv_halt)
         OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
 	// send frame to libretro
@@ -331,7 +379,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
 	info->library_name = "FreeIntv";
-	info->library_version = "1.1";
+	info->library_version = "1.2";
 	info->valid_extensions = "int|bin|rom";
 	info->need_fullpath = true;
 }
