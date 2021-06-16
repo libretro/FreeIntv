@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include "memory.h"
+#include "cp1610.h"
 #include "cart.h"
 #include "osd.h"
 
@@ -129,7 +130,7 @@ void loadRange(int start, int stop)
 {
 	while(start<=stop && pos<size) // load segment
 	{
-		Memory[start] = readWord();
+		CTX(Memory)[start] = readWord();
 		start++;
 	}
 }

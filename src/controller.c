@@ -16,6 +16,8 @@
 */
 #include <math.h>
 #include "controller.h"
+
+#include "cp1610.h"
 #include "memory.h"
 
 const double PI = 3.14159265358979323846;
@@ -79,7 +81,7 @@ void controllerInit()
 
 void setControllerInput(int player, int state)
 {
-	Memory[(player^controllerSwap) + 0x1FE] = (state^0xFF) & 0xFF;
+	CTX(Memory)[(player^controllerSwap) + 0x1FE] = (state^0xFF) & 0xFF;
 }
 
 int getControllerState(int joypad[], int player)

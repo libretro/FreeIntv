@@ -18,6 +18,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "psg.h"
+#include "cp1610.h"
 #include "memory.h"
 
 int PSGBufferSize;
@@ -72,28 +73,28 @@ int EnvHold;
 
 void readRegisters(void)
 {
-	ChA = (Memory[0x01F0] & 0xFF) | ((Memory[0x1F4] & 0x0F)<<8);
-	ChB = (Memory[0x01F1] & 0xFF) | ((Memory[0x1F5] & 0x0F)<<8);
-	ChC = (Memory[0x01F2] & 0xFF) | ((Memory[0x1F6] & 0x0F)<<8);
+	ChA = (CTX(Memory)[0x01F0] & 0xFF) | ((CTX(Memory)[0x1F4] & 0x0F)<<8);
+	ChB = (CTX(Memory)[0x01F1] & 0xFF) | ((CTX(Memory)[0x1F5] & 0x0F)<<8);
+	ChC = (CTX(Memory)[0x01F2] & 0xFF) | ((CTX(Memory)[0x1F6] & 0x0F)<<8);
  
-	VolA = Memory[0x01FB] & 0x0F;
-	VolB = Memory[0x01FC] & 0x0F;
-	VolC = Memory[0x01FD] & 0x0F;
+	VolA = CTX(Memory)[0x01FB] & 0x0F;
+	VolB = CTX(Memory)[0x01FC] & 0x0F;
+	VolC = CTX(Memory)[0x01FD] & 0x0F;
 
-	NoiseP = (Memory[0x01F9] & 0x1F)<<1;
-	NoiseA = (Memory[0x01F8]>>3) & 0x01;
-	NoiseB = (Memory[0x01F8]>>4) & 0x01;
-	NoiseC = (Memory[0x01F8]>>5) & 0x01;
+	NoiseP = (CTX(Memory)[0x01F9] & 0x1F)<<1;
+	NoiseA = (CTX(Memory)[0x01F8]>>3) & 0x01;
+	NoiseB = (CTX(Memory)[0x01F8]>>4) & 0x01;
+	NoiseC = (CTX(Memory)[0x01F8]>>5) & 0x01;
 
-	ToneA = Memory[0x01F8] & 0x01;
-	ToneB = (Memory[0x01F8]>>1) & 0x01;
-	ToneC = (Memory[0x01F8]>>2) & 0x01;
+	ToneA = CTX(Memory)[0x01F8] & 0x01;
+	ToneB = (CTX(Memory)[0x01F8]>>1) & 0x01;
+	ToneC = (CTX(Memory)[0x01F8]>>2) & 0x01;
 
-	EnvP = ((Memory[0x01F3] & 0xFF) | ((Memory[0x1F7] & 0xFF)<<8))<<1;
-	EnvFlags = Memory[0x01FA] & 0x0F;
-	EnvA = (Memory[0x01FB]>>4) & 0x03;
-	EnvB = (Memory[0x01FC]>>4) & 0x03;
-	EnvC = (Memory[0x01FD]>>4) & 0x03;
+	EnvP = ((CTX(Memory)[0x01F3] & 0xFF) | ((CTX(Memory)[0x1F7] & 0xFF)<<8))<<1;
+	EnvFlags = CTX(Memory)[0x01FA] & 0x0F;
+	EnvA = (CTX(Memory)[0x01FB]>>4) & 0x03;
+	EnvB = (CTX(Memory)[0x01FC]>>4) & 0x03;
+	EnvC = (CTX(Memory)[0x01FD]>>4) & 0x03;
 
 	ChA = ChA + (0x1000 * (ChA==0)); // a Channel Period value of 0 
 	ChB = ChB + (0x1000 * (ChB==0)); // indicates a value of 0x1000
@@ -141,7 +142,7 @@ int psg_masks[16] = {
 
 void PSGNotify(int adr, int val) // PSG Registers Modified 0x01F0-0x1FD (called from writeMem)
 {
-    Memory[adr] &= psg_masks[adr - 0x1f0];
+    CTX(Memory)[adr] &= psg_masks[adr - 0x1f0];
 	readRegisters();
     // Note: updating frequencies doesn't reset counters in real chip
     //       (otherwise sound glitch happens in games)
