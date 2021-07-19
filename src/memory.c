@@ -14,13 +14,13 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
+
+#include "cp1610.h"
 #include "memory.h"
 #include "stic.h"
 #include "psg.h"
 
 #include <stdio.h>
-
-unsigned int Memory[0x10000];
 
 int stic_and[64] = {
     0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff,
@@ -65,13 +65,13 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         case 0x17:
         case 0x1f:
             if (stic_gram != 0)
-                Memory[adr & 0x39FF] = val;
+                CTX(Memory)[adr & 0x39FF] = val;
             return;
     }
     if(adr>=0x100 && adr<=0x1FF)
     {
         val = val & 0xFF;
-        Memory[adr] = val;
+        CTX(Memory)[adr] = val;
         //PSG Registers
         if(adr>=0x01F0 && adr<=0x1FD)
         {
@@ -96,11 +96,11 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
     if((adr>=0x0000 && adr<=0x003F) || (adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
     {
         if (stic_reg != 0)
-            Memory[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
+            CTX(Memory)[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
         return;
     }
     
-    Memory[adr] = val;
+    CTX(Memory)[adr] = val;
     
 }
 
@@ -111,7 +111,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
     int val;
     
     adr &= 0xffff;
-    val = Memory[adr];
+    val = CTX(Memory)[adr];
 
 	if(adr>=0x100 && adr<=0x1FF)
 	{
@@ -122,7 +122,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
 	{
 		if(adr<=0x3F)
 		{
-            val = (Memory[adr] & stic_and[adr]) | stic_or[adr];
+            val = (CTX(Memory)[adr] & stic_and[adr]) | stic_or[adr];
 		}
 
 		// read sensitive addresses
@@ -137,25 +137,25 @@ int readMem(int adr) // Read (should handle hooks/alias)
 void MemoryInit()
 {
 	int i;
-	for(i=0x0000; i<=0x0007; i++) { Memory[i] = 0x3800; } // STIC Registers
-	for(i=0x0008; i<=0x000F; i++) { Memory[i] = 0x3000; }
-	for(i=0x0010; i<=0x0017; i++) { Memory[i] = 0x0000; }
-	for(i=0x0018; i<=0x001F; i++) { Memory[i] = 0x3C00; }
-	for(i=0x0020; i<=0x003F; i++) { Memory[i] = 0x3FFF; }
-	for(i=0x0028; i<=0x002C; i++) { Memory[i] = 0x3FF0; }
-	Memory[0x30] = 0x3FF8;
-	Memory[0x31] = 0x3FF8;
-	Memory[0x32] = 0x3FFC;
-	for(i=0x0040; i<=0x007F; i++) { Memory[i] = 0x0000; }
-	for(i=0x0080; i<=0x00FF; i++) { Memory[i] = 0xFFFF; }
-	for(i=0x0100; i<=0x035F; i++) { Memory[i] = 0x0000; } // Scratch, PSG (1F0-1FF), System Ram
-	for(i=0x0360; i<=0x0FFF; i++) { Memory[i] = 0xFFFF; }
-	for(i=0x1000; i<=0x1FFF; i++) { Memory[i] = 0x0000; } // EXEC ROM
-	for(i=0x2000; i<=0x2FFF; i++) { Memory[i] = 0xFFFF; }
-	for(i=0x3000; i<=0x3FFF; i++) { Memory[i] = 0x0000; } // GROM, GRAM
-	for(i=0x4000; i<=0x4FFF; i++) { Memory[i] = 0xFFFF; }
-	for(i=0x5000; i<=0x5FFF; i++) { Memory[i] = 0x0000; }
-	for(i=0x6000; i<=0xFFFF; i++) { Memory[i] = 0xFFFF; }
-	Memory[0x1FE] = 0xFF; // Controller R
-	Memory[0x1FF] = 0xFF; // Controller L
+	for(i=0x0000; i<=0x0007; i++) { CTX(Memory)[i] = 0x3800; } // STIC Registers
+	for(i=0x0008; i<=0x000F; i++) { CTX(Memory)[i] = 0x3000; }
+	for(i=0x0010; i<=0x0017; i++) { CTX(Memory)[i] = 0x0000; }
+	for(i=0x0018; i<=0x001F; i++) { CTX(Memory)[i] = 0x3C00; }
+	for(i=0x0020; i<=0x003F; i++) { CTX(Memory)[i] = 0x3FFF; }
+	for(i=0x0028; i<=0x002C; i++) { CTX(Memory)[i] = 0x3FF0; }
+	CTX(Memory)[0x30] = 0x3FF8;
+	CTX(Memory)[0x31] = 0x3FF8;
+	CTX(Memory)[0x32] = 0x3FFC;
+	for(i=0x0040; i<=0x007F; i++) { CTX(Memory)[i] = 0x0000; }
+	for(i=0x0080; i<=0x00FF; i++) { CTX(Memory)[i] = 0xFFFF; }
+	for(i=0x0100; i<=0x035F; i++) { CTX(Memory)[i] = 0x0000; } // Scratch, PSG (1F0-1FF), System Ram
+	for(i=0x0360; i<=0x0FFF; i++) { CTX(Memory)[i] = 0xFFFF; }
+	for(i=0x1000; i<=0x1FFF; i++) { CTX(Memory)[i] = 0x0000; } // EXEC ROM
+	for(i=0x2000; i<=0x2FFF; i++) { CTX(Memory)[i] = 0xFFFF; }
+	for(i=0x3000; i<=0x3FFF; i++) { CTX(Memory)[i] = 0x0000; } // GROM, GRAM
+	for(i=0x4000; i<=0x4FFF; i++) { CTX(Memory)[i] = 0xFFFF; }
+	for(i=0x5000; i<=0x5FFF; i++) { CTX(Memory)[i] = 0x0000; }
+	for(i=0x6000; i<=0xFFFF; i++) { CTX(Memory)[i] = 0xFFFF; }
+	CTX(Memory)[0x1FE] = 0xFF; // Controller R
+	CTX(Memory)[0x1FF] = 0xFF; // Controller L
 }

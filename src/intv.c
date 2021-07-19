@@ -53,7 +53,7 @@ void loadExec(const char* path)
 		for(i=0x1000; i<=0x1FFF; i++)
 		{
 			fread(word,sizeof(word),1,fp);
-			Memory[i] = (word[0]<<8) | word[1];
+			CTX(Memory)[i] = (word[0]<<8) | word[1];
 		}
 
 		fclose(fp);
@@ -79,7 +79,7 @@ void loadGrom(const char* path)
 		for(i=0x3000; i<=0x37FF; i++)
 		{
 			fread(word,sizeof(word),1,fp);
-			Memory[i] = word[0];
+			CTX(Memory)[i] = word[0];
 		}
 
 		fclose(fp);
@@ -170,8 +170,8 @@ int exec(void) // Run one instruction
                 stic_gram = 1;  // GRAM accessible
                 break;
             case 2:
-                delayV = ((Memory[0x31])&0x7);
-                delayH = ((Memory[0x30])&0x7);
+                delayV = ((CTX(Memory)[0x31])&0x7);
+                delayH = ((CTX(Memory)[0x30])&0x7);
                 phase_len += 120 + 114 * delayV + delayH;
                 if (stic_vid_enable) {
                     stic_gram = 0;  // GRAM now inaccessible
@@ -187,8 +187,8 @@ int exec(void) // Run one instruction
                 }
                 break;
             case 14:
-                delayV = ((Memory[0x31])&0x7);
-                delayH = ((Memory[0x30])&0x7);
+                delayV = ((CTX(Memory)[0x31])&0x7);
+                delayH = ((CTX(Memory)[0x30])&0x7);
                 phase_len += 912 - 114 * delayV - delayH;
                 if (stic_vid_enable) {
                     phase_len -= 108;   // BUSRQ period (STIC reads RAM)
@@ -196,7 +196,7 @@ int exec(void) // Run one instruction
                 }
                 break;
             case 15:
-                delayV = ((Memory[0x31])&0x7);
+                delayV = ((CTX(Memory)[0x31])&0x7);
                 phase_len += 57 + 17;
                 if (stic_vid_enable && delayV == 0) {
                     phase_len -= 38;    // BUSRQ period (STIC reads RAM)
