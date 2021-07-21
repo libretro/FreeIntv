@@ -34,6 +34,33 @@ typedef struct CP1610_Context_t
 	int Flag_Overflow;
 	
 	unsigned int Memory[0x10000];
+
+	// Stick
+	unsigned int STICMode;
+
+	int stic_phase;
+	int stic_vid_enable;
+	int stic_reg;
+	int stic_gram;
+	int phase_len;
+
+	int DisplayEnabled;
+
+	unsigned int frame[352*224];
+
+	unsigned int scanBuffer[768]; // buffer for current scanline (352+32)*2
+	unsigned int collBuffer[768]; // buffer for collision -- made larger than needed to save checks
+
+	int delayH; // Horizontal Delay
+	int delayV; // Vertical Delay
+
+	int extendTop;
+	int extendLeft;
+
+	unsigned int CSP; // Color Stack Pointer
+	unsigned int cscolors[4]; // color squares colors
+	unsigned int fgcard[20]; // cached colors for cards on current row
+	unsigned int bgcard[20]; // (used for normal color stack mode)
 } CP1610_Context, *PCP1610_Context;
 
 extern CP1610_Context gCP1610_Context;

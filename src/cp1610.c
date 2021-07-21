@@ -43,7 +43,13 @@ CP1610_Context gCP1610_Context = {
 	.Flag_Carry = 0,
 	.Flag_Sign = 0,
 	.Flag_Zero = 0,
-	.Flag_Overflow = 0
+	.Flag_Overflow = 0,
+
+	// Stic
+	.delayH = 0,
+	.delayV = 0,
+	.extendTop = 0,
+	.extendLeft = 0
 };
 
 void CP1610Reset()

@@ -64,7 +64,7 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         case 0x0f:
         case 0x17:
         case 0x1f:
-            if (stic_gram != 0)
+            if (CTX(stic_gram) != 0)
                 CTX(Memory)[adr & 0x39FF] = val;
             return;
     }
@@ -83,19 +83,19 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
     // STIC Display Enable
     if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
     {
-        if (stic_reg != 0)
-            DisplayEnabled = 1;
+        if (CTX(stic_reg) != 0)
+            CTX(DisplayEnabled) = 1;
     }
     // STIC Mode Select
     if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
     {
-        if (stic_reg != 0)
-            STICMode = 0;
+        if (CTX(stic_reg) != 0)
+            CTX(STICMode) = 0;
     }
     //STIC Alias
     if((adr>=0x0000 && adr<=0x003F) || (adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
     {
-        if (stic_reg != 0)
+        if (CTX(stic_reg) != 0)
             CTX(Memory)[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
         return;
     }
@@ -118,7 +118,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		val = val & 0xFF;
 	}
 
-	if(stic_reg != 0)
+	if(CTX(stic_reg) != 0)
 	{
 		if(adr<=0x3F)
 		{
@@ -128,7 +128,7 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		// read sensitive addresses
 		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
 		{
-			STICMode = 1;
+			CTX(STICMode) = 1;
 		}
 	}
 	return val;
