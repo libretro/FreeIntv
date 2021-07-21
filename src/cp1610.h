@@ -21,9 +21,6 @@
 typedef struct CP1610_Context_t
 {
 	uint32_t Version;
-	int (*OpCodes[0x400])(int);
-	int Interuptable[0x400];
-	const char *Nmemonic[0x400];
 
 	unsigned int R[8]; // Registers R0-R7
 
