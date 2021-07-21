@@ -115,8 +115,8 @@ void retro_init(void)
 	struct retro_keyboard_callback kb = { Keyboard };
 
 	// init buffers, structs
-	memset(frame, 0, frameSize);
-	OSD_setDisplay(frame, MaxWidth, MaxHeight);
+	memset(CTX(frame), 0, frameSize);
+	OSD_setDisplay(CTX(frame), MaxWidth, MaxHeight);
 
 	// setup controller swap
 	controllerInit();
@@ -329,8 +329,8 @@ void retro_run(void)
 		Run();
 
 		// draw overlays
-		if(showKeypad0) { drawMiniKeypad(0, frame); }
-		if(showKeypad1) { drawMiniKeypad(1, frame); }
+		if(showKeypad0) { drawMiniKeypad(0, CTX(frame)); }
+		if(showKeypad1) { drawMiniKeypad(1, CTX(frame)); }
 
 		// sample audio from buffer
 		audioInc = 3733.5 / audioSamples;
@@ -367,7 +367,7 @@ void retro_run(void)
     if (intv_halt)
         OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
 	// send frame to libretro
-	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
+	Video(CTX(frame), frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 
 }
 

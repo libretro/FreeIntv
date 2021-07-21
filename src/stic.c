@@ -33,31 +33,7 @@ void drawBackgroundColorStack(int scanline);
 // http://spatula-city.org/~im14u2c/intv/jzintv-1.0-beta3/doc/programming/stic.txt
 // http://spatula-city.org/~im14u2c/intv/tech/master.html
 
-unsigned int STICMode;
 
-int stic_phase;
-int stic_vid_enable;
-int stic_reg;
-int stic_gram;
-int phase_len;
-
-int DisplayEnabled;
-
-unsigned int frame[352*224];
-
-unsigned int scanBuffer[768]; // buffer for current scanline (352+32)*2
-unsigned int collBuffer[768]; // buffer for collision -- made larger than needed to save checks
-
-int delayH = 0; // Horizontal Delay
-int delayV = 0; // Vertical Delay
-
-int extendTop = 0;
-int extendLeft = 0;
-
-unsigned int CSP; // Color Stack Pointer
-unsigned int cscolors[4]; // color squares colors
-unsigned int fgcard[20]; // cached colors for cards on current row
-unsigned int bgcard[20]; // (used for normal color stack mode)
 #if defined(ABGR1555)
 unsigned int color7 = 0xFFFCFF; // Copy of color 7 (for color squares mode)
 unsigned int colors[16] =
@@ -124,12 +100,12 @@ int reverse[256] = // lookup table to reverse the bits in a byte //
 
 void STICReset(void)
 {
-	STICMode = 1;
+	CTX(STICMode) = 1;
 	SR1 = 0;
-	DisplayEnabled = 0;
-	CSP = 0x28;
-    stic_phase = 15;
-    phase_len = 2782;
+	CTX(DisplayEnabled) = 0;
+	CTX(CSP) = 0x28;
+    CTX(stic_phase) = 15;
+    CTX(phase_len) = 2782;
 }
 
 void drawBorder(int scanline)
@@ -139,40 +115,40 @@ void drawBorder(int scanline)
 	int color = colors[CTX(Memory)[0x2C] & 0x0f]; // border color
 	
 	if(scanline>=112) { return; }
-    if (scanline == delayV - 1 || scanline == 104) {
+    if (scanline == CTX(delayV) - 1 || scanline == 104) {
         for(i=7 * 2; i < (9 + 160) * 2; i += 2)
         {
-            collBuffer[i] |= cbit;
-            collBuffer[i+384] |= cbit;
+            CTX(collBuffer)[i] |= cbit;
+            CTX(collBuffer)[i+384] |= cbit;
         }
     } else {
         i = 7 * 2;
-        collBuffer[i] |= cbit;
-        collBuffer[i + 384] |= cbit;
+        CTX(collBuffer)[i] |= cbit;
+        CTX(collBuffer)[i + 384] |= cbit;
         i = (8 + 160) * 2;
-        collBuffer[i] |= cbit;
-        collBuffer[i + 384] |= cbit;
+        CTX(collBuffer)[i] |= cbit;
+        CTX(collBuffer)[i + 384] |= cbit;
     }
-    if (extendTop != 0)
+    if (CTX(extendTop) != 0)
         i = 16;
     else
-        i = delayV;
+        i = CTX(delayV);
     if(scanline<i || scanline>=104) // top and bottom border
 	{
 		for(i=0; i<352; i++)
 		{
-			scanBuffer[i] = color;
-			scanBuffer[i+384] = color;
+			CTX(scanBuffer)[i] = color;
+			CTX(scanBuffer)[i+384] = color;
 		}
 	}
 	else // left and right border
 	{
-		for(i=0; i<16+(16*extendLeft); i++)
+		for(i=0; i<16+(16*CTX(extendLeft)); i++)
 		{
-			scanBuffer[i] = color;
-			scanBuffer[i+336] = color;
-			scanBuffer[i+384] = color;
-			scanBuffer[i+384+336] = color;
+			CTX(scanBuffer)[i] = color;
+			CTX(scanBuffer)[i+336] = color;
+			CTX(scanBuffer)[i+384] = color;
+			CTX(scanBuffer)[i+384+336] = color;
 		}
 	}
 }
@@ -188,7 +164,7 @@ void drawBackgroundFGBG(int scanline)
 	int gaddress; // card graphic address
 	int gdata;    // current card graphic byte
 	int cbit = 1<<8;   // bit 8 - collision bit for Background
-	int x = delayH; // current pixel offset 
+	int x = CTX(delayH); // current pixel offset 
 
 	// Tiled background is 20x12, cards are 8x8
 	row = scanline / 8; // Which tile row? (Background is 96 lines high)
@@ -213,21 +189,21 @@ void drawBackgroundFGBG(int scanline)
 			if(((gdata>>i)&1)==1)
 			{
 				// draw pixel
-				scanBuffer[x] = fgcolor;
-				scanBuffer[x+1] = fgcolor;
-				scanBuffer[x+384] = fgcolor;
-				scanBuffer[x+384+1] = fgcolor;
+				CTX(scanBuffer)[x] = fgcolor;
+				CTX(scanBuffer)[x+1] = fgcolor;
+				CTX(scanBuffer)[x+384] = fgcolor;
+				CTX(scanBuffer)[x+384+1] = fgcolor;
 				// write to collision buffer 
-				collBuffer[x] |= cbit;
-				collBuffer[x+384] |= cbit;
+				CTX(collBuffer)[x] |= cbit;
+				CTX(collBuffer)[x+384] |= cbit;
 			}
 			else
 			{
 				// draw background
-				scanBuffer[x] = bgcolor;
-				scanBuffer[x+1] = bgcolor;
-				scanBuffer[x+384] = bgcolor;
-				scanBuffer[x+384+1] = bgcolor;
+				CTX(scanBuffer)[x] = bgcolor;
+				CTX(scanBuffer)[x+1] = bgcolor;
+				CTX(scanBuffer)[x+384] = bgcolor;
+				CTX(scanBuffer)[x+384+1] = bgcolor;
 			}		
 			x+=2;
 		}
@@ -246,9 +222,9 @@ void drawBackgroundColorStack(int scanline)
     unsigned int fgcolor;
     int gaddress; // card graphic address
     int gdata;    // current card graphic byte
-    int advcolor; // Flag - Advance CSP
+    int advcolor; // Flag - Advance CTX(CSP)
     int cbit = 1<<8;   // bit 8 - collision bit for Background
-    int x = delayH; // current pixel offset
+    int x = CTX(delayH); // current pixel offset
     
     // Tiled background is 20x12, cards are 8x8
     row = (scanline / 8); // Which tile row? (Background is 96 lines high)
@@ -256,7 +232,7 @@ void drawBackgroundColorStack(int scanline)
     
     cardrow = scanline % 8; // which line of this row of cards to draw
     
-    if(row==0 && cardrow==0) { CSP = 0x28; } // reset CSP on display of first card on screen
+    if(row==0 && cardrow==0) { CTX(CSP) = 0x28; } // reset CTX(CSP) on display of first card on screen
     
     // Draw cards
     for (col=0; col<20; col++) // for each card on the current row...
@@ -266,9 +242,9 @@ void drawBackgroundColorStack(int scanline)
         if(((card>>11)&0x03)==2) // Color Squares Mode
         {
             if (cardrow == 0)
-                bgcard[col] = colors[CTX(Memory)[CSP] & 0x0F];
+                CTX(bgcard)[col] = colors[CTX(Memory)[CTX(CSP)] & 0x0F];
             // set colors
-            colors[7] = bgcard[col]; // color 7 is top of color stack
+            colors[7] = CTX(bgcard)[col]; // color 7 is top of color stack
             color1 = card & 0x07;
             color2 = (card>>3) & 0x07;
             if(cardrow>=4) // switch to lower squares colors
@@ -286,18 +262,18 @@ void drawBackgroundColorStack(int scanline)
             // draw squares
             for(i=0; i<8; i += 2)
             {
-                scanBuffer[x] = color1;
-                scanBuffer[x+1] = color1;
-                scanBuffer[x+8] = color2;
-                scanBuffer[x+9] = color2;
-                scanBuffer[x+384] = color1;
-                scanBuffer[x+384+1] = color1;
-                scanBuffer[x+384+8] = color2;
-                scanBuffer[x+384+9] = color2;
-                collBuffer[x] |= cbit1;
-                collBuffer[x+8] |= cbit2;
-                collBuffer[x+384] |= cbit1;
-                collBuffer[x+384+8] |= cbit2;
+                CTX(scanBuffer)[x] = color1;
+                CTX(scanBuffer)[x+1] = color1;
+                CTX(scanBuffer)[x+8] = color2;
+                CTX(scanBuffer)[x+9] = color2;
+                CTX(scanBuffer)[x+384] = color1;
+                CTX(scanBuffer)[x+384+1] = color1;
+                CTX(scanBuffer)[x+384+8] = color2;
+                CTX(scanBuffer)[x+384+9] = color2;
+                CTX(collBuffer)[x] |= cbit1;
+                CTX(collBuffer)[x+8] |= cbit2;
+                CTX(collBuffer)[x+384] |= cbit1;
+                CTX(collBuffer)[x+384+8] |= cbit2;
                 x+=2;
             }
             x+=8;
@@ -305,16 +281,16 @@ void drawBackgroundColorStack(int scanline)
         }
         else // Color Stack Mode
         {
-            if(cardrow == 0) // only advance CSP once per card, cache card colors for later scanlines
+            if(cardrow == 0) // only advance CTX(CSP) once per card, cache card colors for later scanlines
             {
-                advcolor = (card>>13) & 0x01; // do we need to advance the CSP?
-                CSP = (CSP+advcolor) & 0x2B; // cycles through 0x28-0x2B
-                fgcard[col] = colors[(card&0x07)|((card>>9)&0x08)]; // bits 12, 2, 1, 0
-                bgcard[col] = colors[CTX(Memory)[CSP] & 0x0F];
+                advcolor = (card>>13) & 0x01; // do we need to advance the CTX(CSP)?
+                CTX(CSP) = (CTX(CSP)+advcolor) & 0x2B; // cycles through 0x28-0x2B
+                CTX(fgcard)[col] = colors[(card&0x07)|((card>>9)&0x08)]; // bits 12, 2, 1, 0
+                CTX(bgcard)[col] = colors[CTX(Memory)[CTX(CSP)] & 0x0F];
             }
             
-            fgcolor = fgcard[col];
-            bgcolor = bgcard[col];
+            fgcolor = CTX(fgcard)[col];
+            bgcolor = CTX(bgcard)[col];
             
             if (((card >> 11) & 0x01) != 0) // Limit GRAM to 64 cards
                 gaddress = 0x3000 + (card & 0x09f8);
@@ -327,21 +303,21 @@ void drawBackgroundColorStack(int scanline)
                 if(((gdata>>i)&1)==1)
                 {
                     // draw pixel
-                    scanBuffer[x] = fgcolor;
-                    scanBuffer[x+1] = fgcolor;
-                    scanBuffer[x+384] = fgcolor;
-                    scanBuffer[x+384+1] = fgcolor;
+                    CTX(scanBuffer)[x] = fgcolor;
+                    CTX(scanBuffer)[x+1] = fgcolor;
+                    CTX(scanBuffer)[x+384] = fgcolor;
+                    CTX(scanBuffer)[x+384+1] = fgcolor;
                     // write to collision buffer 
-                    collBuffer[x] |= cbit;
-                    collBuffer[x+384] |= cbit;
+                    CTX(collBuffer)[x] |= cbit;
+                    CTX(collBuffer)[x+384] |= cbit;
                 }
                 else
                 {
                     // draw background
-                    scanBuffer[x] = bgcolor;
-                    scanBuffer[x+1] = bgcolor;
-                    scanBuffer[x+384] = bgcolor;
-                    scanBuffer[x+384+1] = bgcolor;
+                    CTX(scanBuffer)[x] = bgcolor;
+                    CTX(scanBuffer)[x+1] = bgcolor;
+                    CTX(scanBuffer)[x+384] = bgcolor;
+                    CTX(scanBuffer)[x+384+1] = bgcolor;
                 }
                 x+=2;
             }
@@ -397,7 +373,7 @@ void drawSprites(int scanline) // MOBs
         }
 
         // Limit card number to 64 if in GRAM or in Foreground/Background mode
-        if(STICMode==0 || ((Ra>>11) & 0x01) == 1) { card = card & 0x09f8; }
+        if(CTX(STICMode)==0 || ((Ra>>11) & 0x01) == 1) { card = card & 0x09f8; }
         gaddress = 0x3000 + card;
         
         fgcolor = colors[((Ra>>9)&0x08)|(Ra&0x07)];
@@ -446,7 +422,7 @@ void drawSprites(int scanline) // MOBs
 			}
 
 			// draw sprite row //
-			x = (delayH-16) + (posX * 2); // pixels are 2x2 to accomodate half-height pixels
+			x = (CTX(delayH)-16) + (posX * 2); // pixels are 2x2 to accomodate half-height pixels
 
 			for(j=0; j<2; j++)
 			{
@@ -460,11 +436,11 @@ void drawSprites(int scanline) // MOBs
 					// set collision and collision buffer bits //
 					if((Rx>>8)&1) // if sprite is interactive
 					{
-						collBuffer[x] |= cbit;
-						collBuffer[x+2*sizeX] |= cbit; // for double width
+						CTX(collBuffer)[x] |= cbit;
+						CTX(collBuffer)[x+2*sizeX] |= cbit; // for double width
 					}
 					
-					if(priority && ((collBuffer[x]>>8)&1)) // don't draw if sprite is behind background
+					if(priority && ((CTX(collBuffer)[x]>>8)&1)) // don't draw if sprite is behind background
 					{
 						continue;
 					} 
@@ -472,14 +448,14 @@ void drawSprites(int scanline) // MOBs
 					// draw sprite //
 					if((Rx>>9)&1) // if sprite is visible
 					{
-						scanBuffer[x] = fgcolor;
-						scanBuffer[x+1] = fgcolor;
-						scanBuffer[x+2*sizeX] = fgcolor; // for double width
-						scanBuffer[x+3*sizeX] = fgcolor;
+						CTX(scanBuffer)[x] = fgcolor;
+						CTX(scanBuffer)[x+1] = fgcolor;
+						CTX(scanBuffer)[x+2*sizeX] = fgcolor; // for double width
+						CTX(scanBuffer)[x+3*sizeX] = fgcolor;
 					}
                 }
 				gdata = gdata2;  // for second half-pixel row  //
-				x = (delayH-16) + 384 + (posX * 2); // for second half-pixel row //
+				x = (CTX(delayH)-16) + 384 + (posX * 2); // for second half-pixel row //
 			}
 		}
 	}
@@ -498,62 +474,62 @@ void STICDrawFrame(int enabled)
             
             for(i=0; i<352; i++)
             {
-                scanBuffer[i] = color;
-                scanBuffer[i+384] = color;
+                CTX(scanBuffer)[i] = color;
+                CTX(scanBuffer)[i+384] = color;
             }
-            memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
-            memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
+            memcpy(&CTX(frame)[offset], &CTX(scanBuffer)[0], 352 * sizeof(unsigned int));
+            memcpy(&CTX(frame)[offset + 352], &CTX(scanBuffer)[384], 352 * sizeof(unsigned int));
             offset += 352 * 2;
         }
     } else {
-        extendTop = (CTX(Memory)[0x32]>>1)&0x01;
+        CTX(extendTop) = (CTX(Memory)[0x32]>>1)&0x01;
         
-        extendLeft = (CTX(Memory)[0x32])&0x01;
+        CTX(extendLeft) = (CTX(Memory)[0x32])&0x01;
         
-        delayV = 8 + ((CTX(Memory)[0x31])&0x7);
-        delayH = 8 + ((CTX(Memory)[0x30])&0x7);
+        CTX(delayV) = 8 + ((CTX(Memory)[0x31])&0x7);
+        CTX(delayH) = 8 + ((CTX(Memory)[0x30])&0x7);
         
-        delayH = delayH * 2;
+        CTX(delayH) = CTX(delayH) * 2;
         
         for(row=0; row<112; row++)
         {
-            memset(&collBuffer[0], 0, sizeof(collBuffer));
+            memset(&CTX(collBuffer)[0], 0, sizeof(CTX(collBuffer)));
             
             // draw backtab
-            if(row>=delayV && row<(96+delayV))
+            if(row>=CTX(delayV) && row<(96+CTX(delayV)))
             {
-                if(STICMode==0) // Foreground/Background Mode
+                if(CTX(STICMode)==0) // Foreground/Background Mode
                 {
-                    drawBackgroundFGBG(row-delayV);
+                    drawBackgroundFGBG(row-CTX(delayV));
                 }
                 else // Color Stack Modes
                 {
-                    drawBackgroundColorStack(row-delayV);
+                    drawBackgroundColorStack(row-CTX(delayV));
                 }
             }
             
-            if (row>=delayV - 1 && row<(97 + delayV)) {
+            if (row>=CTX(delayV) - 1 && row<(97 + CTX(delayV))) {
                 // draw MOBs
-                drawSprites((row-delayV)+8);
+                drawSprites((row-CTX(delayV))+8);
             }
             
             // draw border and set final collision bits
             drawBorder(row);
             // clear collisions in column 167 //
-            collBuffer[167 * 2] = 0;
-            collBuffer[167 * 2 + 384] = 0;
+            CTX(collBuffer)[167 * 2] = 0;
+            CTX(collBuffer)[167 * 2 + 384] = 0;
             
             for (i = 14; i < 169 * 2; i += 2) {
-                if (collBuffer[i] == 0)
+                if (CTX(collBuffer)[i] == 0)
                     continue;
                 for (j = 0; j < 8; j++) {
-                    if (((collBuffer[i] >> j) & 1) != 0) {
-                        CTX(Memory)[0x18 + j] |= collBuffer[i] & ~(1 << j);
+                    if (((CTX(collBuffer)[i] >> j) & 1) != 0) {
+                        CTX(Memory)[0x18 + j] |= CTX(collBuffer)[i] & ~(1 << j);
                     }
                 }
             }
-            memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
-            memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
+            memcpy(&CTX(frame)[offset], &CTX(scanBuffer)[0], 352 * sizeof(unsigned int));
+            memcpy(&CTX(frame)[offset + 352], &CTX(scanBuffer)[384], 352 * sizeof(unsigned int));
             offset += 352 * 2;
         }
     }

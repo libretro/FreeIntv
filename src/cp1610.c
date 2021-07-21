@@ -27,6 +27,10 @@
 #define regSP 6 // Stack Pointer (R6)
 #define regPC 7 // Program Counter (R7)
 
+static int (*OpCodes[0x400])(int);
+static int Interuptable[0x400];
+static const char *Nmemonic[0x400];
+
 CP1610_Context gCP1610_Context = {
 	.Version = CP1610_SERIALIZE_VERSION,
 	
@@ -39,7 +43,13 @@ CP1610_Context gCP1610_Context = {
 	.Flag_Carry = 0,
 	.Flag_Sign = 0,
 	.Flag_Zero = 0,
-	.Flag_Overflow = 0
+	.Flag_Overflow = 0,
+
+	// Stic
+	.delayH = 0,
+	.delayV = 0,
+	.extendTop = 0,
+	.extendLeft = 0
 };
 
 void CP1610Reset()
@@ -170,14 +180,14 @@ int CP1610Tick(int debug)
 
 	CTX(R)[regPC]++; // point regPC/R7 at operand/next address
     
-	ticks = CTX(OpCodes)[instruction](instruction); // execute instruction
+	ticks = OpCodes[instruction](instruction); // execute instruction
 
 	if(sdbd==1) { CTX(Flag_DoubleByteData) = 0; } // reset SDBD
 
 	// check interupt request
 	if(CTX(Flag_InteruptEnable) == 1 && SR1>0)
 	{
-		if(CTX(Interuptable)[instruction])
+		if(Interuptable[instruction])
 		{
 			// Take VBlank Interupt //
 			SR1 = 0;
@@ -680,9 +690,9 @@ void addInstruction(int start, int end, int caninterupt, const char *name, int (
 	int i;
 	for(i=start; i<=end; i++)
 	{
-		CTX(Interuptable)[i] = caninterupt;
-		CTX(Nmemonic)[i] = name;
-		CTX(OpCodes)[i] = callback;
+		Interuptable[i] = caninterupt;
+		Nmemonic[i] = name;
+		OpCodes[i] = callback;
 	}
 }
 

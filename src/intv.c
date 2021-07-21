@@ -149,57 +149,57 @@ int exec(void) // Run one instruction
         if(SR1<0) { SR1 = 0; }
     }
     
-    phase_len -= ticks;
-    if (phase_len < 0) {
-        stic_phase = (stic_phase + 1) & 15;
-        switch (stic_phase) {
+    CTX(phase_len) -= ticks;
+    if (CTX(phase_len) < 0) {
+        CTX(stic_phase) = (CTX(stic_phase) + 1) & 15;
+        switch (CTX(stic_phase)) {
             case 0: // Start of VBLANK
-                stic_reg = 1;   // STIC registers accessible
-                stic_gram = 1;  // GRAM accessible
-                phase_len += 2900;
-                SR1 = phase_len;
+                CTX(stic_reg) = 1;   // STIC registers accessible
+                CTX(stic_gram) = 1;  // GRAM accessible
+                CTX(phase_len) += 2900;
+                SR1 = CTX(phase_len);
                 // Render Frame //
-                STICDrawFrame(stic_vid_enable);
+                STICDrawFrame(CTX(stic_vid_enable));
                 return 0;
             case 1:
-                phase_len += 3796 - 2900;
-                stic_vid_enable = DisplayEnabled;
-                DisplayEnabled = 0;
-                if (stic_vid_enable)
-                    stic_reg = 0;   // STIC registers now inaccessible
-                stic_gram = 1;  // GRAM accessible
+                CTX(phase_len) += 3796 - 2900;
+                CTX(stic_vid_enable) = CTX(DisplayEnabled);
+                CTX(DisplayEnabled) = 0;
+                if (CTX(stic_vid_enable))
+                    CTX(stic_reg) = 0;   // STIC registers now inaccessible
+                CTX(stic_gram) = 1;  // GRAM accessible
                 break;
             case 2:
-                delayV = ((CTX(Memory)[0x31])&0x7);
-                delayH = ((CTX(Memory)[0x30])&0x7);
-                phase_len += 120 + 114 * delayV + delayH;
-                if (stic_vid_enable) {
-                    stic_gram = 0;  // GRAM now inaccessible
-                    phase_len -= 68;    // BUSRQ period (STIC reads RAM)
+                CTX(delayV) = ((CTX(Memory)[0x31])&0x7);
+                CTX(delayH) = ((CTX(Memory)[0x30])&0x7);
+                CTX(phase_len) += 120 + 114 * CTX(delayV) + CTX(delayH);
+                if (CTX(stic_vid_enable)) {
+                    CTX(stic_gram) = 0;  // GRAM now inaccessible
+                    CTX(phase_len) -= 68;    // BUSRQ period (STIC reads RAM)
                     PSGTick(68);
                 }
                 break;
             default:
-                phase_len += 912;
-                if (stic_vid_enable) {
-                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
+                CTX(phase_len) += 912;
+                if (CTX(stic_vid_enable)) {
+                    CTX(phase_len) -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
                 }
                 break;
             case 14:
-                delayV = ((CTX(Memory)[0x31])&0x7);
-                delayH = ((CTX(Memory)[0x30])&0x7);
-                phase_len += 912 - 114 * delayV - delayH;
-                if (stic_vid_enable) {
-                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
+                CTX(delayV) = ((CTX(Memory)[0x31])&0x7);
+                CTX(delayH) = ((CTX(Memory)[0x30])&0x7);
+                CTX(phase_len) += 912 - 114 * CTX(delayV) - CTX(delayH);
+                if (CTX(stic_vid_enable)) {
+                    CTX(phase_len) -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
                 }
                 break;
             case 15:
-                delayV = ((CTX(Memory)[0x31])&0x7);
-                phase_len += 57 + 17;
-                if (stic_vid_enable && delayV == 0) {
-                    phase_len -= 38;    // BUSRQ period (STIC reads RAM)
+                CTX(delayV) = ((CTX(Memory)[0x31])&0x7);
+                CTX(phase_len) += 57 + 17;
+                if (CTX(stic_vid_enable) && CTX(delayV) == 0) {
+                    CTX(phase_len) -= 38;    // BUSRQ period (STIC reads RAM)
                     PSGTick(38);
                 }
                 break;
