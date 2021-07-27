@@ -138,17 +138,19 @@ void drawBorder(int scanline)
 	int color = colors[Memory[0x2C] & 0x0f]; // border color
 	
 	if(scanline>=112) { return; }
-    if (scanline == delayV - 1 || scanline == 104) {
-        for(i=7 * 2; i < (9 + 160) * 2; i += 2)
+    if (scanline == delayV - 1 || scanline == 104) {    // Collision border is 1 pixel thick
+        for(i=1 * 2; i < (8 + 160) * 2; i += 2)         // It extends from column -7 to 159
         {
             collBuffer[i] |= cbit;
             collBuffer[i+384] |= cbit;
         }
-    } else {
-        i = 7 * 2;
-        collBuffer[i] |= cbit;
-        collBuffer[i + 384] |= cbit;
-        i = (8 + 160) * 2;
+    } else if (scanline > delayV - 1 && scanline < 104) {   // Left and right side collision border
+        for(i=1 * 2; i < 8 * 2; i += 2)                 // Left side from column -7 to -1
+        {
+            collBuffer[i] |= cbit;
+            collBuffer[i+384] |= cbit;
+        }
+        i = (8 + 159) * 2;                              // Right side collision is 1 pixel thick
         collBuffer[i] |= cbit;
         collBuffer[i + 384] |= cbit;
     }
@@ -169,11 +171,15 @@ void drawBorder(int scanline)
 		for(i=0; i<16+(16*extendLeft); i++)
 		{
 			scanBuffer[i] = color;
-			scanBuffer[i+336] = color;
+			scanBuffer[i+168*2] = color;
 			scanBuffer[i+384] = color;
-			scanBuffer[i+384+336] = color;
+			scanBuffer[i+384+168*2] = color;
 		}
-	}
+        scanBuffer[167*2] = color;                  // Invisible 160th column
+        scanBuffer[167*2 + 1] = color;
+        scanBuffer[167*2 + 384] = color;                  // Invisible 160th column
+        scanBuffer[167*2 + 384 + 1] = color;
+    }
 }
 
 void drawBackgroundFGBG(int scanline)
@@ -383,7 +389,7 @@ void drawSprites(int scanline) // MOBs
 
 		// if sprite x coordinate is 0 or >167, it's disabled
 		// if it's not visible and not interactive, it's disabled
-		if(posX==0 || posX>=167 || ((Rx>>8)&0x03)==0 || posY>=104) { continue; }
+		if(posX==0 || posX>167 || ((Rx>>8)&0x03)==0 || posY>104) { continue; }
 
         cbit = 1<<i; // set collision bit
 
@@ -538,11 +544,8 @@ void STICDrawFrame(int enabled)
             
             // draw border and set final collision bits
             drawBorder(row);
-            // clear collisions in column 167 //
-            collBuffer[167 * 2] = 0;
-            collBuffer[167 * 2 + 384] = 0;
-            
-            for (i = 14; i < 169 * 2; i += 2) {
+
+            for (i = 1 * 2; i < 168 * 2; i += 2) {
                 if (collBuffer[i] == 0)
                     continue;
                 for (j = 0; j < 8; j++) {
