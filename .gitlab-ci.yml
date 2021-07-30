@@ -93,6 +93,10 @@ include:
   # PlayStation2
   - project: 'libretro-infrastructure/ci-templates'
     file: '/ps2-static.yml'
+    
+  # OpenDingux
+  - project: 'libretro-infrastructure/ci-templates'
+    file: '/dingux-mips32.yml'
 
   # tvOS (AppleTV)
   - project: 'libretro-infrastructure/ci-templates'
@@ -261,5 +265,4 @@ libretro-build-libnx-aarch64:
 libretro-build-retrofw-mips32:
   extends:
     - .libretro-retrofw-mips32-make-default
-    - .core-defs  
-    
+    - .core-defs
