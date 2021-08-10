@@ -23,6 +23,7 @@
 #include <retro_miscellaneous.h>
 
 #include "intv.h"
+#include "cp1610.h"
 #include "memory.h"
 #include "stic.h"
 #include "psg.h"
@@ -387,11 +388,58 @@ RETRO_API size_t retro_get_memory_size(unsigned id)
 	return 0;
 }
 
+#define SERIALIZED_VERSION 0x4f544700
+
+struct serialized {
+    int version;
+    struct CP1610serialized CP1610;
+    struct STICserialized STIC;
+    unsigned int Memory[0x10000];   // Should be equal to Memory.c
+    // Extra variables from intv.c
+    int SR1;
+    int intv_halt;
+};
+
+size_t retro_serialize_size(void)
+{
+    return sizeof(struct serialized);
+}
+
+bool retro_serialize(void *data, size_t size)
+{
+    struct serialized *all;
+    
+    all = (struct serialized *) data;
+    all->version = SERIALIZED_VERSION;
+    CP1610Serialize(&all->CP1610);
+    STICSerialize(&all->STIC);
+    memcpy(all->Memory, Memory, sizeof(Memory));
+    all->SR1 = SR1;
+    all->intv_halt = intv_halt;
+    return true;
+}
+
+bool retro_unserialize(const void *data, size_t size)
+{
+    const struct serialized *all;
+    
+    all = (const struct serialized *) data;
+    if (all->version != SERIALIZED_VERSION)
+        return false;
+    CP1610Unserialize(&all->CP1610);
+    STICUnserialize(&all->STIC);
+    memcpy(Memory, all->Memory, sizeof(Memory));
+    SR1 = all->SR1;
+    intv_halt = all->intv_halt;
+    PSGInit();
+    PSGFrame();
+    audioBufferPos = 0.0;
+    audioInc = 1;
+    return false;
+}
+
 /* Stubs */
 unsigned int retro_api_version(void) { return RETRO_API_VERSION; }
-size_t retro_serialize_size(void) { return 0; }
-bool retro_serialize(void *data, size_t size) { return false; }
-bool retro_unserialize(const void *data, size_t size) { return false; }
 void retro_cheat_reset(void) {  }
 void retro_cheat_set(unsigned index, bool enabled, const char *code) {  }
 bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info) { return false; }

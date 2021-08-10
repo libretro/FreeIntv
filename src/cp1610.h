@@ -17,6 +17,19 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
+struct CP1610serialized {
+    int Flag_DoubleByteData;
+    int Flag_InteruptEnable;
+    int Flag_Carry;
+    int Flag_Sign;
+    int Flag_Zero;
+    int Flag_Overflow;
+    unsigned int R[8];
+};
+
+void CP1610Serialize(struct CP1610serialized *);
+void CP1610Unserialize(const struct CP1610serialized *);
+
 void CP1610Init(void); // Adds opcodes to lookup tables
 
 void CP1610Reset(void); // reset cpu
