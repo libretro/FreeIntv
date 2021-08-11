@@ -54,7 +54,6 @@ int extendTop = 0;
 int extendLeft = 0;
 
 unsigned int CSP; // Color Stack Pointer
-unsigned int cscolors[4]; // color squares colors
 unsigned int fgcard[20]; // cached colors for cards on current row
 unsigned int bgcard[20]; // (used for normal color stack mode)
 #if defined(ABGR1555)
@@ -120,6 +119,42 @@ int reverse[256] = // lookup table to reverse the bits in a byte //
 	0x07, 0x87, 0x47, 0xC7, 0x27, 0xA7, 0x67, 0xE7, 0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,
 	0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
 };
+
+void STICSerialize(struct STICserialized *all)
+{
+    all->STICMode = STICMode;
+    all->stic_phase = stic_phase;
+    all->stic_vid_enable = stic_vid_enable;
+    all->stic_reg = stic_reg;
+    all->stic_gram = stic_gram;
+    all->phase_len = phase_len;
+    all->DisplayEnabled = DisplayEnabled;
+    all->delayH = delayH;
+    all->delayV = delayV;
+    all->extendTop = extendTop;
+    all->extendLeft = extendLeft;
+    all->CSP = CSP;
+    memcpy(all->fgcard, fgcard, sizeof(fgcard));
+    memcpy(all->bgcard, bgcard, sizeof(bgcard));
+}
+
+void STICUnserialize(const struct STICserialized *all)
+{
+    STICMode = all->STICMode;
+    stic_phase = all->stic_phase;
+    stic_vid_enable = all->stic_vid_enable;
+    stic_reg = all->stic_reg;
+    stic_gram = all->stic_gram;
+    phase_len = all->phase_len;
+    DisplayEnabled = all->DisplayEnabled;
+    delayH = all->delayH;
+    delayV = all->delayV;
+    extendTop = all->extendTop;
+    extendLeft = all->extendLeft;
+    CSP = all->CSP;
+    memcpy(fgcard, all->fgcard, sizeof(fgcard));
+    memcpy(bgcard, all->bgcard, sizeof(bgcard));
+}
 
 void STICReset(void)
 {

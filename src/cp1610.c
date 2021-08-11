@@ -42,6 +42,28 @@ int Flag_Sign = 0;
 int Flag_Zero = 0;
 int Flag_Overflow = 0;
 
+void CP1610Serialize(struct CP1610serialized *all)
+{
+    all->Flag_DoubleByteData = Flag_DoubleByteData;
+    all->Flag_InteruptEnable = Flag_InteruptEnable;
+    all->Flag_Carry = Flag_Carry;
+    all->Flag_Sign = Flag_Sign;
+    all->Flag_Zero = Flag_Zero;
+    all->Flag_Overflow = Flag_Overflow;
+    memcpy(&all->R[0], &R[0], sizeof(R));
+}
+
+void CP1610Unserialize(const struct CP1610serialized *all)
+{
+    Flag_DoubleByteData = all->Flag_DoubleByteData;
+    Flag_InteruptEnable = all->Flag_InteruptEnable;
+    Flag_Carry = all->Flag_Carry;
+    Flag_Sign = all->Flag_Sign;
+    Flag_Zero = all->Flag_Zero;
+    Flag_Overflow = all->Flag_Overflow;
+    memcpy(&R[0], &all->R[0], sizeof(R));
+}
+
 void CP1610Reset()
 {
 	Flag_DoubleByteData = 0;

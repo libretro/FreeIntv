@@ -31,6 +31,31 @@ extern int DisplayEnabled; // determines if frame should be updated or not
 
 extern unsigned int frame[352*224]; // frame buffer
 
+struct STICserialized {
+    unsigned int STICMode;
+
+    int stic_phase;
+    int stic_vid_enable;
+    int stic_reg;
+    int stic_gram;
+    int phase_len;
+
+    int DisplayEnabled;
+
+    int delayH;
+    int delayV;
+
+    int extendTop;
+    int extendLeft;
+
+    unsigned int CSP;
+    unsigned int fgcard[20];
+    unsigned int bgcard[20];
+};
+
+void STICSerialize(struct STICserialized *);
+void STICUnserialize(const struct STICserialized *);
+
 void STICDrawFrame(int);
 void STICReset(void);
 
