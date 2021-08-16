@@ -435,7 +435,7 @@ bool retro_unserialize(const void *data, size_t size)
     PSGFrame();
     audioBufferPos = 0.0;
     audioInc = 1;
-    return false;
+    return true;
 }
 
 /* Stubs */
