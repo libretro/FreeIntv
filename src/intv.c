@@ -100,15 +100,14 @@ void Reset()
 	SR1 = 0;
     intv_halt = 0;
 	CP1610Reset();
-	MemoryInit();
 	STICReset();
-	PSGInit();
 }
 
 void Init()
 {
 	CP1610Init();
 	MemoryInit();
+    PSGInit();
 }
 
 void Run()

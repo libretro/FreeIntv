@@ -136,6 +136,7 @@ void STICSerialize(struct STICserialized *all)
     all->CSP = CSP;
     memcpy(all->fgcard, fgcard, sizeof(fgcard));
     memcpy(all->bgcard, bgcard, sizeof(bgcard));
+    memcpy(all->frame, frame, sizeof(frame));
 }
 
 void STICUnserialize(const struct STICserialized *all)
@@ -154,6 +155,7 @@ void STICUnserialize(const struct STICserialized *all)
     CSP = all->CSP;
     memcpy(fgcard, all->fgcard, sizeof(fgcard));
     memcpy(bgcard, all->bgcard, sizeof(bgcard));
+    memcpy(frame, all->frame, sizeof(frame));
 }
 
 void STICReset(void)
