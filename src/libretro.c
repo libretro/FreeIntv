@@ -388,12 +388,13 @@ RETRO_API size_t retro_get_memory_size(unsigned id)
 	return 0;
 }
 
-#define SERIALIZED_VERSION 0x4f544700
+#define SERIALIZED_VERSION 0x4f544701
 
 struct serialized {
     int version;
     struct CP1610serialized CP1610;
     struct STICserialized STIC;
+    struct PSGserialized PSG;
     unsigned int Memory[0x10000];   // Should be equal to Memory.c
     // Extra variables from intv.c
     int SR1;
@@ -413,6 +414,7 @@ bool retro_serialize(void *data, size_t size)
     all->version = SERIALIZED_VERSION;
     CP1610Serialize(&all->CP1610);
     STICSerialize(&all->STIC);
+    PSGSerialize(&all->PSG);
     memcpy(all->Memory, Memory, sizeof(Memory));
     all->SR1 = SR1;
     all->intv_halt = intv_halt;
@@ -428,13 +430,10 @@ bool retro_unserialize(const void *data, size_t size)
         return false;
     CP1610Unserialize(&all->CP1610);
     STICUnserialize(&all->STIC);
+    PSGUnserialize(&all->PSG);
     memcpy(Memory, all->Memory, sizeof(Memory));
     SR1 = all->SR1;
     intv_halt = all->intv_halt;
-    PSGInit();
-    PSGFrame();
-    audioBufferPos = 0.0;
-    audioInc = 1;
     return true;
 }
 

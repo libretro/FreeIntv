@@ -51,6 +51,8 @@ struct STICserialized {
     unsigned int CSP;
     unsigned int fgcard[20];
     unsigned int bgcard[20];
+
+    unsigned int frame[352*224];
 };
 
 void STICSerialize(struct STICserialized *);
