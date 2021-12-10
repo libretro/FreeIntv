@@ -59,13 +59,25 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         case 0x0b:  /* 5800-5FFF */
         case 0x0c:  /* 6000-67FF */
         case 0x0d:  /* 6800-6FFF */
+        case 0x14:  /* A000-A7FF */
+        case 0x15:  /* A800-AFFF */
+        case 0x16:  /* B000-B7FF */
+        case 0x1a:  /* D000-D7FF */
+        case 0x1b:  /* D800-DFFF */
+        case 0x1c:  /* E000-E7FF */
+        case 0x1d:  /* E800-EFFF */
+        case 0x1e:  /* F000-F7FF */
             return; /* Ignore */
-        case 0x07:  /* GRAM */
-        case 0x0f:
-        case 0x17:
-        case 0x1f:
-            if (stic_gram != 0)
-                Memory[adr & 0x39FF] = val;
+        case 0x07:  /* GRAM 3800-3fff */
+        case 0x0f:  /* GRAM 7800-7fff */
+        case 0x17:  /* GRAM B800-BFFF */
+        case 0x1f:  /* GRAM F800-FFFF */
+            if (stic_gram != 0) {
+                // GRAM is 8-bit memory
+                // Note: Without the AND 0xff, Tower of Doom fails as it builds
+                // map from GRAM.
+                Memory[adr & 0x39FF] = val & 0xff;
+            }
             return;
     }
     if(adr>=0x100 && adr<=0x1FF)

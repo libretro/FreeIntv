@@ -179,6 +179,18 @@ int CP1610Tick(int debug)
         fprintf(stdout, "%04x:[%03x%c %04x %04x %04x %04x %04x %04x %04x %s %c%c%c%c%c%c\n", R[7], instruction, instruction > 0x03ff ? 'X' : ']', R[0], R[1], R[2], R[3], R[4], R[5], R[6], Nmemonic[instruction], Flag_Sign ? 'S' : '-', Flag_Carry ? 'C' : '-', Flag_Overflow ? 'O' : '-', Flag_Zero ? 'Z' : '-', Flag_InteruptEnable ? 'I' : '-', Flag_DoubleByteData ? 'D' : '-');
     }
 #endif
+#if 0   // Debug output compatible with JZINTV for comparison purposes
+    {
+        fprintf(stdout, " %04X %04X %04X %04X %04X %04X %04X %04X %c%c%c%c%c%c%c%c %s\n", R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7],
+            Flag_Sign ? 'S' : '-',
+            Flag_Carry ? 'C' : '-',
+            Flag_Overflow ? 'O' : '-',
+            Flag_Zero ? 'Z' : '-',
+            Flag_InteruptEnable ? 'I' : '-',
+            Flag_DoubleByteData ? 'D' : '-',
+            '-', '-', Nmemonic[instruction]);
+    }
+#endif
     
     if(instruction > 0x03FF)
 	{
