@@ -170,6 +170,9 @@ int CP1610Tick(int debug)
 	unsigned int instruction = readMem(R[PC]);
 
 	int ticks = 0;
+#if 0
+    static int global_ticks = 0;
+#endif
 
     // DEBUG
 #if 0
@@ -181,14 +184,17 @@ int CP1610Tick(int debug)
 #endif
 #if 0   // Debug output compatible with JZINTV for comparison purposes
     {
-        fprintf(stdout, " %04X %04X %04X %04X %04X %04X %04X %04X %c%c%c%c%c%c%c%c %s\n", R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7],
+        FILE *debug_file;
+        
+        fprintf(debug_file, " %04X %04X %04X %04X %04X %04X %04X %04X %c%c%c%c%c%c%c%c %20s %d\n", R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7],
             Flag_Sign ? 'S' : '-',
-            Flag_Carry ? 'C' : '-',
-            Flag_Overflow ? 'O' : '-',
             Flag_Zero ? 'Z' : '-',
+            Flag_Overflow ? 'O' : '-',
+            Flag_Carry ? 'C' : '-',
             Flag_InteruptEnable ? 'I' : '-',
             Flag_DoubleByteData ? 'D' : '-',
-            '-', '-', Nmemonic[instruction]);
+            Interuptable[instruction] ? 'i' : '-',
+            SR1 > 0 ? 'q' : '-' , Nmemonic[instruction], global_ticks);
     }
 #endif
     
@@ -218,6 +224,9 @@ int CP1610Tick(int debug)
 		}
 	}
 
+#if 0
+    global_ticks += ticks;
+#endif
 	return ticks;
 }
 
@@ -256,6 +265,7 @@ int TCI(int v)  { return 4; } // Terminate Current Interrupt (not used)
 int CLRC(int v) { Flag_Carry = 0; return 4; } // Clear Carry
 int SETC(int v) { Flag_Carry = 1; return 4; } // Set Carry
 
+#define EXTRA_IF_R6(reg)  (reg == 6 ? 3 : 0)
 #define EXTRA_IF_R6R7(reg)  (reg >= 6 ? 1 : 0)
 
 int INCR(int v) // Increment Register
@@ -528,6 +538,7 @@ int Branch(int v) // Branch - B, BC, BOV, BPL, BEQ, BLT, BLE, BUSC, NOPP, BNC, B
 		{
 			if(direction==0) { R[PC] = R[PC]+offset; }
 			if(direction==1) { R[PC] = R[PC]-offset-1; }
+            return 9;
 		}
 		return 7;
 	}
@@ -574,14 +585,14 @@ int MVI(int v) // 	Move In 0000:0010:1000:0rrr  aaaa:aaaa:aaaa:aaaa
 {
 	int reg = v & 0x07;
 	R[reg] = readOperandIndirect();
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int MVIa(int v) // Move In Indirect 0000:0010:10aa:addd
 {
 	int areg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;	
 	R[dreg] = readIndirect(areg);
-    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(dreg) + EXTRA_IF_R6(areg);
 }
 int MVII(int v) // Move In Immediate (copies operand to register)
 {
@@ -597,7 +608,7 @@ int ADD(int v) // Add
 	int reg = v & 0x07;
 	int val = readOperandIndirect();
 	R[reg] = AddSetSZOC(R[reg], val);
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);;
 }
 int ADDa(int v) // Add Indirect
 {
@@ -605,7 +616,7 @@ int ADDa(int v) // Add Indirect
 	int dreg = v & 0x07;
 	int val = readIndirect(areg);
 	R[dreg] = AddSetSZOC(R[dreg], val);
-    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int ADDI(int v) // Add Immediate
 {
@@ -618,7 +629,7 @@ int SUB(int v) // Subtract
 	int val = readOperandIndirect();
 	R[reg] = SubSetOC(R[reg], val);
 	SetFlagsSZ(reg);
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int SUBa(int v)  // Subtract Indirect
 {
@@ -627,7 +638,7 @@ int SUBa(int v)  // Subtract Indirect
 	int val = readIndirect(areg);
 	R[dreg] = SubSetOC(R[dreg], val);
 	SetFlagsSZ(dreg);
-    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int SUBI(int v) // Subtract Immediate
 {
@@ -641,7 +652,7 @@ int CMP(int v)
 	int res = SubSetOC(R[reg], val);
 	Flag_Sign = (res & 0x8000)!=0;
 	Flag_Zero = res==0;
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int CMPa(int v)
 {
@@ -651,7 +662,7 @@ int CMPa(int v)
 	int res = SubSetOC(R[dreg], val);
 	Flag_Sign = (res & 0x8000)!=0;
 	Flag_Zero = res==0;
-    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int CMPI(int v) // CMP Immediate
 {
@@ -664,7 +675,7 @@ int AND(int v) // And
 	int val = readOperandIndirect();
 	R[reg] = R[reg] & val;
 	SetFlagsSZ(reg);
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int ANDa(int v) // And Indirect
 {
@@ -673,7 +684,7 @@ int ANDa(int v) // And Indirect
 	int val = readIndirect(areg);
 	R[dreg] = R[dreg] & val;
 	SetFlagsSZ(dreg);
-    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int ANDI(int v) // And Immediate
 {
@@ -686,7 +697,7 @@ int XOR(int v) // Xor
 	int val = readOperandIndirect();
 	R[reg] = R[reg] ^ val;
 	SetFlagsSZ(reg);
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int XORa(int v) // Xor Indirect
 {
@@ -695,7 +706,7 @@ int XORa(int v) // Xor Indirect
 	int val = readIndirect(areg);
 	R[dreg] = R[dreg] ^ val;
 	SetFlagsSZ(dreg);
-    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int XORI(int v) // Xor Immediate
 {

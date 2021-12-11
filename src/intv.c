@@ -159,11 +159,17 @@ int exec(void) // Run one instruction
                 SR1 = phase_len;
                 // Render Frame //
                 STICDrawFrame(stic_vid_enable);
+                // The following line was below just after
+                //   "stic_vid_enable = DisplayEnabled;"
+                // It caused D1K Homebrew to fail:
+                // o D1K misses a video interrupt.
+                // o However it updates DisplayEnabled in time (writing to 0x20)
+                // o So the DisplayEnabled variable should be reset here.
+                DisplayEnabled = 0;
                 return 0;
             case 1:
                 phase_len += 3796 - 2900;
                 stic_vid_enable = DisplayEnabled;
-                DisplayEnabled = 0;
                 if (stic_vid_enable)
                     stic_reg = 0;   // STIC registers now inaccessible
                 stic_gram = 1;  // GRAM accessible

@@ -92,23 +92,18 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         return;
     }
     
-    // STIC Display Enable
-    if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
-    {
-        if (stic_reg != 0)
-            DisplayEnabled = 1;
-    }
-    // STIC Mode Select
-    if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-    {
-        if (stic_reg != 0)
-            STICMode = 0;
-    }
-    //STIC Alias
-    if((adr>=0x0000 && adr<=0x003F) || (adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
-    {
-        if (stic_reg != 0)
-            Memory[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
+    // STIC access
+    if ((adr & 0x3fc0) == 0x0000) {
+        if (stic_reg != 0) {
+            adr &= 0x3f;
+            // STIC Display Enable
+            if (adr == 0x20)
+                DisplayEnabled = 1;
+            // STIC Mode Select
+            if (adr == 0x21)
+                STICMode = 0;   // Foreground/Background mode
+            Memory[adr] = (val & stic_and[adr]) | stic_or[adr];
+        }
         return;
     }
     
@@ -123,6 +118,18 @@ int readMem(int adr) // Read (should handle hooks/alias)
     int val;
     
     adr &= 0xffff;
+    // STIC access
+    if ((adr & 0x3fc0) == 0x0000) {
+        if (stic_reg != 0 && (adr & 0x3f) == 0x21)
+            STICMode = 1;   // Color Stack mode
+        if (adr >= 0x4000)
+            return 0xffff;
+        if (stic_reg == 0)  // Return trash
+            return adr & 0x0e;
+        adr &= 0x3f;
+        val = (Memory[adr] & stic_and[adr]) | stic_or[adr];
+        return val;
+	}
     val = Memory[adr];
 
 	if(adr>=0x100 && adr<=0x1FF)
@@ -130,19 +137,6 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		val = val & 0xFF;
 	}
 
-	if(stic_reg != 0)
-	{
-		if(adr<=0x3F)
-		{
-            val = (Memory[adr] & stic_and[adr]) | stic_or[adr];
-		}
-
-		// read sensitive addresses
-		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-		{
-			STICMode = 1;
-		}
-	}
 	return val;
 }
 
