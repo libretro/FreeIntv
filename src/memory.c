@@ -14,11 +14,13 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
+#include <stdio.h>
+
+#include "intv.h"
 #include "memory.h"
 #include "stic.h"
 #include "psg.h"
-
-#include <stdio.h>
+#include "ivoice.h"
 
 unsigned int Memory[0x10000];
 
@@ -80,6 +82,10 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
             }
             return;
     }
+    if (adr == 0x80 || adr == 0x81) {
+        ivoice_wr(adr & 1, val);
+        return;
+    }
     if(adr>=0x100 && adr<=0x1FF)
     {
         val = val & 0xFF;
@@ -118,6 +124,8 @@ int readMem(int adr) // Read (should handle hooks/alias)
     int val;
     
     adr &= 0xffff;
+    if (adr == 0x80 || adr == 0x81)
+        return ivoice_rd(adr & 1);
     // STIC access
     if ((adr & 0x3fc0) == 0x0000) {
         if (stic_reg != 0 && (adr & 0x3f) == 0x21)
