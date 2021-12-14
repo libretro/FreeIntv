@@ -27,6 +27,7 @@
 #include "memory.h"
 #include "stic.h"
 #include "psg.h"
+#include "ivoice.h"
 #include "controller.h"
 #include "osd.h"
 
@@ -66,11 +67,13 @@ int  keyboardState = 0;
 // at 44.1khz, read 735 samples (44100/60) 
 // at 48khz, read 800 samples (48000/60)
 // e.g. audioInc = 3733.5 / 735
-int audioSamples = 735;
-//int audioSamples = 800;
+int audioSamples = AUDIO_FREQUENCY / 60;
 
 double audioBufferPos = 0.0;
-double audioInc = 1;
+double audioInc;
+
+double ivoiceBufferPos = 0.0;
+double ivoiceInc;
 
 unsigned int frameWidth = MaxWidth;
 unsigned int frameHeight = MaxHeight;
@@ -243,7 +246,7 @@ void retro_run(void)
 			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
 			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
 			OSD_drawTextBG(3, 15, "                                      ");
-			OSD_drawTextBG(3, 16, " FREEINTV 1.1          LICENSE GPL V3 ");
+			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
 			OSD_drawTextBG(3, 17, "                                      ");
 		}
 	}
@@ -286,17 +289,26 @@ void retro_run(void)
 
 		// sample audio from buffer
 		audioInc = 3733.5 / audioSamples;
+        ivoiceInc = 1.0;
 
 		for(i=0; i<audioSamples; i++)
 		{
-			Audio(PSGBuffer[(int)(audioBufferPos)], PSGBuffer[(int)(audioBufferPos)]); // Audio(left, right)
+            int c = (PSGBuffer[(int) audioBufferPos] + ivoiceBuffer[(int) ivoiceBufferPos]) / 2;
+            
+			Audio(c, c); // Audio(left, right)
 
 			audioBufferPos += audioInc;
+            ivoiceBufferPos += ivoiceInc;
+            
+            if (ivoiceBufferPos >= ivoiceBufferSize)
+                ivoiceBufferPos = 0.0;
 
 			audioBufferPos = audioBufferPos * (audioBufferPos<(PSGBufferSize-1));
 		}
 		audioBufferPos = 0.0;
 		PSGFrame();
+        ivoiceBufferPos = 0.0;
+        ivoice_frame();
 	}
 
 	// Swap Left/Right Controller
@@ -332,7 +344,7 @@ void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
 	info->library_name = "FreeIntv";
-	info->library_version = "1.1";
+	info->library_version = "1.2";
 	info->valid_extensions = "int|bin|rom";
 	info->need_fullpath = true;
 }
@@ -349,12 +361,8 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.aspect_ratio = ((float)MaxWidth) / ((float)MaxHeight);
 
 	info->timing.fps = DefaultFPS;
-	info->timing.sample_rate = 44100.0;
+	info->timing.sample_rate = AUDIO_FREQUENCY;
 
-#if 0
-	info->timing.sample_rate = 48000.0;
-	info->timing.sample_rate = 224010;
-#endif
 	Environ(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixelformat);
 }
 
@@ -388,13 +396,14 @@ RETRO_API size_t retro_get_memory_size(unsigned id)
 	return 0;
 }
 
-#define SERIALIZED_VERSION 0x4f544701
+#define SERIALIZED_VERSION 0x4f544702
 
 struct serialized {
     int version;
     struct CP1610serialized CP1610;
     struct STICserialized STIC;
     struct PSGserialized PSG;
+    struct ivoiceSerialized ivoice;
     unsigned int Memory[0x10000];   // Should be equal to Memory.c
     // Extra variables from intv.c
     int SR1;
@@ -415,6 +424,7 @@ bool retro_serialize(void *data, size_t size)
     CP1610Serialize(&all->CP1610);
     STICSerialize(&all->STIC);
     PSGSerialize(&all->PSG);
+    ivoiceSerialize(&all->ivoice);
     memcpy(all->Memory, Memory, sizeof(Memory));
     all->SR1 = SR1;
     all->intv_halt = intv_halt;
@@ -431,6 +441,7 @@ bool retro_unserialize(const void *data, size_t size)
     CP1610Unserialize(&all->CP1610);
     STICUnserialize(&all->STIC);
     PSGUnserialize(&all->PSG);
+    ivoiceUnserialize(&all->ivoice);
     memcpy(Memory, all->Memory, sizeof(Memory));
     SR1 = all->SR1;
     intv_halt = all->intv_halt;

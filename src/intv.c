@@ -24,6 +24,7 @@
 #include "controller.h"
 #include "cart.h"
 #include "osd.h"
+#include "ivoice.h"
 
 int SR1;
 int intv_halt;
@@ -101,6 +102,7 @@ void Reset()
     intv_halt = 0;
 	CP1610Reset();
 	STICReset();
+    ivoice_reset();
 }
 
 void Init()
@@ -108,6 +110,7 @@ void Init()
 	CP1610Init();
 	MemoryInit();
     PSGInit();
+    ivoice_init(0, 1.0);
 }
 
 void Run()
@@ -141,6 +144,9 @@ int exec(void) // Run one instruction
 
 	// Tick PSG
 	PSGTick(ticks);
+ 
+    // Tick Intellivoice
+    ivoice_tk(ticks);
     
     if(SR1>0)
     {
@@ -159,11 +165,17 @@ int exec(void) // Run one instruction
                 SR1 = phase_len;
                 // Render Frame //
                 STICDrawFrame(stic_vid_enable);
+                // The following line was below just after
+                //   "stic_vid_enable = DisplayEnabled;"
+                // It caused D1K Homebrew to fail:
+                // o D1K misses a video interrupt.
+                // o However it updates DisplayEnabled in time (writing to 0x20)
+                // o So the DisplayEnabled variable should be reset here.
+                DisplayEnabled = 0;
                 return 0;
             case 1:
                 phase_len += 3796 - 2900;
                 stic_vid_enable = DisplayEnabled;
-                DisplayEnabled = 0;
                 if (stic_vid_enable)
                     stic_reg = 0;   // STIC registers now inaccessible
                 stic_gram = 1;  // GRAM accessible
@@ -176,6 +188,7 @@ int exec(void) // Run one instruction
                     stic_gram = 0;  // GRAM now inaccessible
                     phase_len -= 68;    // BUSRQ period (STIC reads RAM)
                     PSGTick(68);
+                    ivoice_tk(68);
                 }
                 break;
             default:
@@ -183,6 +196,7 @@ int exec(void) // Run one instruction
                 if (stic_vid_enable) {
                     phase_len -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
+                    ivoice_tk(108);
                 }
                 break;
             case 14:
@@ -192,6 +206,7 @@ int exec(void) // Run one instruction
                 if (stic_vid_enable) {
                     phase_len -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
+                    ivoice_tk(108);
                 }
                 break;
             case 15:
@@ -200,6 +215,7 @@ int exec(void) // Run one instruction
                 if (stic_vid_enable && delayV == 0) {
                     phase_len -= 38;    // BUSRQ period (STIC reads RAM)
                     PSGTick(38);
+                    ivoice_tk(38);
                 }
                 break;
                 

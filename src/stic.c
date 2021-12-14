@@ -160,12 +160,14 @@ void STICUnserialize(const struct STICserialized *all)
 
 void STICReset(void)
 {
-	STICMode = 1;
-	SR1 = 0;
+	STICMode = 1;       // Color Stack mode
+	SR1 = 0;            // No interrupt pending
 	DisplayEnabled = 0;
 	CSP = 0x28;
     stic_phase = 15;
-    phase_len = 2782;
+    stic_reg = 1;
+    stic_gram = 1;
+    phase_len = 2782;   // Time to run before the first STIC interrupt
 }
 
 void drawBorder(int scanline)

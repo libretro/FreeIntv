@@ -17,6 +17,8 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
+#define AUDIO_FREQUENCY     44100
+
 extern int SR1; // SR1 line for interrupt
 
 extern int intv_halt;

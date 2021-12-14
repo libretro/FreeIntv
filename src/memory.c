@@ -14,11 +14,13 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
+#include <stdio.h>
+
+#include "intv.h"
 #include "memory.h"
 #include "stic.h"
 #include "psg.h"
-
-#include <stdio.h>
+#include "ivoice.h"
 
 unsigned int Memory[0x10000];
 
@@ -59,14 +61,30 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         case 0x0b:  /* 5800-5FFF */
         case 0x0c:  /* 6000-67FF */
         case 0x0d:  /* 6800-6FFF */
+        case 0x14:  /* A000-A7FF */
+        case 0x15:  /* A800-AFFF */
+        case 0x16:  /* B000-B7FF */
+        case 0x1a:  /* D000-D7FF */
+        case 0x1b:  /* D800-DFFF */
+        case 0x1c:  /* E000-E7FF */
+        case 0x1d:  /* E800-EFFF */
+        case 0x1e:  /* F000-F7FF */
             return; /* Ignore */
-        case 0x07:  /* GRAM */
-        case 0x0f:
-        case 0x17:
-        case 0x1f:
-            if (stic_gram != 0)
-                Memory[adr & 0x39FF] = val;
+        case 0x07:  /* GRAM 3800-3fff */
+        case 0x0f:  /* GRAM 7800-7fff */
+        case 0x17:  /* GRAM B800-BFFF */
+        case 0x1f:  /* GRAM F800-FFFF */
+            if (stic_gram != 0) {
+                // GRAM is 8-bit memory
+                // Note: Without the AND 0xff, Tower of Doom fails as it builds
+                // map from GRAM.
+                Memory[adr & 0x39FF] = val & 0xff;
+            }
             return;
+    }
+    if (adr == 0x80 || adr == 0x81) {
+        ivoice_wr(adr & 1, val);
+        return;
     }
     if(adr>=0x100 && adr<=0x1FF)
     {
@@ -80,23 +98,18 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         return;
     }
     
-    // STIC Display Enable
-    if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
-    {
-        if (stic_reg != 0)
-            DisplayEnabled = 1;
-    }
-    // STIC Mode Select
-    if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-    {
-        if (stic_reg != 0)
-            STICMode = 0;
-    }
-    //STIC Alias
-    if((adr>=0x0000 && adr<=0x003F) || (adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
-    {
-        if (stic_reg != 0)
-            Memory[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
+    // STIC access
+    if ((adr & 0x3fc0) == 0x0000) {
+        if (stic_reg != 0) {
+            adr &= 0x3f;
+            // STIC Display Enable
+            if (adr == 0x20)
+                DisplayEnabled = 1;
+            // STIC Mode Select
+            if (adr == 0x21)
+                STICMode = 0;   // Foreground/Background mode
+            Memory[adr] = (val & stic_and[adr]) | stic_or[adr];
+        }
         return;
     }
     
@@ -111,6 +124,20 @@ int readMem(int adr) // Read (should handle hooks/alias)
     int val;
     
     adr &= 0xffff;
+    if (adr == 0x80 || adr == 0x81)
+        return ivoice_rd(adr & 1);
+    // STIC access
+    if ((adr & 0x3fc0) == 0x0000) {
+        if (stic_reg != 0 && (adr & 0x3f) == 0x21)
+            STICMode = 1;   // Color Stack mode
+        if (adr >= 0x4000)
+            return 0xffff;
+        if (stic_reg == 0)  // Return trash
+            return adr & 0x0e;
+        adr &= 0x3f;
+        val = (Memory[adr] & stic_and[adr]) | stic_or[adr];
+        return val;
+	}
     val = Memory[adr];
 
 	if(adr>=0x100 && adr<=0x1FF)
@@ -118,19 +145,6 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		val = val & 0xFF;
 	}
 
-	if(stic_reg != 0)
-	{
-		if(adr<=0x3F)
-		{
-            val = (Memory[adr] & stic_and[adr]) | stic_or[adr];
-		}
-
-		// read sensitive addresses
-		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-		{
-			STICMode = 1;
-		}
-	}
 	return val;
 }
 
