@@ -15,6 +15,7 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include "psg.h"
@@ -182,6 +183,11 @@ void PSGInit()
 void PSGFrame()
 {
 	PSGBufferPos = 0;
+ #if 0  // Debugging
+    {
+        fprintf(stderr, "%04x %04x %04x %02x %02x %02x\n", ChA, ChB, ChC, VolA, VolB, VolC);
+    }
+ #endif
 }
 
 int psg_masks[16] = {
