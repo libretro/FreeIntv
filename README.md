@@ -21,8 +21,8 @@ FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'sys
 
 * BIOS filenames are case-sensitive
 
-## Entertainment Computer System and Intellivoice
-FreeIntv does not currently support Entertainment Computer System (ECS) and Intellivoice functionality. Contributions to the code are welcome!
+## Entertainment Computer System
+FreeIntv does not currently support Entertainment Computer System (ECS) functionality. Contributions to the code are welcome!
 
 ## Controller overlays
 Mattel Intellivision games were often meant to be played with game-specific cards overlaid on the numeric keypad. These overlays convey information which can be very useful in gameplay. Images of a limited selection of Intellivision titles are available at: http://www.intellivisionlives.com/bluesky/games/instructions.shtml

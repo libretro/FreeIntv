@@ -156,7 +156,7 @@ void retro_unload_game(void)
 
 void retro_run(void)
 {
-	int i = 0;
+	int c, i, j, k, l;
 	int showKeypad0 = false;
 	int showKeypad1 = false;
 
@@ -291,13 +291,28 @@ void retro_run(void)
 		audioInc = 3733.5 / audioSamples;
         ivoiceInc = 1.0;
 
+        j = 0;
 		for(i=0; i<audioSamples; i++)
 		{
-            int c = (PSGBuffer[(int) audioBufferPos] + ivoiceBuffer[(int) ivoiceBufferPos]) / 2;
+            // Sound interpolator:
+            //   The PSG module generates audio at 224010 hz (3733.5 samples per frame)
+            //   Very high frequencies like 0x0001 would generate chirps on output
+            //   (For example, Lock&Chase) so this code interpolates audio, making
+            //   these silent as in real hardware.
+            audioBufferPos += audioInc;
+            k = audioBufferPos;
+            l = k - j;
+            
+            c = 0;
+            while (j < k)
+                c += PSGBuffer[j++];
+            c = c / l;
+            // Finally it adds the Intellivoice output (properly generated at the
+            // same frequency as output)
+            c = (c + ivoiceBuffer[(int) ivoiceBufferPos]) / 2;
             
 			Audio(c, c); // Audio(left, right)
 
-			audioBufferPos += audioInc;
             ivoiceBufferPos += ivoiceInc;
             
             if (ivoiceBufferPos >= ivoiceBufferSize)

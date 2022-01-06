@@ -177,14 +177,14 @@ void drawBorder(int scanline)
 	int color = colors[Memory[0x2C] & 0x0f]; // border color
 	
 	if(scanline>=112) { return; }
-    if (scanline == delayV - 1 || scanline == 104) {    // Collision border is 1 pixel thick
+    if (scanline == delayV - 1 || scanline == 104 || extendTop != 0 && scanline >= 7 && scanline < 16) {    // Collision border is 1 pixel thick, or 9 if extendTop is set
         for(i=1 * 2; i < (8 + 160) * 2; i += 2)         // It extends from column -7 to 159
         {
             collBuffer[i] |= cbit;
             collBuffer[i+384] |= cbit;
         }
     } else if (scanline > delayV - 1 && scanline < 104) {   // Left and right side collision border
-        for(i=1 * 2; i < 8 * 2; i += 2)                 // Left side from column -7 to -1
+        for(i=1 * 2; i < 16+(16*extendLeft); i += 2)                 // Left side from column -7 to -1 (or 7 if extendLeft is set)
         {
             collBuffer[i] |= cbit;
             collBuffer[i+384] |= cbit;
@@ -532,7 +532,7 @@ void drawSprites(int scanline) // MOBs
 void STICDrawFrame(int enabled)
 {
 	int row, offset;
-	int i, j;
+	int i;
 
     offset = 0;
     if (enabled == 0) {
@@ -587,11 +587,42 @@ void STICDrawFrame(int enabled)
             for (i = 1 * 2; i < 168 * 2; i += 2) {
                 if (collBuffer[i] == 0)
                     continue;
-                for (j = 0; j < 8; j++) {
-                    if (((collBuffer[i] >> j) & 1) != 0) {
-                        Memory[0x18 + j] |= collBuffer[i] & ~(1 << j);
-                    }
-                }
+                if (collBuffer[i] & 0x01)
+                    Memory[0x18] |= collBuffer[i];
+                if (collBuffer[i] & 0x02)
+                    Memory[0x19] |= collBuffer[i];
+                if (collBuffer[i] & 0x04)
+                    Memory[0x1a] |= collBuffer[i];
+                if (collBuffer[i] & 0x08)
+                    Memory[0x1b] |= collBuffer[i];
+                if (collBuffer[i] & 0x10)
+                    Memory[0x1c] |= collBuffer[i];
+                if (collBuffer[i] & 0x20)
+                    Memory[0x1d] |= collBuffer[i];
+                if (collBuffer[i] & 0x40)
+                    Memory[0x1e] |= collBuffer[i];
+                if (collBuffer[i] & 0x80)
+                    Memory[0x1f] |= collBuffer[i];
+            }
+            for (i = 1 * 2 + 384; i < 168 * 2 + 384; i += 2) {
+                if (collBuffer[i] == 0)
+                    continue;
+                if (collBuffer[i] & 0x01)
+                    Memory[0x18] |= collBuffer[i];
+                if (collBuffer[i] & 0x02)
+                    Memory[0x19] |= collBuffer[i];
+                if (collBuffer[i] & 0x04)
+                    Memory[0x1a] |= collBuffer[i];
+                if (collBuffer[i] & 0x08)
+                    Memory[0x1b] |= collBuffer[i];
+                if (collBuffer[i] & 0x10)
+                    Memory[0x1c] |= collBuffer[i];
+                if (collBuffer[i] & 0x20)
+                    Memory[0x1d] |= collBuffer[i];
+                if (collBuffer[i] & 0x40)
+                    Memory[0x1e] |= collBuffer[i];
+                if (collBuffer[i] & 0x80)
+                    Memory[0x1f] |= collBuffer[i];
             }
             memcpy(&frame[offset], &scanBuffer[0], 352 * sizeof(unsigned int));
             memcpy(&frame[offset + 352], &scanBuffer[384], 352 * sizeof(unsigned int));
