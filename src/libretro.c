@@ -289,41 +289,41 @@ void retro_run(void)
 
 		// sample audio from buffer
 		audioInc = 3733.5 / audioSamples;
-        ivoiceInc = 1.0;
+		ivoiceInc = 1.0;
 
-        j = 0;
+		j = 0;
 		for(i=0; i<audioSamples; i++)
 		{
-            // Sound interpolator:
-            //   The PSG module generates audio at 224010 hz (3733.5 samples per frame)
-            //   Very high frequencies like 0x0001 would generate chirps on output
-            //   (For example, Lock&Chase) so this code interpolates audio, making
-            //   these silent as in real hardware.
-            audioBufferPos += audioInc;
-            k = audioBufferPos;
-            l = k - j;
-            
-            c = 0;
-            while (j < k)
-                c += PSGBuffer[j++];
-            c = c / l;
-            // Finally it adds the Intellivoice output (properly generated at the
-            // same frequency as output)
-            c = (c + ivoiceBuffer[(int) ivoiceBufferPos]) / 2;
-            
+			// Sound interpolator:
+			//   The PSG module generates audio at 224010 hz (3733.5 samples per frame)
+			//   Very high frequencies like 0x0001 would generate chirps on output
+			//   (For example, Lock&Chase) so this code interpolates audio, making
+			//   these silent as in real hardware.
+			audioBufferPos += audioInc;
+			k = audioBufferPos;
+			l = k - j;
+
+			c = 0;
+			while (j < k)
+				c += PSGBuffer[j++];
+			c = c / l;
+			// Finally it adds the Intellivoice output (properly generated at the
+			// same frequency as output)
+			c = (c + ivoiceBuffer[(int) ivoiceBufferPos]) / 2;
+
 			Audio(c, c); // Audio(left, right)
 
-            ivoiceBufferPos += ivoiceInc;
-            
-            if (ivoiceBufferPos >= ivoiceBufferSize)
-                ivoiceBufferPos = 0.0;
+			ivoiceBufferPos += ivoiceInc;
+
+			if (ivoiceBufferPos >= ivoiceBufferSize)
+				ivoiceBufferPos = 0.0;
 
 			audioBufferPos = audioBufferPos * (audioBufferPos<(PSGBufferSize-1));
 		}
 		audioBufferPos = 0.0;
 		PSGFrame();
-        ivoiceBufferPos = 0.0;
-        ivoice_frame();
+		ivoiceBufferPos = 0.0;
+		ivoice_frame();
 	}
 
 	// Swap Left/Right Controller
@@ -343,8 +343,8 @@ void retro_run(void)
 		}
 	}
 
-    if (intv_halt)
-        OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
+	if (intv_halt)
+		OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
 	// send frame to libretro
 	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 
@@ -366,7 +366,7 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   int pixelformat = RETRO_PIXEL_FORMAT_XRGB8888;
+	int pixelformat = RETRO_PIXEL_FORMAT_XRGB8888;
 
 	memset(info, 0, sizeof(*info));
 	info->geometry.base_width   = MaxWidth;
@@ -414,53 +414,53 @@ RETRO_API size_t retro_get_memory_size(unsigned id)
 #define SERIALIZED_VERSION 0x4f544702
 
 struct serialized {
-    int version;
-    struct CP1610serialized CP1610;
-    struct STICserialized STIC;
-    struct PSGserialized PSG;
-    struct ivoiceSerialized ivoice;
-    unsigned int Memory[0x10000];   // Should be equal to Memory.c
-    // Extra variables from intv.c
-    int SR1;
-    int intv_halt;
+	int version;
+	struct CP1610serialized CP1610;
+	struct STICserialized STIC;
+	struct PSGserialized PSG;
+	struct ivoiceSerialized ivoice;
+	unsigned int Memory[0x10000];   // Should be equal to Memory.c
+	// Extra variables from intv.c
+	int SR1;
+	int intv_halt;
 };
 
 size_t retro_serialize_size(void)
 {
-    return sizeof(struct serialized);
+	return sizeof(struct serialized);
 }
 
 bool retro_serialize(void *data, size_t size)
 {
-    struct serialized *all;
-    
-    all = (struct serialized *) data;
-    all->version = SERIALIZED_VERSION;
-    CP1610Serialize(&all->CP1610);
-    STICSerialize(&all->STIC);
-    PSGSerialize(&all->PSG);
-    ivoiceSerialize(&all->ivoice);
-    memcpy(all->Memory, Memory, sizeof(Memory));
-    all->SR1 = SR1;
-    all->intv_halt = intv_halt;
-    return true;
+	struct serialized *all;
+
+	all = (struct serialized *) data;
+	all->version = SERIALIZED_VERSION;
+	CP1610Serialize(&all->CP1610);
+	STICSerialize(&all->STIC);
+	PSGSerialize(&all->PSG);
+	ivoiceSerialize(&all->ivoice);
+	memcpy(all->Memory, Memory, sizeof(Memory));
+	all->SR1 = SR1;
+	all->intv_halt = intv_halt;
+	return true;
 }
 
 bool retro_unserialize(const void *data, size_t size)
 {
-    const struct serialized *all;
-    
-    all = (const struct serialized *) data;
-    if (all->version != SERIALIZED_VERSION)
-        return false;
-    CP1610Unserialize(&all->CP1610);
-    STICUnserialize(&all->STIC);
-    PSGUnserialize(&all->PSG);
-    ivoiceUnserialize(&all->ivoice);
-    memcpy(Memory, all->Memory, sizeof(Memory));
-    SR1 = all->SR1;
-    intv_halt = all->intv_halt;
-    return true;
+	const struct serialized *all;
+
+	all = (const struct serialized *) data;
+	if (all->version != SERIALIZED_VERSION)
+		return false;
+	CP1610Unserialize(&all->CP1610);
+	STICUnserialize(&all->STIC);
+	PSGUnserialize(&all->PSG);
+	ivoiceUnserialize(&all->ivoice);
+	memcpy(Memory, all->Memory, sizeof(Memory));
+	SR1 = all->SR1;
+	intv_halt = all->intv_halt;
+	return true;
 }
 
 /* Stubs */
