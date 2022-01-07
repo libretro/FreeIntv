@@ -141,6 +141,14 @@ int getControllerState(int joypad[], int player)
 		state |= keypadDirections[norm & 0x07];
 	}
 
+	// Thumbsticks for Keypad 0/5
+	if(joypad[18]!=0) { state |= K_0; } // 0x48 - Keypad 0
+	if(joypad[19]!=0) { state |= K_5; } // 0x42 - Keypad 5
+
+	// L/R triggers for Keypad Enter/Clear
+	if(joypad[12]!=0) { state |= K_C; } // 0x88 - Keypad Clear
+	if(joypad[13]!=0) { state |= K_E; } // 0x28 - Keypad Enter
+
 	return state;
 }
 
