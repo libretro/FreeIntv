@@ -117,13 +117,6 @@ void retro_init(void)
 	char gromPath[PATH_MAX_LENGTH];
 	struct retro_keyboard_callback kb = { Keyboard };
 
-	// init buffers, structs
-	memset(frame, 0, frameSize);
-	OSD_setDisplay(frame, MaxWidth, MaxHeight);
-
-	// setup controller swap
-	controllerInit();
-
 	// controller descriptors
 	struct retro_input_descriptor desc[] = {
 		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Disc Left" },
@@ -166,6 +159,13 @@ void retro_init(void)
 
 		{ 0 },
 	};
+
+	// init buffers, structs
+	memset(frame, 0, frameSize);
+	OSD_setDisplay(frame, MaxWidth, MaxHeight);
+
+	// setup controller swap
+	controllerInit();
 
 	Environ(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
