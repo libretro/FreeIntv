@@ -86,7 +86,7 @@ void controllerInit()
 
 void setControllerInput(int player, int state)
 {
-	CTX(Memory)[(player^controllerSwap) + 0x1FE] = (state^0xFF) & 0xFF;
+	Memory[(player^controllerSwap) + 0x1FE] = (state^0xFF) & 0xFF;
 }
 
 int getControllerState(int joypad[], int player)

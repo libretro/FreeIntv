@@ -130,7 +130,7 @@ void loadRange(int start, int stop)
 {
 	while(start<=stop && pos<size) // load segment
 	{
-		CTX(Memory)[start] = readWord();
+		Memory[start] = readWord();
 		start++;
 	}
 }
