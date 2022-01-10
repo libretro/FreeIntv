@@ -9,7 +9,7 @@ The PSG and STIC emulation was made closer to hardware and optimized by Oscar To
 The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), and adapted by Oscar Toledo G. (nanochess)
 
 ## License
-The FreeIntv core is licensed under GPLv3. More information at https://github.com/markwkidd/FreeIntv/blob/master/LICENSE.
+The FreeIntv core is licensed under GPLv2+. More information at https://github.com/libretro/FreeIntv/blob/master/LICENSE
 
 ## BIOS
 FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'system' folder:
