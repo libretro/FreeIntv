@@ -265,7 +265,7 @@ void retro_run(void)
 	joypad1[18] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
 	joypad1[19] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
 
-#ifndef HOVERFORCE
+#if	!defined(HOVERFORCE) && !defined(MOUNTAINSKI)
 	// Pause
 	if((joypad0[8]==1 && joypre0[8]==0) || (joypad1[8]==1 && joypre1[8]==0))
 	{
@@ -306,7 +306,7 @@ void retro_run(void)
 			OSD_drawTextBG(3, 17, " FREEINTV 1.3          LICENSE GPL V2 ");
 			OSD_drawTextBG(3, 18, "                                      ");
                 }
-#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK) || defined(SLAPSHOT) || defined(HOVERFORCE)
+#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK) || defined(SLAPSHOT) || defined(HOVERFORCE) || defined(DECATHLON)
 		// These games have special mappings so the mapping details
 		// are offputting so just tell them to refer to manual or overlay.
 		// help menu //
@@ -425,7 +425,7 @@ void retro_run(void)
 		ivoiceBufferPos = 0.0;
 		ivoice_frame();
 	}
-#ifndef SHARKSHARK || !defined(REVCONTROLLERS)
+#if	!defined(SHARKSHARK) || !defined(REVCONTROLLERS)
 	// Swap Left/Right Controller
 	if(joypad0[9]==1 || joypad1[9]==1)
 	{

@@ -147,6 +147,18 @@ int getControllerState(int joypad[], int player)
         if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
         if(joypad[6]!=0) { state |= K_E; }
 	if(joypad[8]!=0) { state |= K_0; } // Map START to K0 instead of pause
+#elif defined(MOUNTAINSKI)
+        if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
+        if(joypad[4]!=0) { state |= K_C; }
+        if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
+        if(joypad[6]!=0) { state |= K_E; }
+        if(joypad[8]!=0) { state |= K_0; } // Map START to K0 instead of pause
+#elif defined(DECATHLON)
+        //Slapshot needs choose player
+        if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
+        if(joypad[4]!=0) { state |= K_C; } // 0x3F - Button Right
+        if(joypad[5]!=0) { state |= K_E; } // 0x9F - Button Left
+        if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
 #else
 	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= B_LEFT; } // 0x9F - Button Left
