@@ -76,7 +76,7 @@ void controllerInit()
 	// and input 1 maps to Left Controller (0x1FF)
 	// pressing select (freeintv_libretro.c) will
 	// swap the left and right controllers
-#ifdef SHARKSHARK
+#if	defined(SHARKSHARK) || defined(REVCONTROLLERS)
 	//These titles require controller swap from boot
 	controllerSwap = 1;
 #else
@@ -141,6 +141,12 @@ int getControllerState(int joypad[], int player)
 	if(joypad[4]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
 	if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
 	if(joypad[6]!=0) { state |= K_0; }
+#elif defined(HOVERFORCE)
+        if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
+        if(joypad[4]!=0) { state |= K_C; }
+        if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
+        if(joypad[6]!=0) { state |= K_E; }
+	if(joypad[8]!=0) { state |= K_0; } // Map START to K0 instead of pause
 #else
 	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= B_LEFT; } // 0x9F - Button Left
