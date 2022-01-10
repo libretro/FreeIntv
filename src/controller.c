@@ -17,6 +17,8 @@
 */
 #include <math.h>
 #include "controller.h"
+
+#include "cp1610.h"
 #include "memory.h"
 
 const double PI = 3.14159265358979323846;
@@ -71,16 +73,21 @@ int getQuickKeypadState(int player);
 
 void controllerInit()
 {
-	controllerSwap = 0;
 	// by default input 0 maps to Right Controller (0x1FE)
 	// and input 1 maps to Left Controller (0x1FF)
 	// pressing select (freeintv_libretro.c) will
 	// swap the left and right controllers
+#ifdef SHARKSHARK
+	//These titles require controller swap from boot
+	controllerSwap = 1;
+#else
+	controllerSwap = 0;
+#endif
 }
 
 void setControllerInput(int player, int state)
 {
-	Memory[(player^controllerSwap) + 0x1FE] = (state^0xFF) & 0xFF;
+	CTX(Memory)[(player^controllerSwap) + 0x1FE] = (state^0xFF) & 0xFF;
 }
 
 int getControllerState(int joypad[], int player)
@@ -105,11 +112,42 @@ int getControllerState(int joypad[], int player)
 	if(joypad[1]!=0 && joypad[2]!=0) { state |= D_SW; } // 0x36 - Down+Left
 	if(joypad[1]!=0 && joypad[3]!=0) { state |= D_SE; } // 0x3C - Down+Right
 
+#ifdef NIGHTSTALKER
+	//Nightstalker requires keypad to play so map keypad to face buttons
+	if(joypad[7]!=0) { state |= K_4; }
+	if(joypad[4]!=0) { state |= K_6; }
+	if(joypad[5]!=0) { state |= K_8; }
+	if(joypad[6]!=0) { state |= K_2; }
+#elif SHARKSHARK
+	//Add Dart moves to shark shark
+	if(joypad[7]!=0) { state |= K_1; } // 0x5F - Button Top
+	if(joypad[4]!=0) { state |= K_3; } // 0x9F - Button Left
+	if(joypad[5]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
+	if(joypad[6]!=0) { state |= K_6; }
+#elif defined(ASTROSMASH)
+	//Astrosmash requires keypad to play so map Button Top to K3 (Hyper space) 
+	if(joypad[7]!=0) { state |= K_3; } // 0x5F - Button Top
+	if(joypad[4]!=0) { state |= K_2; } // 0x3F - Button Right
+	if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
+	if(joypad[6]!=0) { state |= K_1; }
+#elif defined(PINBALL)
+	//Pinball needs the LEFT/RIGHT button flipping
+	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
+	if(joypad[4]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
+	if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
+	if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
+#elif defined(SLAPSHOT)
+	//Slapshot needs choose player
+	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
+	if(joypad[4]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
+	if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
+	if(joypad[6]!=0) { state |= K_0; }
+#else
 	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= B_LEFT; } // 0x9F - Button Left
 	if(joypad[5]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
-
 	if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
+#endif
 
 	/* Analog Controls for 16-way disc control */
 
