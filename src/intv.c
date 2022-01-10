@@ -24,6 +24,7 @@
 #include "controller.h"
 #include "cart.h"
 #include "osd.h"
+#include "ivoice.h"
 
 int SR1;
 int intv_halt;
@@ -53,7 +54,7 @@ void loadExec(const char* path)
 		for(i=0x1000; i<=0x1FFF; i++)
 		{
 			fread(word,sizeof(word),1,fp);
-			CTX(Memory)[i] = (word[0]<<8) | word[1];
+			Memory[i] = (word[0]<<8) | word[1];
 		}
 
 		fclose(fp);
@@ -79,7 +80,7 @@ void loadGrom(const char* path)
 		for(i=0x3000; i<=0x37FF; i++)
 		{
 			fread(word,sizeof(word),1,fp);
-			CTX(Memory)[i] = word[0];
+			Memory[i] = word[0];
 		}
 
 		fclose(fp);
@@ -100,15 +101,16 @@ void Reset()
 	SR1 = 0;
     intv_halt = 0;
 	CP1610Reset();
-	MemoryInit();
 	STICReset();
-	PSGInit();
+    ivoice_reset();
 }
 
 void Init()
 {
 	CP1610Init();
 	MemoryInit();
+    PSGInit();
+    ivoice_init(0, 1.0);
 }
 
 void Run()
@@ -142,6 +144,9 @@ int exec(void) // Run one instruction
 
 	// Tick PSG
 	PSGTick(ticks);
+ 
+    // Tick Intellivoice
+    ivoice_tk(ticks);
     
     if(SR1>0)
     {
@@ -149,58 +154,68 @@ int exec(void) // Run one instruction
         if(SR1<0) { SR1 = 0; }
     }
     
-    CTX(phase_len) -= ticks;
-    if (CTX(phase_len) < 0) {
-        CTX(stic_phase) = (CTX(stic_phase) + 1) & 15;
-        switch (CTX(stic_phase)) {
+    phase_len -= ticks;
+    if (phase_len < 0) {
+        stic_phase = (stic_phase + 1) & 15;
+        switch (stic_phase) {
             case 0: // Start of VBLANK
-                CTX(stic_reg) = 1;   // STIC registers accessible
-                CTX(stic_gram) = 1;  // GRAM accessible
-                CTX(phase_len) += 2900;
-                SR1 = CTX(phase_len);
+                stic_reg = 1;   // STIC registers accessible
+                stic_gram = 1;  // GRAM accessible
+                phase_len += 2900;
+                SR1 = phase_len;
                 // Render Frame //
-                STICDrawFrame(CTX(stic_vid_enable));
+                STICDrawFrame(stic_vid_enable);
+                // The following line was below just after
+                //   "stic_vid_enable = DisplayEnabled;"
+                // It caused D1K Homebrew to fail:
+                // o D1K misses a video interrupt.
+                // o However it updates DisplayEnabled in time (writing to 0x20)
+                // o So the DisplayEnabled variable should be reset here.
+                DisplayEnabled = 0;
                 return 0;
             case 1:
-                CTX(phase_len) += 3796 - 2900;
-                CTX(stic_vid_enable) = CTX(DisplayEnabled);
-                CTX(DisplayEnabled) = 0;
-                if (CTX(stic_vid_enable))
-                    CTX(stic_reg) = 0;   // STIC registers now inaccessible
-                CTX(stic_gram) = 1;  // GRAM accessible
+                phase_len += 3796 - 2900;
+                stic_vid_enable = DisplayEnabled;
+                if (stic_vid_enable)
+                    stic_reg = 0;   // STIC registers now inaccessible
+                stic_gram = 1;  // GRAM accessible
                 break;
             case 2:
-                CTX(delayV) = ((CTX(Memory)[0x31])&0x7);
-                CTX(delayH) = ((CTX(Memory)[0x30])&0x7);
-                CTX(phase_len) += 120 + 114 * CTX(delayV) + CTX(delayH);
-                if (CTX(stic_vid_enable)) {
-                    CTX(stic_gram) = 0;  // GRAM now inaccessible
-                    CTX(phase_len) -= 68;    // BUSRQ period (STIC reads RAM)
+                delayV = ((Memory[0x31])&0x7);
+                delayH = ((Memory[0x30])&0x7);
+                phase_len += 120 + 114 * delayV + delayH;
+                if (stic_vid_enable) {
+                    stic_gram = 0;  // GRAM now inaccessible
+                    phase_len -= 68;    // BUSRQ period (STIC reads RAM)
                     PSGTick(68);
+                    ivoice_tk(68);
                 }
                 break;
             default:
-                CTX(phase_len) += 912;
-                if (CTX(stic_vid_enable)) {
-                    CTX(phase_len) -= 108;   // BUSRQ period (STIC reads RAM)
+                phase_len += 912;
+                if (stic_vid_enable) {
+                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
+                    ivoice_tk(108);
                 }
                 break;
             case 14:
-                CTX(delayV) = ((CTX(Memory)[0x31])&0x7);
-                CTX(delayH) = ((CTX(Memory)[0x30])&0x7);
-                CTX(phase_len) += 912 - 114 * CTX(delayV) - CTX(delayH);
-                if (CTX(stic_vid_enable)) {
-                    CTX(phase_len) -= 108;   // BUSRQ period (STIC reads RAM)
+                delayV = ((Memory[0x31])&0x7);
+                delayH = ((Memory[0x30])&0x7);
+                phase_len += 912 - 114 * delayV - delayH;
+                if (stic_vid_enable) {
+                    phase_len -= 108;   // BUSRQ period (STIC reads RAM)
                     PSGTick(108);
+                    ivoice_tk(108);
                 }
                 break;
             case 15:
-                CTX(delayV) = ((CTX(Memory)[0x31])&0x7);
-                CTX(phase_len) += 57 + 17;
-                if (CTX(stic_vid_enable) && CTX(delayV) == 0) {
-                    CTX(phase_len) -= 38;    // BUSRQ period (STIC reads RAM)
+                delayV = ((Memory[0x31])&0x7);
+                phase_len += 57 + 17;
+                if (stic_vid_enable && delayV == 0) {
+                    phase_len -= 38;    // BUSRQ period (STIC reads RAM)
                     PSGTick(38);
+                    ivoice_tk(38);
                 }
                 break;
                 

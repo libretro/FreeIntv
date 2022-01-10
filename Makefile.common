@@ -12,6 +12,7 @@ SOURCES_C   := \
 	$(SOURCE_DIR)/cart.c \
 	$(SOURCE_DIR)/controller.c \
 	$(SOURCE_DIR)/osd.c \
+	$(SOURCE_DIR)/ivoice.c \
 	$(SOURCE_DIR)/psg.c \
 	$(SOURCE_DIR)/stic.c
 

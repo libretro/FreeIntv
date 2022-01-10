@@ -24,48 +24,57 @@
 // http://spatula-city.org/~im14u2c/chips/GICP1600.pdf
 // ftp://bitsavers.informatik.uni-stuttgart.de/components/gi/CP1600/CP-1600_Microprocessor_Users_Manual_May75.pdf
 
-#define regSP 6 // Stack Pointer (R6)
-#define regPC 7 // Program Counter (R7)
+int (*OpCodes[0x400])(int);
+int Interuptable[0x400];
+const char *Nmemonic[0x400];
 
-static int (*OpCodes[0x400])(int);
-static int Interuptable[0x400];
-static const char *Nmemonic[0x400];
+unsigned int R[8] = {0, 0, 0, 0, 0, 0, 0x02F1, 0x1000}; // Registers R0-R7
 
-CP1610_Context gCP1610_Context = {
-	.Version = CP1610_SERIALIZE_VERSION,
-	
-	.R = {0, 0, 0, 0, 0, 0, 0x02F1, 0x1000}, // Registers R0-R7
+const int PC = 7; // const Program Counter (R7)
+const int SP = 6; // const Stack Pointer (R6)
 
-	.InstructionRegister = 0, // four external lines?
+int InstructionRegister = 0; // four external lines?
 
-	.Flag_DoubleByteData = 0,
-	.Flag_InteruptEnable = 0,
-	.Flag_Carry = 0,
-	.Flag_Sign = 0,
-	.Flag_Zero = 0,
-	.Flag_Overflow = 0,
+int Flag_DoubleByteData = 0;
+int Flag_InteruptEnable = 0;
+int Flag_Carry = 0;
+int Flag_Sign = 0;
+int Flag_Zero = 0;
+int Flag_Overflow = 0;
 
-	// Stic
-	.delayH = 0,
-	.delayV = 0,
-	.extendTop = 0,
-	.extendLeft = 0
-};
+void CP1610Serialize(struct CP1610serialized *all)
+{
+    all->Flag_DoubleByteData = Flag_DoubleByteData;
+    all->Flag_InteruptEnable = Flag_InteruptEnable;
+    all->Flag_Carry = Flag_Carry;
+    all->Flag_Sign = Flag_Sign;
+    all->Flag_Zero = Flag_Zero;
+    all->Flag_Overflow = Flag_Overflow;
+    memcpy(&all->R[0], &R[0], sizeof(R));
+}
+
+void CP1610Unserialize(const struct CP1610serialized *all)
+{
+    Flag_DoubleByteData = all->Flag_DoubleByteData;
+    Flag_InteruptEnable = all->Flag_InteruptEnable;
+    Flag_Carry = all->Flag_Carry;
+    Flag_Sign = all->Flag_Sign;
+    Flag_Zero = all->Flag_Zero;
+    Flag_Overflow = all->Flag_Overflow;
+    memcpy(&R[0], &all->R[0], sizeof(R));
+}
 
 void CP1610Reset()
 {
-	CTX(Version) = CP1610_SERIALIZE_VERSION;
-	CTX(Flag_DoubleByteData) = 0;
-	CTX(Flag_InteruptEnable) = 0;
-	CTX(Flag_Carry) = 0;
-	CTX(Flag_Sign) = 0;
-	CTX(Flag_Zero) = 0;
-	CTX(Flag_Overflow) = 0;
-
-	memset(&CTX(R), 0, sizeof(CTX(R)));
-
-	CTX(R[regSP]) = 0x02F1; // Stack is at System Ram 0x02F1-0x0318
-	CTX(R[regPC]) = 0x1000; // EXEC entry point
+	Flag_DoubleByteData = 0;
+	Flag_InteruptEnable = 0;
+	Flag_Carry = 0;
+	Flag_Sign = 0;
+	Flag_Zero = 0;
+	Flag_Overflow = 0;
+	R[0] = R[1] = R[2] = R[3] = R[4] = R[5] = 0;
+	R[SP] = 0x02F1; // Stack is at System Ram 0x02F1-0x0318
+	R[PC] = 0x1000; // EXEC entry point
 }
 
 int readIndirect(int reg) // Read Indirect, handle SDBD, update autoincriment registers
@@ -73,20 +82,20 @@ int readIndirect(int reg) // Read Indirect, handle SDBD, update autoincriment re
     int val = 0;
     int adr = 0;
     
-    if(reg==6) { CTX(R)[reg] = CTX(R)[reg] - 1; } // decriment R6 (regSP) before read
-    adr = CTX(R)[reg];
+    if(reg==6) { R[reg] = R[reg] - 1; } // decriment R6 (SP) before read
+    adr = R[reg];
     
     val = readMem(adr);
-    if(reg==4 || reg==5 || reg==7) // autoincrement registers R4-R7 excluding regSP (R6)
+    if(reg==4 || reg==5 || reg==7) // autoincrement registers R4-R7 excluding SP (R6)
     {
-        CTX(R)[reg] = (CTX(R)[reg]+1) & 0xFFFF;
+        R[reg] = (R[reg]+1) & 0xFFFF;
     }
-    if(CTX(Flag_DoubleByteData) == 1) {
+    if(Flag_DoubleByteData == 1) {
         val &= 0xff;
         if(reg==4 || reg==5 || reg==7) // autoincrement registers (incremented twice for double byte data)
         {
             val |= ((readMem(adr+1) & 0xFF)<<8);
-            CTX(R)[reg] = (CTX(R)[reg]+1) & 0xFFFF;
+            R[reg] = (R[reg]+1) & 0xFFFF;
         } else {
             val |= val << 8;
         }
@@ -96,34 +105,34 @@ int readIndirect(int reg) // Read Indirect, handle SDBD, update autoincriment re
 
 void writeIndirect(int reg, int val)
 {
-	int adr = CTX(R)[reg];
+	int adr = R[reg];
 	writeMem(adr, val);
 	if(reg>=4) // autoincrement registers R4-R7
 	{
-		CTX(R)[reg] = (CTX(R)[reg]+1) & 0xFFFF;
+		R[reg] = (R[reg]+1) & 0xFFFF;
 	}
 }
 
 int readOperand(void)
 {
-	int val = readMem(CTX(R)[regPC]);
-	CTX(R)[regPC]++;
+	int val = readMem(R[PC]);
+	R[PC]++;
 	return val;
 }
 
 int readOperandIndirect(void)
 {
-	int adr = readMem(CTX(R)[regPC]);
+	int adr = readMem(R[PC]);
 	int val = readMem(adr);
-	CTX(R)[regPC]++;
+	R[PC]++;
 	return val;
 }
 
 void SetFlagsSZ(int reg)
 {
-	CTX(R)[reg] = CTX(R)[reg] & 0xFFFF;
-	CTX(Flag_Sign) = (CTX(R)[reg] & 0x8000)!=0;
-	CTX(Flag_Zero) = CTX(R)[reg]==0;
+	R[reg] = R[reg] & 0xFFFF;
+	Flag_Sign = (R[reg] & 0x8000)!=0;
+	Flag_Zero = R[reg]==0;
 }
 
 int AddSetSZOC(int A, int B)
@@ -133,13 +142,13 @@ int AddSetSZOC(int A, int B)
 	int result = (A+B);
 	int signr =  result & 0x8000;
 
-	CTX(Flag_Overflow) = (signa==signb && signa!=signr) ? 1 : 0;
-	CTX(Flag_Carry) = (result & 0x10000) != 0;
+	Flag_Overflow = (signa==signb && signa!=signr) ? 1 : 0;
+	Flag_Carry = (result & 0x10000) != 0;
 
 	result = result & 0xFFFF;
 
-	CTX(Flag_Sign) = (result & 0x8000)!=0;
-	CTX(Flag_Zero) = result==0;
+	Flag_Sign = (result & 0x8000)!=0;
+	Flag_Zero = result==0;
 	return result;
 }
 int SubSetOC(int A, int B)
@@ -148,26 +157,44 @@ int SubSetOC(int A, int B)
 	int signb = B & 0x8000;
 	int result = (A + (B ^ 0xFFFF) + 1); // A - B using 1's compliment;
 	int signr =  result & 0x8000;
-	CTX(Flag_Carry) = (result & 0x10000)!=0;
-	CTX(Flag_Overflow) = (signa!=signb && signa!=signr) ? 1 : 0;
+	Flag_Carry = (result & 0x10000)!=0;
+	Flag_Overflow = (signa!=signb && signa!=signr) ? 1 : 0;
 	return result & 0xFFFF;
 }
 
 int CP1610Tick(int debug)
 {
 	// execute one instruction //
-	int sdbd = CTX(Flag_DoubleByteData);
+	int sdbd = Flag_DoubleByteData;
 
-	unsigned int instruction = readMem(CTX(R)[regPC]);
+	unsigned int instruction = readMem(R[PC]);
 
 	int ticks = 0;
+#if 0
+    static int global_ticks = 0;
+#endif
 
     // DEBUG
 #if 0
     {
         FILE *debug_file;
         
-        fprintf(stdout, "%04x:[%03x%c %04x %04x %04x %04x %04x %04x %04x %s %c%c%c%c%c%c\n", CTX(R)[7], instruction, instruction > 0x03ff ? 'X' : ']', CTX(R)[0], CTX(R)[1], CTX(R)[2], CTX(R)[3], CTX(R)[4], CTX(R)[5], CTX(R)[6], Nmemonic[instruction], CTX(Flag_Sign) ? 'S' : '-', CTX(Flag_Carry) ? 'C' : '-', CTX(Flag_Overflow) ? 'O' : '-', CTX(Flag_Zero) ? 'Z' : '-', CTX(Flag_InteruptEnable) ? 'I' : '-', CTX(Flag_DoubleByteData) ? 'D' : '-');
+        fprintf(stdout, "%04x:[%03x%c %04x %04x %04x %04x %04x %04x %04x %s %c%c%c%c%c%c\n", R[7], instruction, instruction > 0x03ff ? 'X' : ']', R[0], R[1], R[2], R[3], R[4], R[5], R[6], Nmemonic[instruction], Flag_Sign ? 'S' : '-', Flag_Carry ? 'C' : '-', Flag_Overflow ? 'O' : '-', Flag_Zero ? 'Z' : '-', Flag_InteruptEnable ? 'I' : '-', Flag_DoubleByteData ? 'D' : '-');
+    }
+#endif
+#if 0   // Debug output compatible with JZINTV for comparison purposes
+    {
+        FILE *debug_file;
+        
+        fprintf(debug_file, " %04X %04X %04X %04X %04X %04X %04X %04X %c%c%c%c%c%c%c%c %20s %d\n", R[0], R[1], R[2], R[3], R[4], R[5], R[6], R[7],
+            Flag_Sign ? 'S' : '-',
+            Flag_Zero ? 'Z' : '-',
+            Flag_Overflow ? 'O' : '-',
+            Flag_Carry ? 'C' : '-',
+            Flag_InteruptEnable ? 'I' : '-',
+            Flag_DoubleByteData ? 'D' : '-',
+            Interuptable[instruction] ? 'i' : '-',
+            SR1 > 0 ? 'q' : '-' , Nmemonic[instruction], global_ticks);
     }
 #endif
     
@@ -178,25 +205,28 @@ int CP1610Tick(int debug)
 		return 0;
 	}
 
-	CTX(R)[regPC]++; // point regPC/R7 at operand/next address
+	R[PC]++; // point PC/R7 at operand/next address
     
 	ticks = OpCodes[instruction](instruction); // execute instruction
 
-	if(sdbd==1) { CTX(Flag_DoubleByteData) = 0; } // reset SDBD
+	if(sdbd==1) { Flag_DoubleByteData = 0; } // reset SDBD
 
 	// check interupt request
-	if(CTX(Flag_InteruptEnable) == 1 && SR1>0)
+	if(Flag_InteruptEnable == 1 && SR1>0)
 	{
 		if(Interuptable[instruction])
 		{
 			// Take VBlank Interupt //
 			SR1 = 0;
-			writeIndirect(regSP, CTX(R)[regPC]); // push regPC...
-			CTX(R)[regPC] = 0x1004; // Jump
+			writeIndirect(SP, R[PC]); // push PC...
+			R[PC] = 0x1004; // Jump
             ticks += 12;
 		}
 	}
 
+#if 0
+    global_ticks += ticks;
+#endif
 	return ticks;
 }
 
@@ -205,13 +235,13 @@ int HLT(int v)
     // Halt Instruction found! //
     printf("\n\n[ERROR] [FREEINTV] HALT!\n");
   
-    CTX(R)[regPC]--; // Repeat instruction forever instead of exiting without warning
+    R[PC]--; // Repeat instruction forever instead of exiting without warning
     return 0;
 }
 
-int SDBD(int v) { CTX(Flag_DoubleByteData) = 1; return 4; } // Set Double Byte Data
-int EIS(int v)  { CTX(Flag_InteruptEnable) = 1; return 4; } // Enable Interrupt System
-int DIS(int v)  { CTX(Flag_InteruptEnable) = 0; return 4; } // Disable Interrupt System
+int SDBD(int v) { Flag_DoubleByteData = 1; return 4; } // Set Double Byte Data
+int EIS(int v)  { Flag_InteruptEnable = 1; return 4; } // Enable Interrupt System
+int DIS(int v)  { Flag_InteruptEnable = 0; return 4; } // Disable Interrupt System
 int Jump(int v)
 { 
 	// J, JE, JD, JSR, JSRE, JSRD, CALL
@@ -224,58 +254,59 @@ int Jump(int v)
 	if(reg!=3)
 	{
 		reg = reg + 4;
-		CTX(R)[reg] = CTX(R)[regPC]; // store return address (regPC already advanced to regPC+3)
+		R[reg] = R[PC]; // store return address (PC already advanced to PC+3)
 	}
-	if(ff==1) { CTX(Flag_InteruptEnable) = 1; } // set Interupt flag
-	if(ff==2) { CTX(Flag_InteruptEnable) = 0; } // clear Interrupt flag
-	CTX(R)[regPC] = adr; // Jump
+	if(ff==1) { Flag_InteruptEnable = 1; } // set Interupt flag
+	if(ff==2) { Flag_InteruptEnable = 0; } // clear Interrupt flag
+	R[PC] = adr; // Jump
 	return 13;
 }
 int TCI(int v)  { return 4; } // Terminate Current Interrupt (not used)
-int CLRC(int v) { CTX(Flag_Carry) = 0; return 4; } // Clear Carry
-int SETC(int v) { CTX(Flag_Carry) = 1; return 4; } // Set Carry
+int CLRC(int v) { Flag_Carry = 0; return 4; } // Clear Carry
+int SETC(int v) { Flag_Carry = 1; return 4; } // Set Carry
 
+#define EXTRA_IF_R6(reg)  (reg == 6 ? 3 : 0)
 #define EXTRA_IF_R6R7(reg)  (reg >= 6 ? 1 : 0)
 
 int INCR(int v) // Increment Register
 {
 	int reg = v & 0x07;
-	CTX(R)[reg] = CTX(R)[reg]+1;
+	R[reg] = R[reg]+1;
 	SetFlagsSZ(reg);
     return 6 + EXTRA_IF_R6R7(reg);
 }
 int DECR(int v) // Decrement Register
 {
 	int reg = v & 0x07;
-	CTX(R)[reg] = CTX(R)[reg]-1;
+	R[reg] = R[reg]-1;
 	SetFlagsSZ(reg);
     return 6 + EXTRA_IF_R6R7(reg);
 }
 int COMR(int v) // Complement Register (One's Compliment)
 {
 	int reg = v & 0x07;
-	CTX(R)[reg] = CTX(R)[reg] ^ 0xFFFF;
+	R[reg] = R[reg] ^ 0xFFFF;
 	SetFlagsSZ(reg);
     return 6 + EXTRA_IF_R6R7(reg);
 }
 int NEGR(int v) // Negate Register (Two's Compliment)
 {
 	int reg = v & 0x07;
-	CTX(R)[reg] = SubSetOC(0, CTX(R)[reg]);
+	R[reg] = SubSetOC(0, R[reg]);
     SetFlagsSZ(reg);
     return 6 + EXTRA_IF_R6R7(reg);
 }
 int ADCR(int v) // Add Carry to Register
 {
 	int reg = v & 0x07;
-	CTX(R)[reg] = AddSetSZOC(CTX(R)[reg], CTX(Flag_Carry));
+	R[reg] = AddSetSZOC(R[reg], Flag_Carry);
     return 6 + EXTRA_IF_R6R7(reg);
 }
 int GSWD(int v) // Get the Status Word szoc:0000:szoc:0000
 {
 	int reg = v & 0x03;
-	unsigned int szoc = (CTX(Flag_Sign)<<3) | (CTX(Flag_Zero)<<2) | (CTX(Flag_Overflow)<<1) | CTX(Flag_Carry);
-	CTX(R)[reg] = (szoc<<12) | (szoc<<4);
+	unsigned int szoc = (Flag_Sign<<3) | (Flag_Zero<<2) | (Flag_Overflow<<1) | Flag_Carry;
+	R[reg] = (szoc<<12) | (szoc<<4);
 	return 6;
 }
 int NOP(int v) { return 6; } // No Operation
@@ -284,31 +315,31 @@ int SIN(int v) { return 6; } // Software Interrupt (not used)
 int RSWD(int v) // Return Status Word szoc:0000
 {
 	int reg = v & 0x07;
-	unsigned int szoc = CTX(R)[reg]>>4;
-	CTX(Flag_Sign) = (szoc>>3) & 1;
-	CTX(Flag_Zero) = (szoc>>2) & 1;
-	CTX(Flag_Overflow) = (szoc>>1) & 1;
-	CTX(Flag_Carry) = szoc & 1;
+	unsigned int szoc = R[reg]>>4;
+	Flag_Sign = (szoc>>3) & 1;
+	Flag_Zero = (szoc>>2) & 1;
+	Flag_Overflow = (szoc>>1) & 1;
+	Flag_Carry = szoc & 1;
 	return 6;
 }
 int SWAP(int v) // Swap 0000:0trr
 {
 	int reg = v & 0x03;
 	int times = (v>>2) & 1;
-	int upper = (CTX(R)[reg]>>8) & 0xFF;
-	int lower = CTX(R)[reg] & 0xFF;
+	int upper = (R[reg]>>8) & 0xFF;
+	int lower = R[reg] & 0xFF;
 	if(times==0) // single swap
 	{
-		CTX(R)[reg] = (lower<<8) | upper;
-		CTX(Flag_Sign) = (CTX(R)[reg]>>7) & 1;
-		CTX(Flag_Zero) = CTX(R)[reg]==0;
+		R[reg] = (lower<<8) | upper;
+		Flag_Sign = (R[reg]>>7) & 1;
+		Flag_Zero = R[reg]==0;
 		return 6;
 	}
 	else // double swap
 	{
-		CTX(R)[reg] = (lower<<8) | lower;
-		CTX(Flag_Sign) = (CTX(R)[reg]>>7) & 1;
-		CTX(Flag_Zero) = CTX(R)[reg]==0;
+		R[reg] = (lower<<8) | lower;
+		Flag_Sign = (R[reg]>>7) & 1;
+		Flag_Zero = R[reg]==0;
 		return 8;
 	}
 }
@@ -316,7 +347,7 @@ int SLL(int v) // Shift Logical Left 0000:1drr
 {
 	int reg = v & 0x03;
 	int dist = ((v>>2) & 1)+1;
-	CTX(R)[reg] = CTX(R)[reg]<<dist;
+	R[reg] = R[reg]<<dist;
 	SetFlagsSZ(reg);
 	return 6+(2*(dist-1)); // 6 <<1 or 8 <<2
 }
@@ -324,20 +355,20 @@ int RLC(int v) // Rotate Left Through Carry
 {
 	int reg = v & 0x03;
 	int times = ((v>>2) & 1);
-	int bit15 = (CTX(R)[reg]>>15) & 1;
-	int bit14 = (CTX(R)[reg]>>14) & 1;
+	int bit15 = (R[reg]>>15) & 1;
+	int bit14 = (R[reg]>>14) & 1;
 	if(times==0) // Single rotate
 	{
-		CTX(R)[reg] = CTX(R)[reg] << 1;
-		CTX(R)[reg] = CTX(R)[reg] | CTX(Flag_Carry);
-		CTX(Flag_Carry) = bit15;
+		R[reg] = R[reg] << 1;
+		R[reg] = R[reg] | Flag_Carry;
+		Flag_Carry = bit15;
 	}
 	else // Double rotate
 	{
-		CTX(R)[reg] = CTX(R)[reg] << 2;
-		CTX(R)[reg] = CTX(R)[reg] | ((CTX(Flag_Carry) << 1) | CTX(Flag_Overflow));
-		CTX(Flag_Carry) = bit15;
-		CTX(Flag_Overflow) = bit14;
+		R[reg] = R[reg] << 2;
+		R[reg] = R[reg] | ((Flag_Carry << 1) | Flag_Overflow);
+		Flag_Carry = bit15;
+		Flag_Overflow = bit14;
 	}
 	SetFlagsSZ(reg);
 	return 6+(2*times); // 6 single or 8 double
@@ -351,15 +382,15 @@ int SLLC(int v) // Shift Logical Left through Carry
 	// The wiki method seems to be correct
 	int reg = v & 0x03;
 	int dist = ((v>>2) & 1)+1;
-	int bit15 = (CTX(R)[reg]>>15) & 1;
-	int bit14 = (CTX(R)[reg]>>14) & 1;
-	CTX(R)[reg] = (CTX(R)[reg]<<dist);
-	CTX(Flag_Carry) = bit15;			
+	int bit15 = (R[reg]>>15) & 1;
+	int bit14 = (R[reg]>>14) & 1;
+	R[reg] = (R[reg]<<dist);
+	Flag_Carry = bit15;			
 	if(dist==2)
 	{
-		CTX(Flag_Overflow) = bit14; // wiki.intellivision.us method 
-		//CTX(Flag_Carry) = bit14; // CP-1600 Manual method
-		//CTX(Flag_Overflow) = bit15; // CP-1600 Manual method
+		Flag_Overflow = bit14; // wiki.intellivision.us method 
+		//Flag_Carry = bit14; // CP-1600 Manual method
+		//Flag_Overflow = bit15; // CP-1600 Manual method
 	}
 	SetFlagsSZ(reg);
 	return 6+(2*(dist-1)); // 6 <<1 or 8 <<2
@@ -368,80 +399,80 @@ int SLR(int v) // Shift Logical Right
 {
 	int reg = v & 0x03;
 	int dist = ((v>>2) & 1)+1;
-	CTX(R)[reg] = CTX(R)[reg]>>dist;
-	CTX(Flag_Sign) = (CTX(R)[reg]>>7) & 1;
-	CTX(Flag_Zero) = CTX(R)[reg]==0;
+	R[reg] = R[reg]>>dist;
+	Flag_Sign = (R[reg]>>7) & 1;
+	Flag_Zero = R[reg]==0;
 	return 6+(2*(dist-1)); // 6 <<1 or 8 <<2
 }
 int SAR(int v) // Shift Arithmetic Right
 {
 	int reg = v & 0x03;
 	int dist = ((v>>2) & 1)+1;
-	int bit15 = (CTX(R)[reg]>>15) & 1;
+	int bit15 = (R[reg]>>15) & 1;
 
-	CTX(R)[reg] = CTX(R)[reg]>>dist;
+	R[reg] = R[reg]>>dist;
 	if(dist==1)
 	{
-		CTX(R)[reg] = CTX(R)[reg] | (bit15<<15);
+		R[reg] = R[reg] | (bit15<<15);
 	}
 	else
 	{
-		CTX(R)[reg] = CTX(R)[reg] | (bit15<<15);
-		CTX(R)[reg] = CTX(R)[reg] | (bit15<<14); // CP-1600 manual says "sign bit copied to high bits"
+		R[reg] = R[reg] | (bit15<<15);
+		R[reg] = R[reg] | (bit15<<14); // CP-1600 manual says "sign bit copied to high bits"
 	}
-	CTX(Flag_Sign) = (CTX(R)[reg]>>7) & 1;
-	CTX(Flag_Zero) = CTX(R)[reg]==0;
+	Flag_Sign = (R[reg]>>7) & 1;
+	Flag_Zero = R[reg]==0;
 	return 6+(2*(dist-1)); // 6 <<1 or 8 <<2
 }
 int RRC(int v) // Rotate Right Through Carry
 {
 	int reg = v & 0x03;
 	int dist = ((v>>2) & 1);
-	int bit1 = (CTX(R)[reg]>>1) & 1;
-	int bit0 = CTX(R)[reg] & 1;
+	int bit1 = (R[reg]>>1) & 1;
+	int bit0 = R[reg] & 1;
 
 	if(dist==0)
 	{
-		CTX(R)[reg] = CTX(R)[reg]>>1;
-		CTX(R)[reg] = CTX(R)[reg] | (CTX(Flag_Carry)<<15);
+		R[reg] = R[reg]>>1;
+		R[reg] = R[reg] | (Flag_Carry<<15);
 	}
 	else
 	{
-		CTX(R)[reg] = CTX(R)[reg]>>2;
-		CTX(R)[reg] = CTX(R)[reg] | (CTX(Flag_Overflow)<<15);
-		CTX(R)[reg] = CTX(R)[reg] | (CTX(Flag_Carry)<<14);
-		CTX(Flag_Overflow) = bit1;
+		R[reg] = R[reg]>>2;
+		R[reg] = R[reg] | (Flag_Overflow<<15);
+		R[reg] = R[reg] | (Flag_Carry<<14);
+		Flag_Overflow = bit1;
 	}
-	CTX(Flag_Carry) = bit0;
-	CTX(Flag_Sign) = (CTX(R)[reg]>>7) & 1;
-	CTX(Flag_Zero) = CTX(R)[reg]==0;
+	Flag_Carry = bit0;
+	Flag_Sign = (R[reg]>>7) & 1;
+	Flag_Zero = R[reg]==0;
 	return 6+(2*(dist)); // 6 <<1 or 8 <<2
 }
 int SARC(int v) // Shift Arithmetic Right Through Carry 
 {
 	int reg = v & 0x03;
 	int dist = ((v>>2) & 1)+1;
-	int bit15 = (CTX(R)[reg]>>15) & 1;
-	int bit1 = (CTX(R)[reg]>>1) & 1;
-	int bit0 = CTX(R)[reg] & 1;
+	int bit15 = (R[reg]>>15) & 1;
+	int bit1 = (R[reg]>>1) & 1;
+	int bit0 = R[reg] & 1;
 
-	CTX(R)[reg] = CTX(R)[reg]>>dist;
-	CTX(R)[reg] = CTX(R)[reg] | (bit15<<15);
+	R[reg] = R[reg]>>dist;
+	R[reg] = R[reg] | (bit15<<15);
 	if(dist==2)
 	{
-		CTX(R)[reg] = CTX(R)[reg] | (bit15<<14); // CP-1600 manual says "sign bit copied to high 2 bits"
-		CTX(Flag_Overflow) = bit1;
+		R[reg] = R[reg] | (bit15<<14); // CP-1600 manual says "sign bit copied to high 2 bits"
+		Flag_Overflow = bit1;
 	}
-	CTX(Flag_Carry) = bit0;
-	CTX(Flag_Sign) = (CTX(R)[reg]>>7) & 1;
-	CTX(Flag_Zero) = CTX(R)[reg]==0;
+	Flag_Carry = bit0;
+	Flag_Sign = (R[reg]>>7) & 1;
+	Flag_Zero = R[reg]==0;
 	return 6+(2*(dist-1)); // 6 <<1 or 8 <<2
 }
 int MOVR(int v) // Move Register
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
-	CTX(R)[dreg] = CTX(R)[sreg];
+	R[dreg] = R[sreg];
 	SetFlagsSZ(dreg);
     return 6 + EXTRA_IF_R6R7(dreg);
 }
@@ -449,14 +480,14 @@ int ADDR(int v) // Add Registers
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
-	CTX(R)[dreg] = AddSetSZOC(CTX(R)[dreg], CTX(R)[sreg]);
+	R[dreg] = AddSetSZOC(R[dreg], R[sreg]);
     return 6 + EXTRA_IF_R6R7(dreg);
 }
 int SUBR(int v) // Subtract Registers
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
-	CTX(R)[dreg] = SubSetOC(CTX(R)[dreg], CTX(R)[sreg]);
+	R[dreg] = SubSetOC(R[dreg], R[sreg]);
 	SetFlagsSZ(dreg);
     return 6 + EXTRA_IF_R6R7(dreg);
 }
@@ -464,16 +495,16 @@ int CMPR(int v) // Compare Registers
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
-	int res = SubSetOC(CTX(R)[dreg], CTX(R)[sreg]);
-	CTX(Flag_Sign) = (res & 0x8000)!=0;
-	CTX(Flag_Zero) = res==0;
+	int res = SubSetOC(R[dreg], R[sreg]);
+	Flag_Sign = (res & 0x8000)!=0;
+	Flag_Zero = res==0;
     return 6 + EXTRA_IF_R6R7(dreg);
 }
 int ANDR(int v) // And Registers
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
-	CTX(R)[dreg] = CTX(R)[dreg] & CTX(R)[sreg];
+	R[dreg] = R[dreg] & R[sreg];
 	SetFlagsSZ(dreg);
     return 6 + EXTRA_IF_R6R7(dreg);
 }
@@ -481,7 +512,7 @@ int XORR(int v) // Xor Registers
 {
 	int sreg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;
-	CTX(R)[dreg] = CTX(R)[dreg] ^ CTX(R)[sreg];
+	R[dreg] = R[dreg] ^ R[sreg];
 	SetFlagsSZ(dreg);
     return 6 + EXTRA_IF_R6R7(dreg);
 }
@@ -503,29 +534,30 @@ int Branch(int v) // Branch - B, BC, BOV, BPL, BEQ, BLT, BLE, BUSC, NOPP, BNC, B
 		// digital states to be sampled by the CPU during the execution of the BEXT
 		// (Branch on EXTernal) instruction
 		// --- I don't know what is meant by 'instruction register'
-		if((CTX(InstructionRegister) & 0x0F)==(v & 0x0F))
+		if((InstructionRegister & 0x0F)==(v & 0x0F))
 		{
-			if(direction==0) { CTX(R)[regPC] = CTX(R)[regPC]+offset; }
-			if(direction==1) { CTX(R)[regPC] = CTX(R)[regPC]-offset-1; }
+			if(direction==0) { R[PC] = R[PC]+offset; }
+			if(direction==1) { R[PC] = R[PC]-offset-1; }
+            return 9;
 		}
 		return 7;
 	}
 	switch(condition)
 	{
 		case 0: branch = 1; break; // B, NOPP
-		case 1: branch = (CTX(Flag_Carry)==1); break; // BC, BNC
-		case 2: branch = (CTX(Flag_Overflow)==1); break; // BOV, BNOV
-		case 3: branch = (CTX(Flag_Sign)==0); break; // BPL, BMI
-		case 4: branch = (CTX(Flag_Zero)==1); break; // BEQ, BNEQ
-		case 5: branch = (CTX(Flag_Sign)!=CTX(Flag_Overflow)); break; // BLT, BGE
-		case 6: branch = (CTX(Flag_Zero)==1)||(CTX(Flag_Sign)!=CTX(Flag_Overflow)); break; // BLE, BGT
-		case 7: branch = (CTX(Flag_Sign)!=CTX(Flag_Carry)); break; // BUSC, BESC
+		case 1: branch = (Flag_Carry==1); break; // BC, BNC
+		case 2: branch = (Flag_Overflow==1); break; // BOV, BNOV
+		case 3: branch = (Flag_Sign==0); break; // BPL, BMI
+		case 4: branch = (Flag_Zero==1); break; // BEQ, BNEQ
+		case 5: branch = (Flag_Sign!=Flag_Overflow); break; // BLT, BGE
+		case 6: branch = (Flag_Zero==1)||(Flag_Sign!=Flag_Overflow); break; // BLE, BGT
+		case 7: branch = (Flag_Sign!=Flag_Carry); break; // BUSC, BESC
 	}
 	if(notbit==1) { branch = !branch; }
 	if(branch)
 	{
-		if(direction==0) { CTX(R)[regPC] = CTX(R)[regPC]+offset; }
-		if(direction==1) { CTX(R)[regPC] = CTX(R)[regPC]-(offset+1); }
+		if(direction==0) { R[PC] = R[PC]+offset; }
+		if(direction==1) { R[PC] = R[PC]-(offset+1); }
 		return 9;
 	}
 	return 7;
@@ -534,7 +566,7 @@ int MVO(int v) // Move Out
 {
 	int reg = v & 0x07;
 	int adr = readOperand();
-	writeMem(adr, CTX(R)[reg]);
+	writeMem(adr, R[reg]);
 	return 11;
 }
 int MVOa(int v) // MVO@ - Move Out Indirect  0000:0010:01aa:asss
@@ -542,143 +574,143 @@ int MVOa(int v) // MVO@ - Move Out Indirect  0000:0010:01aa:asss
 	// The PSHR Rx instruction is an alias for MVOa Rx, R6
 	int areg = (v >> 3) & 0x7;
 	int sreg = v & 0x7;
-	writeIndirect(areg, CTX(R)[sreg]);
+	writeIndirect(areg, R[sreg]);
 	return 9;
 }
 int MVOI(int v) // Move Out Immediate 0000:0010:0111:1sss
 {
-	return(MVOa(v)); // call indirect copies CTX(R)[sss] to address in CTX(R)[regPC]
+	return(MVOa(v)); // call indirect copies R[sss] to address in R[PC]
 }
 int MVI(int v) // 	Move In 0000:0010:1000:0rrr  aaaa:aaaa:aaaa:aaaa
 {
 	int reg = v & 0x07;
-	CTX(R)[reg] = readOperandIndirect();
-	return 10;
+	R[reg] = readOperandIndirect();
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int MVIa(int v) // Move In Indirect 0000:0010:10aa:addd
 {
 	int areg = (v >> 3) & 0x7;
 	int dreg = v & 0x7;	
-	CTX(R)[dreg] = readIndirect(areg);
-    return (CTX(Flag_DoubleByteData) == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+	R[dreg] = readIndirect(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(dreg) + EXTRA_IF_R6(areg);
 }
 int MVII(int v) // Move In Immediate (copies operand to register)
 {
-	// These instructions are only one word, so don't advance regPC past operand.
+	// These instructions are only one word, so don't advance PC past operand.
 	// Auto incrementing registers will move past the operands automatically.
-	// This works exactly like MVI@ with regPC as the address register.
+	// This works exactly like MVI@ with PC as the address register.
 	// All nnnI instructions work this way.
-	v = v | 0x0038;  // set address register to regPC
+	v = v | 0x0038;  // set address register to PC
 	return(MVIa(v)); // call indirect
 }
 int ADD(int v) // Add
 {
 	int reg = v & 0x07;
 	int val = readOperandIndirect();
-	CTX(R)[reg] = AddSetSZOC(CTX(R)[reg], val);
-	return 10;
+	R[reg] = AddSetSZOC(R[reg], val);
+	return 10 + EXTRA_IF_R6R7(reg);;
 }
 int ADDa(int v) // Add Indirect
 {
 	int areg = (v >> 3) & 0x07;
 	int dreg = v & 0x07;
 	int val = readIndirect(areg);
-	CTX(R)[dreg] = AddSetSZOC(CTX(R)[dreg], val);
-    return (CTX(Flag_DoubleByteData) == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+	R[dreg] = AddSetSZOC(R[dreg], val);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int ADDI(int v) // Add Immediate
 {
-	v = v | 0x0038;  // set address register to regPC
+	v = v | 0x0038;  // set address register to PC
 	return(ADDa(v)); // call indirect
 }
 int SUB(int v) // Subtract
 {
 	int reg = v & 0x07;
 	int val = readOperandIndirect();
-	CTX(R)[reg] = SubSetOC(CTX(R)[reg], val);
+	R[reg] = SubSetOC(R[reg], val);
 	SetFlagsSZ(reg);
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int SUBa(int v)  // Subtract Indirect
 {
 	int areg = (v >> 3) & 0x07;
 	int dreg = v & 0x07;
 	int val = readIndirect(areg);
-	CTX(R)[dreg] = SubSetOC(CTX(R)[dreg], val);
+	R[dreg] = SubSetOC(R[dreg], val);
 	SetFlagsSZ(dreg);
-    return (CTX(Flag_DoubleByteData) == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int SUBI(int v) // Subtract Immediate
 {
-	v = v | 0x0038;  // set address register to regPC
+	v = v | 0x0038;  // set address register to PC
 	return(SUBa(v)); // call indirect
 }
 int CMP(int v)
 {
 	int reg = v & 0x07;
 	int val = readOperandIndirect();
-	int res = SubSetOC(CTX(R)[reg], val);
-	CTX(Flag_Sign) = (res & 0x8000)!=0;
-	CTX(Flag_Zero) = res==0;
-	return 10;
+	int res = SubSetOC(R[reg], val);
+	Flag_Sign = (res & 0x8000)!=0;
+	Flag_Zero = res==0;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int CMPa(int v)
 {
 	int areg = (v >> 3) & 0x07;
 	int dreg = v & 0x07;
 	int val = readIndirect(areg);
-	int res = SubSetOC(CTX(R)[dreg], val);
-	CTX(Flag_Sign) = (res & 0x8000)!=0;
-	CTX(Flag_Zero) = res==0;
-    return (CTX(Flag_DoubleByteData) == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+	int res = SubSetOC(R[dreg], val);
+	Flag_Sign = (res & 0x8000)!=0;
+	Flag_Zero = res==0;
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int CMPI(int v) // CMP Immediate
 {
-	v = v | 0x0038;  // set address register to regPC
+	v = v | 0x0038;  // set address register to PC
 	return(CMPa(v)); // call indirect
 }
 int AND(int v) // And
 {
 	int reg = v & 0x07;
 	int val = readOperandIndirect();
-	CTX(R)[reg] = CTX(R)[reg] & val;
+	R[reg] = R[reg] & val;
 	SetFlagsSZ(reg);
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int ANDa(int v) // And Indirect
 {
 	int areg = (v >> 3) & 0x07;
 	int dreg = v & 0x07;
 	int val = readIndirect(areg);
-	CTX(R)[dreg] = CTX(R)[dreg] & val;
+	R[dreg] = R[dreg] & val;
 	SetFlagsSZ(dreg);
-    return (CTX(Flag_DoubleByteData) == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int ANDI(int v) // And Immediate
 {
-	v = v | 0x0038;  // set address register to regPC
+	v = v | 0x0038;  // set address register to PC
 	return(ANDa(v)); // call indirect
 }
 int XOR(int v) // Xor
 {
 	int reg = v & 0x07;
 	int val = readOperandIndirect();
-	CTX(R)[reg] = CTX(R)[reg] ^ val;
+	R[reg] = R[reg] ^ val;
 	SetFlagsSZ(reg);
-	return 10;
+	return 10 + EXTRA_IF_R6R7(reg);
 }
 int XORa(int v) // Xor Indirect
 {
 	int areg = (v >> 3) & 0x07;
 	int dreg = v & 0x07;
 	int val = readIndirect(areg);
-	CTX(R)[dreg] = CTX(R)[dreg] ^ val;
+	R[dreg] = R[dreg] ^ val;
 	SetFlagsSZ(dreg);
-    return (CTX(Flag_DoubleByteData) == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg);
+    return (Flag_DoubleByteData == 1 ? 10 : 8) + EXTRA_IF_R6R7(areg) + EXTRA_IF_R6(areg);
 }
 int XORI(int v) // Xor Immediate
 {
-	v = v | 0x0038;  // set address register to regPC
+	v = v | 0x0038;  // set address register to PC
 	return(XORa(v)); // call indirect
 }
 

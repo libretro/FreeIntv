@@ -15,22 +15,49 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include "psg.h"
-#include "cp1610.h"
 #include "memory.h"
+
+int Volume[16] = { 0, 92, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144, 8192, 10922 };
+
+int Envelope_Shift[4] = {8, 2, 1, 0};
+
+// Volume levels assigned to each channel from PSG registers
+#define VolA    (Memory[0x01FB] & 0x0F)
+#define VolB    (Memory[0x01FC] & 0x0F)
+#define VolC    (Memory[0x01FD] & 0x0F)
+
+// Envelope shifts for channels (6-bit variations only)
+#define EnvA    ((Memory[0x01FB] >> 4) & 0x03)
+#define EnvB    ((Memory[0x01FC] >> 4) & 0x03)
+#define EnvC    ((Memory[0x01FD] >> 4) & 0x03)
+
+int NoiseP; // Noise Period
+
+// Detect Tone enabled for this channel (0- enabled, 1- disabled)
+#define ToneA   ((Memory[0x01F8] & 0x01) != 0)
+#define ToneB   ((Memory[0x01F8] & 0x02) != 0)
+#define ToneC   ((Memory[0x01F8] & 0x04) != 0)
+           
+// Detect Noise enabled for this channel (0- enabled, 1- disabled)
+#define NoiseA  ((Memory[0x01F8] & 0x08) != 0)
+#define NoiseB  ((Memory[0x01F8] & 0x10) != 0)
+#define NoiseC  ((Memory[0x01F8] & 0x20) != 0)
+
+// Envelope type
+#define EnvFlags    (Memory[0x01FA] & 0x0F)
 
 int PSGBufferSize;
 int16_t PSGBuffer[7467];
 int PSGBufferPos;
 
-int Volume[16] = { 0, 92, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144, 8192, 10922 };
-
 int Ticks; // CPU cycles not yet processed
 
 int CountA; // countdowns for tone generators
-int CountB; // used to modulate square-wave 
+int CountB; // used to modulate square-wave
 int CountC; // according to Channel Period
 int CountN; // countdown for noise generator
 int CountE; // countdown for envelope generator
@@ -42,28 +69,10 @@ int OutN;  // Noise generator output
 int OutE;  // Envelope generator output
 
 int ChA; // Channel Period from PSG Registers
-int ChB; 
-int ChC; 
-           
-int VolA; // volume levels assigned to each Channel from PSG Registers
-int VolB; 
-int VolC; 
-           
-int NoiseP; // Noise Period
-int NoiseA; // is Noise enabled for this channel
-int NoiseB; // 0 - enabled 
-int NoiseC;	// 1 - disabled
+int ChB;
+int ChC;
 
-           
-int ToneA; // is Tone enabled for this channel
-int ToneB; // 0 - enabled
-int ToneC; // 1 - disabled
-           
-int EnvP;    // Envelope Period 
-int EnvFlags; // Envelope Type
-int EnvA;    // Envelope Shifts for Channels (6-bit variations only)
-int EnvB; 
-int EnvC; 
+int EnvP;    // Envelope Period
 int StepE; // 1, 0, -1 -- Direction to Step Envelope at end of countdown
 
 int EnvContinue; // Flags from Envelope Type
@@ -71,39 +80,82 @@ int EnvAttack;
 int EnvAlternate;
 int EnvHold;
 
+void PSGSerialize(struct PSGserialized *all)
+{
+    all->PSGBufferSize = PSGBufferSize;
+    memcpy(all->PSGBuffer, PSGBuffer, sizeof(PSGBuffer));
+    all->PSGBufferPos = PSGBufferPos;
+    all->Ticks = Ticks;
+    all->CountA = CountA;
+    all->CountB = CountB;
+    all->CountC = CountC;
+    all->CountN = CountN;
+    all->CountE = CountE;
+    all->OutA = OutA;
+    all->OutB = OutB;
+    all->OutC = OutC;
+    all->OutN = OutN;
+    all->OutE = OutE;
+    all->ChA = ChA;
+    all->ChB = ChB;
+    all->ChC = ChC;
+    all->NoiseP = NoiseP;
+    all->EnvP = EnvP;
+    all->StepE = StepE;
+    all->EnvContinue = EnvContinue;
+    all->EnvAttack = EnvAttack;
+    all->EnvAlternate = EnvAlternate;
+    all->EnvHold = EnvHold;
+}
+
+void PSGUnserialize(const struct PSGserialized *all)
+{
+    PSGBufferSize = all->PSGBufferSize;
+    memcpy(PSGBuffer, all->PSGBuffer, sizeof(PSGBuffer));
+    PSGBufferPos = all->PSGBufferPos;
+    Ticks = all->Ticks;
+    CountA = all->CountA;
+    CountB = all->CountB;
+    CountC = all->CountC;
+    CountN = all->CountN;
+    CountE = all->CountE;
+    OutA = all->OutA;
+    OutB = all->OutB;
+    OutC = all->OutC;
+    OutN = all->OutN;
+    OutE = all->OutE;
+    ChA = all->ChA;
+    ChB = all->ChB;
+    ChC = all->ChC;
+    NoiseP = all->NoiseP;
+    EnvP = all->EnvP;
+    StepE = all->StepE;
+    EnvContinue = all->EnvContinue;
+    EnvAttack = all->EnvAttack;
+    EnvAlternate = all->EnvAlternate;
+    EnvHold = all->EnvHold;
+}
+
 void readRegisters(void)
 {
-	ChA = (CTX(Memory)[0x01F0] & 0xFF) | ((CTX(Memory)[0x1F4] & 0x0F)<<8);
-	ChB = (CTX(Memory)[0x01F1] & 0xFF) | ((CTX(Memory)[0x1F5] & 0x0F)<<8);
-	ChC = (CTX(Memory)[0x01F2] & 0xFF) | ((CTX(Memory)[0x1F6] & 0x0F)<<8);
+	ChA = (Memory[0x01F0] & 0xFF) | ((Memory[0x1F4] & 0x0F)<<8);
+	ChB = (Memory[0x01F1] & 0xFF) | ((Memory[0x1F5] & 0x0F)<<8);
+	ChC = (Memory[0x01F2] & 0xFF) | ((Memory[0x1F6] & 0x0F)<<8);
  
-	VolA = CTX(Memory)[0x01FB] & 0x0F;
-	VolB = CTX(Memory)[0x01FC] & 0x0F;
-	VolC = CTX(Memory)[0x01FD] & 0x0F;
+    ChA = ChA + (0x1000 * (ChA==0)); // a Channel Period value of 0
+    ChB = ChB + (0x1000 * (ChB==0)); // indicates a value of 0x1000
+    ChC = ChC + (0x1000 * (ChC==0));
 
-	NoiseP = (CTX(Memory)[0x01F9] & 0x1F)<<1;
-	NoiseA = (CTX(Memory)[0x01F8]>>3) & 0x01;
-	NoiseB = (CTX(Memory)[0x01F8]>>4) & 0x01;
-	NoiseC = (CTX(Memory)[0x01F8]>>5) & 0x01;
+    NoiseP = (Memory[0x01F9] & 0x1F)<<1;
 
-	ToneA = CTX(Memory)[0x01F8] & 0x01;
-	ToneB = (CTX(Memory)[0x01F8]>>1) & 0x01;
-	ToneC = (CTX(Memory)[0x01F8]>>2) & 0x01;
+    // a Noise Period of 0 indicates a period of 0x40
+    NoiseP = NoiseP + (0x40 * (NoiseP==0));
 
-	EnvP = ((CTX(Memory)[0x01F3] & 0xFF) | ((CTX(Memory)[0x1F7] & 0xFF)<<8))<<1;
-	EnvFlags = CTX(Memory)[0x01FA] & 0x0F;
-	EnvA = (CTX(Memory)[0x01FB]>>4) & 0x03;
-	EnvB = (CTX(Memory)[0x01FC]>>4) & 0x03;
-	EnvC = (CTX(Memory)[0x01FD]>>4) & 0x03;
+    EnvP = ((Memory[0x01F3] & 0xFF) | ((Memory[0x1F7] & 0xFF)<<8))<<1;
 
-	ChA = ChA + (0x1000 * (ChA==0)); // a Channel Period value of 0 
-	ChB = ChB + (0x1000 * (ChB==0)); // indicates a value of 0x1000
-	ChC = ChC + (0x1000 * (ChC==0));
-	// a Noise Period of 0 indicates a period of 0x40 
-	NoiseP = NoiseP + (0x40 * (NoiseP==0));
-	// an Envelope Period of 0 indicates a period of 0x20000
-	EnvP = EnvP + (0x20000 * (EnvP==0));
-	
+    // an Envelope Period of 0 indicates a period of 0x20000
+    EnvP = EnvP + (0x20000 * (EnvP==0));
+
 	// Envelope Flags
 	EnvContinue = (EnvFlags>>3) & 0x01;
 	EnvAttack = (EnvFlags>>2) & 0x01;
@@ -118,7 +170,7 @@ void PSGInit()
 	OutA = 0; // tone generator outputs
 	OutB = 0;
 	OutC = 0;
-	OutN = 0x14000; // noise output
+	OutN = 0x10004; // noise output
 	OutE = 0; // envelope output
 	CountA = 0; // tone generator countdowns
 	CountB = 0;
@@ -131,6 +183,11 @@ void PSGInit()
 void PSGFrame()
 {
 	PSGBufferPos = 0;
+ #if 0  // Debugging
+    {
+        fprintf(stderr, "%04x %04x %04x %02x %02x %02x\n", ChA, ChB, ChC, VolA, VolB, VolC);
+    }
+ #endif
 }
 
 int psg_masks[16] = {
@@ -142,7 +199,7 @@ int psg_masks[16] = {
 
 void PSGNotify(int adr, int val) // PSG Registers Modified 0x01F0-0x1FD (called from writeMem)
 {
-    CTX(Memory)[adr] &= psg_masks[adr - 0x1f0];
+    Memory[adr] &= psg_masks[adr - 0x1f0];
 	readRegisters();
     // Note: updating frequencies doesn't reset counters in real chip
     //       (otherwise sound glitch happens in games)
@@ -173,9 +230,9 @@ void PSGTick(int ticks) // adds 1 sound sample per 4 cpu cycles to the buffer
 
 	Ticks = Ticks + ticks;
 
-	while(Ticks > 3)
+	while(Ticks >= 4)
 	{
-		Ticks = Ticks - 4;
+		Ticks -= 4;
 
 		CountA--;
 		CountB--;
@@ -247,9 +304,9 @@ void PSGTick(int ticks) // adds 1 sound sample per 4 cpu cycles to the buffer
 		c = (NoiseC | (OutN & 1)) & (ToneC | OutC);
 
 		// Adjust amplitude (Volume / Envelope)
-		a = a * ( (Volume[VolA] * (EnvA==0)) | (Volume[OutE] * (EnvA!=0)) );
-		b = b * ( (Volume[VolB] * (EnvB==0)) | (Volume[OutE] * (EnvB!=0)) );
-		c = c * ( (Volume[VolC] * (EnvC==0)) | (Volume[OutE] * (EnvC!=0)) );
+		a = a * ( (Volume[VolA] * (EnvA==0)) | (Volume[OutE >> Envelope_Shift[EnvA]]) );
+		b = b * ( (Volume[VolB] * (EnvB==0)) | (Volume[OutE >> Envelope_Shift[EnvB]]) );
+		c = c * ( (Volume[VolC] * (EnvC==0)) | (Volume[OutE >> Envelope_Shift[EnvC]]) );
 
 		sample = a + b + c;
 

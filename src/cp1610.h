@@ -17,55 +17,18 @@
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
 
-#include <stdint.h>
-typedef struct CP1610_Context_t
-{
-	uint32_t Version;
+struct CP1610serialized {
+    int Flag_DoubleByteData;
+    int Flag_InteruptEnable;
+    int Flag_Carry;
+    int Flag_Sign;
+    int Flag_Zero;
+    int Flag_Overflow;
+    unsigned int R[8];
+};
 
-	unsigned int R[8]; // Registers R0-R7
-
-	int InstructionRegister; // four external lines?
-
-	int Flag_DoubleByteData;
-	int Flag_InteruptEnable;
-	int Flag_Carry;
-	int Flag_Sign;
-	int Flag_Zero;
-	int Flag_Overflow;
-	
-	unsigned int Memory[0x10000];
-
-	// Stick
-	unsigned int STICMode;
-
-	int stic_phase;
-	int stic_vid_enable;
-	int stic_reg;
-	int stic_gram;
-	int phase_len;
-
-	int DisplayEnabled;
-
-	unsigned int frame[352*224];
-
-	unsigned int scanBuffer[768]; // buffer for current scanline (352+32)*2
-	unsigned int collBuffer[768]; // buffer for collision -- made larger than needed to save checks
-
-	int delayH; // Horizontal Delay
-	int delayV; // Vertical Delay
-
-	int extendTop;
-	int extendLeft;
-
-	unsigned int CSP; // Color Stack Pointer
-	unsigned int cscolors[4]; // color squares colors
-	unsigned int fgcard[20]; // cached colors for cards on current row
-	unsigned int bgcard[20]; // (used for normal color stack mode)
-} CP1610_Context, *PCP1610_Context;
-
-extern CP1610_Context gCP1610_Context;
-#define CTX(x) gCP1610_Context.x
-#define CP1610_SERIALIZE_VERSION 1
+void CP1610Serialize(struct CP1610serialized *);
+void CP1610Unserialize(const struct CP1610serialized *);
 
 void CP1610Init(void); // Adds opcodes to lookup tables
 

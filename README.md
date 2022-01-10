@@ -4,7 +4,9 @@ FreeIntv is a libretro emulation core for the Mattel Intellivision designed to b
 ## Authors
 
 FreeIntv was created by David Richardson.
-The PSG and STIC emulation was made closer to hardware and optimized by Oscar Toledo G. (nanochess)
+The PSG and STIC emulation was made closer to hardware and optimized by Oscar Toledo G. (nanochess), who also added save states.
+
+The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), and adapted by Oscar Toledo G. (nanochess)
 
 ## License
 The FreeIntv core is licensed under GPLv3. More information at https://github.com/markwkidd/FreeIntv/blob/master/LICENSE.
@@ -19,8 +21,8 @@ FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'sys
 
 * BIOS filenames are case-sensitive
 
-## Entertainment Computer System and Intellivoice
-FreeIntv does not currently support Entertainment Computer System (ECS) and Intellivoice functionality. Contributions to the code are welcome!
+## Entertainment Computer System
+FreeIntv does not currently support Entertainment Computer System (ECS) functionality. Contributions to the code are welcome!
 
 ## Controller overlays
 Mattel Intellivision games were often meant to be played with game-specific cards overlaid on the numeric keypad. These overlays convey information which can be very useful in gameplay. Images of a limited selection of Intellivision titles are available at: http://www.intellivisionlives.com/bluesky/games/instructions.shtml

@@ -14,13 +14,15 @@
 	You should have received a copy of the GNU General Public License
 	along with FreeIntv.  If not, see http://www.gnu.org/licenses/
 */
+#include <stdio.h>
 
-#include "cp1610.h"
+#include "intv.h"
 #include "memory.h"
 #include "stic.h"
 #include "psg.h"
+#include "ivoice.h"
 
-#include <stdio.h>
+unsigned int Memory[0x10000];
 
 int stic_and[64] = {
     0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff,
@@ -59,19 +61,35 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         case 0x0b:  /* 5800-5FFF */
         case 0x0c:  /* 6000-67FF */
         case 0x0d:  /* 6800-6FFF */
+        case 0x14:  /* A000-A7FF */
+        case 0x15:  /* A800-AFFF */
+        case 0x16:  /* B000-B7FF */
+        case 0x1a:  /* D000-D7FF */
+        case 0x1b:  /* D800-DFFF */
+        case 0x1c:  /* E000-E7FF */
+        case 0x1d:  /* E800-EFFF */
+        case 0x1e:  /* F000-F7FF */
             return; /* Ignore */
-        case 0x07:  /* GRAM */
-        case 0x0f:
-        case 0x17:
-        case 0x1f:
-            if (CTX(stic_gram) != 0)
-                CTX(Memory)[adr & 0x39FF] = val;
+        case 0x07:  /* GRAM 3800-3fff */
+        case 0x0f:  /* GRAM 7800-7fff */
+        case 0x17:  /* GRAM B800-BFFF */
+        case 0x1f:  /* GRAM F800-FFFF */
+            if (stic_gram != 0) {
+                // GRAM is 8-bit memory
+                // Note: Without the AND 0xff, Tower of Doom fails as it builds
+                // map from GRAM.
+                Memory[adr & 0x39FF] = val & 0xff;
+            }
             return;
+    }
+    if (adr == 0x80 || adr == 0x81) {
+        ivoice_wr(adr & 1, val);
+        return;
     }
     if(adr>=0x100 && adr<=0x1FF)
     {
         val = val & 0xFF;
-        CTX(Memory)[adr] = val;
+        Memory[adr] = val;
         //PSG Registers
         if(adr>=0x01F0 && adr<=0x1FD)
         {
@@ -80,27 +98,22 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         return;
     }
     
-    // STIC Display Enable
-    if(adr==0x20 || adr==0x4020 || adr==0x8020 || adr==0xC020)
-    {
-        if (CTX(stic_reg) != 0)
-            CTX(DisplayEnabled) = 1;
-    }
-    // STIC Mode Select
-    if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-    {
-        if (CTX(stic_reg) != 0)
-            CTX(STICMode) = 0;
-    }
-    //STIC Alias
-    if((adr>=0x0000 && adr<=0x003F) || (adr>=0x4000 && adr<=0x403F) || (adr>=0x8000 && adr<=0x803F) || (adr>=0xC000 && adr<=0xC03F))
-    {
-        if (CTX(stic_reg) != 0)
-            CTX(Memory)[adr & 0x3F] = (val & stic_and[adr & 0x3f]) | stic_or[adr & 0x3f];;
+    // STIC access
+    if ((adr & 0x3fc0) == 0x0000) {
+        if (stic_reg != 0) {
+            adr &= 0x3f;
+            // STIC Display Enable
+            if (adr == 0x20)
+                DisplayEnabled = 1;
+            // STIC Mode Select
+            if (adr == 0x21)
+                STICMode = 0;   // Foreground/Background mode
+            Memory[adr] = (val & stic_and[adr]) | stic_or[adr];
+        }
         return;
     }
     
-    CTX(Memory)[adr] = val;
+    Memory[adr] = val;
     
 }
 
@@ -111,51 +124,52 @@ int readMem(int adr) // Read (should handle hooks/alias)
     int val;
     
     adr &= 0xffff;
-    val = CTX(Memory)[adr];
+    if (adr == 0x80 || adr == 0x81)
+        return ivoice_rd(adr & 1);
+    // STIC access
+    if ((adr & 0x3fc0) == 0x0000) {
+        if (stic_reg != 0 && (adr & 0x3f) == 0x21)
+            STICMode = 1;   // Color Stack mode
+        if (adr >= 0x4000)
+            return 0xffff;
+        if (stic_reg == 0)  // Return trash
+            return adr & 0x0e;
+        adr &= 0x3f;
+        val = (Memory[adr] & stic_and[adr]) | stic_or[adr];
+        return val;
+	}
+    val = Memory[adr];
 
 	if(adr>=0x100 && adr<=0x1FF)
 	{
 		val = val & 0xFF;
 	}
 
-	if(CTX(stic_reg) != 0)
-	{
-		if(adr<=0x3F)
-		{
-            val = (CTX(Memory)[adr] & stic_and[adr]) | stic_or[adr];
-		}
-
-		// read sensitive addresses
-		if(adr==0x21 || adr==0x4021 || adr==0x8021 || adr==0xC021)
-		{
-			CTX(STICMode) = 1;
-		}
-	}
 	return val;
 }
 
 void MemoryInit()
 {
 	int i;
-	for(i=0x0000; i<=0x0007; i++) { CTX(Memory)[i] = 0x3800; } // STIC Registers
-	for(i=0x0008; i<=0x000F; i++) { CTX(Memory)[i] = 0x3000; }
-	for(i=0x0010; i<=0x0017; i++) { CTX(Memory)[i] = 0x0000; }
-	for(i=0x0018; i<=0x001F; i++) { CTX(Memory)[i] = 0x3C00; }
-	for(i=0x0020; i<=0x003F; i++) { CTX(Memory)[i] = 0x3FFF; }
-	for(i=0x0028; i<=0x002C; i++) { CTX(Memory)[i] = 0x3FF0; }
-	CTX(Memory)[0x30] = 0x3FF8;
-	CTX(Memory)[0x31] = 0x3FF8;
-	CTX(Memory)[0x32] = 0x3FFC;
-	for(i=0x0040; i<=0x007F; i++) { CTX(Memory)[i] = 0x0000; }
-	for(i=0x0080; i<=0x00FF; i++) { CTX(Memory)[i] = 0xFFFF; }
-	for(i=0x0100; i<=0x035F; i++) { CTX(Memory)[i] = 0x0000; } // Scratch, PSG (1F0-1FF), System Ram
-	for(i=0x0360; i<=0x0FFF; i++) { CTX(Memory)[i] = 0xFFFF; }
-	for(i=0x1000; i<=0x1FFF; i++) { CTX(Memory)[i] = 0x0000; } // EXEC ROM
-	for(i=0x2000; i<=0x2FFF; i++) { CTX(Memory)[i] = 0xFFFF; }
-	for(i=0x3000; i<=0x3FFF; i++) { CTX(Memory)[i] = 0x0000; } // GROM, GRAM
-	for(i=0x4000; i<=0x4FFF; i++) { CTX(Memory)[i] = 0xFFFF; }
-	for(i=0x5000; i<=0x5FFF; i++) { CTX(Memory)[i] = 0x0000; }
-	for(i=0x6000; i<=0xFFFF; i++) { CTX(Memory)[i] = 0xFFFF; }
-	CTX(Memory)[0x1FE] = 0xFF; // Controller R
-	CTX(Memory)[0x1FF] = 0xFF; // Controller L
+	for(i=0x0000; i<=0x0007; i++) { Memory[i] = 0x3800; } // STIC Registers
+	for(i=0x0008; i<=0x000F; i++) { Memory[i] = 0x3000; }
+	for(i=0x0010; i<=0x0017; i++) { Memory[i] = 0x0000; }
+	for(i=0x0018; i<=0x001F; i++) { Memory[i] = 0x3C00; }
+	for(i=0x0020; i<=0x003F; i++) { Memory[i] = 0x3FFF; }
+	for(i=0x0028; i<=0x002C; i++) { Memory[i] = 0x3FF0; }
+	Memory[0x30] = 0x3FF8;
+	Memory[0x31] = 0x3FF8;
+	Memory[0x32] = 0x3FFC;
+	for(i=0x0040; i<=0x007F; i++) { Memory[i] = 0x0000; }
+	for(i=0x0080; i<=0x00FF; i++) { Memory[i] = 0xFFFF; }
+	for(i=0x0100; i<=0x035F; i++) { Memory[i] = 0x0000; } // Scratch, PSG (1F0-1FF), System Ram
+	for(i=0x0360; i<=0x0FFF; i++) { Memory[i] = 0xFFFF; }
+	for(i=0x1000; i<=0x1FFF; i++) { Memory[i] = 0x0000; } // EXEC ROM
+	for(i=0x2000; i<=0x2FFF; i++) { Memory[i] = 0xFFFF; }
+	for(i=0x3000; i<=0x3FFF; i++) { Memory[i] = 0x0000; } // GROM, GRAM
+	for(i=0x4000; i<=0x4FFF; i++) { Memory[i] = 0xFFFF; }
+	for(i=0x5000; i<=0x5FFF; i++) { Memory[i] = 0x0000; }
+	for(i=0x6000; i<=0xFFFF; i++) { Memory[i] = 0xFFFF; }
+	Memory[0x1FE] = 0xFF; // Controller R
+	Memory[0x1FF] = 0xFF; // Controller L
 }

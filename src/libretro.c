@@ -23,10 +23,11 @@
 #include <retro_miscellaneous.h>
 
 #include "intv.h"
-#include "memory.h"
 #include "cp1610.h"
+#include "memory.h"
 #include "stic.h"
 #include "psg.h"
+#include "ivoice.h"
 #include "controller.h"
 #include "osd.h"
 
@@ -66,11 +67,13 @@ int  keyboardState = 0;
 // at 44.1khz, read 735 samples (44100/60) 
 // at 48khz, read 800 samples (48000/60)
 // e.g. audioInc = 3733.5 / 735
-int audioSamples = 735;
-//int audioSamples = 800;
+int audioSamples = AUDIO_FREQUENCY / 60;
 
 double audioBufferPos = 0.0;
-double audioInc = 1;
+double audioInc;
+
+double ivoiceBufferPos = 0.0;
+double ivoiceInc;
 
 unsigned int frameWidth = MaxWidth;
 unsigned int frameHeight = MaxHeight;
@@ -114,12 +117,57 @@ void retro_init(void)
 	char gromPath[PATH_MAX_LENGTH];
 	struct retro_keyboard_callback kb = { Keyboard };
 
+	// controller descriptors
+	struct retro_input_descriptor desc[] = {
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Disc Left" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,     "Disc Up" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "Disc Down" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT,  "Disc Right" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "Left Action Button" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "Right Action Button" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      "Top Action Button" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,      "Last Selected Keypad Button" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Swap Left/Right Controllers" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,  "Console Pause" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      "Show Keypad" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      "Show Keypad" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,     "Keypad Clear" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,     "Keypad Enter" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,     "Keypad 0" },
+		{ 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,     "Keypad 5" },
+		{ 0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X, "Keypad [1-9]" },
+		{ 0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y, "Keypad [1-9]" },
+
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,   "Disc Left" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,     "Disc Up" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,   "Disc Down" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT,  "Disc Right" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,      "Left Action Button" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,      "Right Action Button" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y,      "Top Action Button" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X,      "Last Selected Keypad Button" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT, "Swap Left/Right Controllers" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START,  "Console Pause" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,      "Show Keypad" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,      "Show Keypad" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,     "Keypad Clear" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,     "Keypad Enter" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3,     "Keypad 0" },
+		{ 1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3,     "Keypad 5" },
+		{ 1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X, "Keypad [1-9]" },
+		{ 1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y, "Keypad [1-9]" },
+
+		{ 0 },
+	};
+
 	// init buffers, structs
-	memset(CTX(frame), 0, frameSize);
-	OSD_setDisplay(CTX(frame), MaxWidth, MaxHeight);
+	memset(frame, 0, frameSize);
+	OSD_setDisplay(frame, MaxWidth, MaxHeight);
 
 	// setup controller swap
 	controllerInit();
+
+	Environ(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
 	// reset console
 	Init();
@@ -153,7 +201,7 @@ void retro_unload_game(void)
 
 void retro_run(void)
 {
-	int i = 0;
+	int c, i, j, k, l;
 	int showKeypad0 = false;
 	int showKeypad1 = false;
 
@@ -166,7 +214,6 @@ void retro_run(void)
 	}
 
 	/* JoyPad 0 */
-
 	joypad0[0] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
 	joypad0[1] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN);
 	joypad0[2] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
@@ -189,9 +236,10 @@ void retro_run(void)
 	joypad0[15] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
 	joypad0[16] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
 	joypad0[17] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+	joypad0[18] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
+	joypad0[19] = InputState(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
 
 	/* JoyPad 1 */
-
 	joypad1[0] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP);
 	joypad1[1] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN);
 	joypad1[2] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT);
@@ -214,6 +262,8 @@ void retro_run(void)
 	joypad1[15] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
 	joypad1[16] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
 	joypad1[17] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+	joypad1[18] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
+	joypad1[18] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
 
 	// Pause
 	if((joypad0[8]==1 && joypre0[8]==0) || (joypad1[8]==1 && joypre1[8]==0))
@@ -222,59 +272,12 @@ void retro_run(void)
 		if(paused)
 		{
 			OSD_drawPaused();
-#ifdef XBOXPADSTYLEHELP
-			OSD_drawTextCenterBG(21, "HELP - PRESS B");
-#else
 			OSD_drawTextCenterBG(21, "HELP - PRESS A");
-#endif
 		}
 	}
 
 	if(paused)
 	{
-#ifdef XBOXPADSTYLE
-		// If core is being built for a device which uses XBOX style
-		// facebuttons instead of retropad. Reverse the mapping help
-		// help menu //
-		if(joypad0[4]==1 || joypad1[4]==1)
-		{
-			OSD_drawTextBG(3,  4, "                                      ");
-			OSD_drawTextBG(3,  5, "               - HELP -               ");
-			OSD_drawTextBG(3,  6, "                                      ");
-			OSD_drawTextBG(3,  7, " B      - RIGHT ACTION BUTTON         ");
-			OSD_drawTextBG(3,  8, " A      - LEFT ACTION BUTTON          ");
-			OSD_drawTextBG(3,  9, " X      - TOP ACTION BUTTON           ");
-			OSD_drawTextBG(3, 10, " Y      - LAST SELECTED KEYPAD BUTTON ");
-			OSD_drawTextBG(3, 11, " L/R    - SHOW KEYPAD                 ");
-			OSD_drawTextBG(3, 12, "                                      ");
-			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
-			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
-			OSD_drawTextBG(3, 15, "                                      ");
-			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
-			OSD_drawTextBG(3, 17, "                                      ");
-		}
-#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK) || defined(SLAPSHOT)
-		// These games have special mappings so the mapping details
-		// are offputting so just tell them to refer to manual or overlay.
-		// help menu //
-		if(joypad0[4]==1 || joypad1[4]==1)
-		{
-			OSD_drawTextBG(3,  4, "                                      ");
-			OSD_drawTextBG(3,  5, "               - HELP -               ");
-			OSD_drawTextBG(3,  6, "                                      ");
-			OSD_drawTextBG(3,  7, "                                      ");
-			OSD_drawTextBG(3,  8, "         PLEASE CHECK MANUAL          ");
-			OSD_drawTextBG(3,  9, "              OR OVERLAY              ");
-			OSD_drawTextBG(3, 10, "                                      ");
-			OSD_drawTextBG(3, 11, " L/R    - SHOW KEYPAD                 ");
-			OSD_drawTextBG(3, 12, "                                      ");
-			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
-			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
-			OSD_drawTextBG(3, 15, "                                      ");
-			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
-			OSD_drawTextBG(3, 17, "                                      ");
-		}
-#else
 		// help menu //
 		if(joypad0[4]==1 || joypad1[4]==1)
 		{
@@ -286,14 +289,14 @@ void retro_run(void)
 			OSD_drawTextBG(3,  9, " Y      - TOP ACTION BUTTON           ");
 			OSD_drawTextBG(3, 10, " X      - LAST SELECTED KEYPAD BUTTON ");
 			OSD_drawTextBG(3, 11, " L/R    - SHOW KEYPAD                 ");
-			OSD_drawTextBG(3, 12, "                                      ");
-			OSD_drawTextBG(3, 13, " START  - PAUSE GAME                  ");
-			OSD_drawTextBG(3, 14, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
-			OSD_drawTextBG(3, 15, "                                      ");
-			OSD_drawTextBG(3, 16, " FREEINTV 1.2          LICENSE GPL V3 ");
-			OSD_drawTextBG(3, 17, "                                      ");
+			OSD_drawTextBG(3, 12, " LT/RT  - KEYPAD CLEAR/ENTER          ");
+			OSD_drawTextBG(3, 13, "                                      ");
+			OSD_drawTextBG(3, 14, " START  - PAUSE GAME                  ");
+			OSD_drawTextBG(3, 15, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
+			OSD_drawTextBG(3, 16, "                                      ");
+			OSD_drawTextBG(3, 17, " FREEINTV 1.2          LICENSE GPL V3 ");
+			OSD_drawTextBG(3, 18, "                                      ");
 		}
-#endif
 	}
 	else
 	{
@@ -329,24 +332,48 @@ void retro_run(void)
 		Run();
 
 		// draw overlays
-		if(showKeypad0) { drawMiniKeypad(0, CTX(frame)); }
-		if(showKeypad1) { drawMiniKeypad(1, CTX(frame)); }
+		if(showKeypad0) { drawMiniKeypad(0, frame); }
+		if(showKeypad1) { drawMiniKeypad(1, frame); }
 
 		// sample audio from buffer
 		audioInc = 3733.5 / audioSamples;
+		ivoiceInc = 1.0;
 
+		j = 0;
 		for(i=0; i<audioSamples; i++)
 		{
-			Audio(PSGBuffer[(int)(audioBufferPos)], PSGBuffer[(int)(audioBufferPos)]); // Audio(left, right)
-
+			// Sound interpolator:
+			//   The PSG module generates audio at 224010 hz (3733.5 samples per frame)
+			//   Very high frequencies like 0x0001 would generate chirps on output
+			//   (For example, Lock&Chase) so this code interpolates audio, making
+			//   these silent as in real hardware.
 			audioBufferPos += audioInc;
+			k = audioBufferPos;
+			l = k - j;
+
+			c = 0;
+			while (j < k)
+				c += PSGBuffer[j++];
+			c = c / l;
+			// Finally it adds the Intellivoice output (properly generated at the
+			// same frequency as output)
+			c = (c + ivoiceBuffer[(int) ivoiceBufferPos]) / 2;
+
+			Audio(c, c); // Audio(left, right)
+
+			ivoiceBufferPos += ivoiceInc;
+
+			if (ivoiceBufferPos >= ivoiceBufferSize)
+				ivoiceBufferPos = 0.0;
 
 			audioBufferPos = audioBufferPos * (audioBufferPos<(PSGBufferSize-1));
 		}
 		audioBufferPos = 0.0;
 		PSGFrame();
+		ivoiceBufferPos = 0.0;
+		ivoice_frame();
 	}
-#ifndef SHARKSHARK
+
 	// Swap Left/Right Controller
 	if(joypad0[9]==1 || joypad1[9]==1)
 	{
@@ -363,11 +390,11 @@ void retro_run(void)
 			OSD_drawRightLeft();
 		}
 	}
-#endif
-    if (intv_halt)
-        OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
+
+	if (intv_halt)
+		OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
 	// send frame to libretro
-	Video(CTX(frame), frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
+	Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 
 }
 
@@ -387,7 +414,7 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   int pixelformat = RETRO_PIXEL_FORMAT_XRGB8888;
+	int pixelformat = RETRO_PIXEL_FORMAT_XRGB8888;
 
 	memset(info, 0, sizeof(*info));
 	info->geometry.base_width   = MaxWidth;
@@ -397,12 +424,8 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.aspect_ratio = ((float)MaxWidth) / ((float)MaxHeight);
 
 	info->timing.fps = DefaultFPS;
-	info->timing.sample_rate = 44100.0;
+	info->timing.sample_rate = AUDIO_FREQUENCY;
 
-#if 0
-	info->timing.sample_rate = 48000.0;
-	info->timing.sample_rate = 224010;
-#endif
 	Environ(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixelformat);
 }
 
@@ -422,7 +445,7 @@ RETRO_API void *retro_get_memory_data(unsigned id)
 {
 	if(id==RETRO_MEMORY_SYSTEM_RAM)
 	{
-		return CTX(Memory);
+		return Memory;
 	}
 	return 0;
 }
@@ -436,39 +459,56 @@ RETRO_API size_t retro_get_memory_size(unsigned id)
 	return 0;
 }
 
-size_t retro_serialize_size(void) { 
-	return sizeof(gCP1610_Context);
+#define SERIALIZED_VERSION 0x4f544702
+
+struct serialized {
+	int version;
+	struct CP1610serialized CP1610;
+	struct STICserialized STIC;
+	struct PSGserialized PSG;
+	struct ivoiceSerialized ivoice;
+	unsigned int Memory[0x10000];   // Should be equal to Memory.c
+	// Extra variables from intv.c
+	int SR1;
+	int intv_halt;
+};
+
+size_t retro_serialize_size(void)
+{
+	return sizeof(struct serialized);
 }
 
-bool retro_serialize(void *data, size_t size) { 
-	if(size != retro_serialize_size())
-	{
-		// Uhoh
-		return false;
-	}
+bool retro_serialize(void *data, size_t size)
+{
+	struct serialized *all;
 
-	memcpy(data, &gCP1610_Context, sizeof(gCP1610_Context));
-
+	all = (struct serialized *) data;
+	all->version = SERIALIZED_VERSION;
+	CP1610Serialize(&all->CP1610);
+	STICSerialize(&all->STIC);
+	PSGSerialize(&all->PSG);
+	ivoiceSerialize(&all->ivoice);
+	memcpy(all->Memory, Memory, sizeof(Memory));
+	all->SR1 = SR1;
+	all->intv_halt = intv_halt;
 	return true;
 }
 
-bool retro_unserialize(const void *data, size_t size) {
-	if(size != retro_serialize_size())
-	{
-		// Uhoh
+bool retro_unserialize(const void *data, size_t size)
+{
+	const struct serialized *all;
+
+	all = (const struct serialized *) data;
+	if (all->version != SERIALIZED_VERSION)
 		return false;
-	}
-
-	PCP1610_Context restoreContext = (PCP1610_Context)data;
-	if(restoreContext->Version != 1)
-	{
-		// Uhoh, TODO
-		return false;
-	}
-
-	memcpy(&gCP1610_Context, restoreContext, sizeof(gCP1610_Context));
-
-	return true;	
+	CP1610Unserialize(&all->CP1610);
+	STICUnserialize(&all->STIC);
+	PSGUnserialize(&all->PSG);
+	ivoiceUnserialize(&all->ivoice);
+	memcpy(Memory, all->Memory, sizeof(Memory));
+	SR1 = all->SR1;
+	intv_halt = all->intv_halt;
+	return true;
 }
 
 /* Stubs */
