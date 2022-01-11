@@ -100,16 +100,26 @@ int getControllerState(int joypad[], int player)
 	int norm; // theta, normalized 
 
 	int state = 0; //0xFF;
-
+#ifdef VECTRON
 	if(joypad[0]!=0) { state |= D_N; } // 0xFB - Up
 	if(joypad[1]!=0) { state |= D_S; } // 0xFE - Down
-	if(joypad[2]!=0) { state |= D_W; } // 0xF7 - Left
-	if(joypad[3]!=0) { state |= D_E; } // 0xFD - Right
+	if(joypad[2]!=0) { state |= D_SW; } // 0xF7 - Left
+	if(joypad[3]!=0) { state |= D_SE; } // 0xFD - Right
+	if(joypad[0]!=0 && joypad[2]!=0) { state = D_WSW; } // 0xE3 - Up+Left
+	if(joypad[0]!=0 && joypad[3]!=0) { state = D_ESE; } // 0xE9 - Up+Right
+	if(joypad[1]!=0 && joypad[2]!=0) { state = D_SSW; } // 0x36 - Down+Left
+	if(joypad[1]!=0 && joypad[3]!=0) { state = D_SSE; } // 0x3C - Down+Right
+#else
+        if(joypad[0]!=0) { state |= D_N; } // 0xFB - Up
+        if(joypad[1]!=0) { state |= D_S; } // 0xFE - Down
+        if(joypad[2]!=0) { state |= D_W; } // 0xF7 - Left
+        if(joypad[3]!=0) { state |= D_E; } // 0xFD - Right
 
-	if(joypad[0]!=0 && joypad[2]!=0) { state |= D_NW; } // 0xE3 - Up+Left
-	if(joypad[0]!=0 && joypad[3]!=0) { state |= D_NE; } // 0xE9 - Up+Right
-	if(joypad[1]!=0 && joypad[2]!=0) { state |= D_SW; } // 0x36 - Down+Left
-	if(joypad[1]!=0 && joypad[3]!=0) { state |= D_SE; } // 0x3C - Down+Right
+        if(joypad[0]!=0 && joypad[2]!=0) { state = D_NW; } // 0xE3 - Up+Left
+        if(joypad[0]!=0 && joypad[3]!=0) { state = D_NE; } // 0xE9 - Up+Right
+        if(joypad[1]!=0 && joypad[2]!=0) { state = D_SW; } // 0x36 - Down+Left
+        if(joypad[1]!=0 && joypad[3]!=0) { state = D_SE; } // 0x3C - Down+Right
+#endif
 
 #ifdef NIGHTSTALKER
 	//Nightstalker requires keypad to play so map keypad to face buttons
@@ -154,10 +164,19 @@ int getControllerState(int joypad[], int player)
         if(joypad[6]!=0) { state |= K_E; }
         if(joypad[8]!=0) { state |= K_0; } // Map START to K0 instead of pause
 #elif defined(DECATHLON)
-        //Slapshot needs choose player
         if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
         if(joypad[4]!=0) { state |= K_C; } // 0x3F - Button Right
         if(joypad[5]!=0) { state |= K_E; } // 0x9F - Button Left
+        if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
+#elif defined(TOWERDOOM)
+        if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
+        if(joypad[4]!=0) { state |= K_C; } // 0x3F - Button Right
+        if(joypad[5]!=0) { state |= K_E; } // 0x9F - Button Left
+        if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
+#elif defined(VECTRON)
+        if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
+        if(joypad[4]!=0) { state |= B_RIGHT; } // 0x9F - Button Left
+        if(joypad[5]!=0) { state |= B_LEFT; } // 0x3F - Button Right
         if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
 #else
 	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
@@ -204,7 +223,6 @@ int getControllerState(int joypad[], int player)
 	// L/R triggers for Keypad Enter/Clear
 	if(joypad[12]!=0) { state |= K_C; } // 0x88 - Keypad Clear
 	if(joypad[13]!=0) { state |= K_E; } // 0x28 - Keypad Enter
-
 	return state;
 }
 
