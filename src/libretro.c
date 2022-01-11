@@ -265,7 +265,7 @@ void retro_run(void)
 	joypad1[18] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3);
 	joypad1[19] = InputState(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3);
 
-#if	!defined(HOVERFORCE) && !defined(MOUNTAINSKI)
+#if	!defined(HOVERFORCE) && !defined(MOUNTAINSKI) && !defined(CLOUDY)
 	// Pause
 	if((joypad0[8]==1 && joypre0[8]==0) || (joypad1[8]==1 && joypre1[8]==0))
 	{
@@ -306,7 +306,8 @@ void retro_run(void)
 			OSD_drawTextBG(3, 17, " FREEINTV 1.3          LICENSE GPL V2 ");
 			OSD_drawTextBG(3, 18, "                                      ");
                 }
-#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK) || defined(SLAPSHOT) || defined(HOVERFORCE) || defined(DECATHLON) || defined (TOWERDOOM) || defined (VECTRON)
+#elif defined(NIGHTSTALKER) || defined(ASTROSMASH) || defined(PINBALL) || defined(SHARKSHARK) || defined(SLAPSHOT) || \
+	defined(HOVERFORCE) || defined(DECATHLON) || defined (TOWERDOOM) || defined (VECTRON) || defined(CLOUDY)
 		// These games have special mappings so the mapping details
 		// are offputting so just tell them to refer to manual or overlay.
 		// help menu //
@@ -352,6 +353,18 @@ void retro_run(void)
 	}
 	else
 	{
+#ifdef CLOUDY
+                if(joypad0[10]) // left shoulder down (Right shoulder required for gameplay in A D&D Cloudy Mountain)
+                {
+                        showKeypad0 = true;
+                        setControllerInput(0, getKeypadState(0, joypad0, joypre0));
+                }
+                else
+                {
+                        showKeypad0 = false;
+                        setControllerInput(0, getControllerState(joypad0, 0));
+                }
+#else
 		if(joypad0[10] | joypad0[11]) // left/right shoulder down
 		{
 			showKeypad0 = true;
@@ -362,8 +375,20 @@ void retro_run(void)
 			showKeypad0 = false;
 			setControllerInput(0, getControllerState(joypad0, 0));
 		}
-
-		if(joypad1[10] | joypad1[11]) // left shoulder down
+#endif
+#ifdef CLOUDY
+                if(joypad1[10]) // left shoulder down (Right shoulder required for gameplay in A D&D Cloudy Mountain)
+                {
+                        showKeypad1 = true;
+                        setControllerInput(1, getKeypadState(1, joypad1, joypre1));
+                }
+                else
+                {
+                        showKeypad1 = false;
+                        setControllerInput(1, getControllerState(joypad1, 1));
+                }
+#else
+		if(joypad1[10] | joypad1[11]) // left/right shoulder down
 		{
 			showKeypad1 = true;
 			setControllerInput(1, getKeypadState(1, joypad1, joypre1));
@@ -373,7 +398,7 @@ void retro_run(void)
 			showKeypad1 = false;
 			setControllerInput(1, getControllerState(joypad1, 1));
 		}
-
+#endif
 		if(keyboardDown || keyboardChange)
 		{
 			setControllerInput(0, keyboardState);
@@ -425,7 +450,7 @@ void retro_run(void)
 		ivoiceBufferPos = 0.0;
 		ivoice_frame();
 	}
-#if	!defined(SHARKSHARK) || !defined(REVCONTROLLERS)
+#ifndef CLOUDY
 	// Swap Left/Right Controller
 	if(joypad0[9]==1 || joypad1[9]==1)
 	{

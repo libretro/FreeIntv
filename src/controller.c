@@ -91,13 +91,13 @@ void setControllerInput(int player, int state)
 
 int getControllerState(int joypad[], int player)
 {
-	// converts joypad input for use by system  
+	// converts joypad input for use by system
 	int Lx = 0; // left analog X
 	int Ly = 0; // left analog Y
 	int Rx = 0; // right analog X
 	int Ry = 0; // right analog Y
 	double theta; // analog joy angle
-	int norm; // theta, normalized 
+	int norm; // theta, normalized
 
 	int state = 0; //0xFF;
 #ifdef VECTRON
@@ -121,20 +121,20 @@ int getControllerState(int joypad[], int player)
         if(joypad[1]!=0 && joypad[3]!=0) { state = D_SE; } // 0x3C - Down+Right
 #endif
 
-#ifdef NIGHTSTALKER
+#if defined(NIGHTSTALKER)
 	//Nightstalker requires keypad to play so map keypad to face buttons
 	if(joypad[7]!=0) { state |= K_4; }
 	if(joypad[4]!=0) { state |= K_6; }
 	if(joypad[5]!=0) { state |= K_8; }
 	if(joypad[6]!=0) { state |= K_2; }
-#elif SHARKSHARK
+#elif defined(SHARKSHARK)
 	//Add Dart moves to shark shark
 	if(joypad[7]!=0) { state |= K_1; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= K_3; } // 0x9F - Button Left
 	if(joypad[5]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
 	if(joypad[6]!=0) { state |= K_6; }
 #elif defined(ASTROSMASH)
-	//Astrosmash requires keypad to play so map Button Top to K3 (Hyper space) 
+	//Astrosmash requires keypad to play so map Button Top to K3 (Hyper space)
 	if(joypad[7]!=0) { state |= K_3; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= K_2; } // 0x3F - Button Right
 	if(joypad[5]!=0) { state |= B_LEFT; } // 0x9F - Button Left
@@ -178,6 +178,18 @@ int getControllerState(int joypad[], int player)
         if(joypad[4]!=0) { state |= B_RIGHT; } // 0x9F - Button Left
         if(joypad[5]!=0) { state |= B_LEFT; } // 0x3F - Button Right
         if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
+#elif defined(CLOUDY)
+        if(joypad[7]!=0) { state |= K_4; }
+        if(joypad[4]!=0) { state |= K_6; }
+        if(joypad[5]!=0) { state |= K_8; }
+        if(joypad[6]!=0) { state |= K_2; }
+        if(joypad[6]!=0 && joypad[7]!=0) { state = K_1; } // Up+Left facebuttons
+        if(joypad[6]!=0 && joypad[4]!=0) { state = K_3; } // Up+Right facebuttons
+        if(joypad[5]!=0 && joypad[7]!=0) { state = K_7; } // Down+Left facebuttons
+        if(joypad[5]!=0 && joypad[4]!=0) { state = K_9; } // Down+Right facebuttons
+        if(joypad[8]!=0) { state |= K_E; }
+	if(joypad[9]!=0) { state |= K_C; }
+	if(joypad[11]!=0) { state |= B_TOP; }
 #else
 	if(joypad[7]!=0) { state |= B_TOP; } // 0x5F - Button Top
 	if(joypad[4]!=0) { state |= B_LEFT; } // 0x9F - Button Left
@@ -191,12 +203,12 @@ int getControllerState(int joypad[], int player)
 	Ly = joypad[15] / 8192;
 	if(Lx != 0 || Ly != 0)
 	{
-		// find angle 
+		// find angle
 		theta = atan2((double)Ly, (double)Lx) + PI;
 		// normalize
 		if(theta<0.0) { theta = 0.0; }
 		norm = floor((theta/(2*PI))*15.0);
-		norm -= 3; 
+		norm -= 3;
 		if(norm<0) { norm += 16; }
 		state |= discDirections[norm & 0x0F];
 	}
@@ -206,12 +218,12 @@ int getControllerState(int joypad[], int player)
 	Ry = joypad[17] / 8192;
 	if(Rx != 0 || Ry != 0)
 	{
-		// find angle 
+		// find angle
 		theta = atan2((double)Ry, (double)Rx) + PI;
 		// normalize
 		if(theta<0.0) { theta = 0.0; }
 		norm = floor((theta/(2*PI))*7.0);
-		norm -= 1; 
+		norm -= 1;
 		if(norm<0) { norm += 8; }
 		state |= keypadDirections[norm & 0x07];
 	}
@@ -220,10 +232,16 @@ int getControllerState(int joypad[], int player)
 	if(joypad[18]!=0) { state |= K_0; } // 0x48 - Keypad 0
 	if(joypad[19]!=0) { state |= K_5; } // 0x42 - Keypad 5
 
+#ifdef CLOUDY
+        // L trigger used for in game gameplay (QOL - check arrows)
+        if(joypad[13]!=0) { state |= K_0; }
+        return state;
+#else
 	// L/R triggers for Keypad Enter/Clear
 	if(joypad[12]!=0) { state |= K_C; } // 0x88 - Keypad Clear
 	if(joypad[13]!=0) { state |= K_E; } // 0x28 - Keypad Enter
 	return state;
+#endif
 }
 
 // Mini keypads, displayed in the corner using a shoulder button,
