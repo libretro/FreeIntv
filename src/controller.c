@@ -69,6 +69,7 @@ int cursor[4] = { 0, 0, 0, 0 }; // mini keypad cursor (button row/column p0x,p0y
 
 int getQuickKeypadState(int player);
 
+// This function is no longer directly called, the default controller is managed via core option now
 void controllerInit()
 {
 	controllerSwap = 0;
