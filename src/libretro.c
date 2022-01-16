@@ -306,29 +306,49 @@ static void update_input(void)
 	joypad0[2] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)   ? 1 : 0;
 	joypad0[3] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)  ? 1 : 0;
 
-	joypad0[4] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
-	joypad0[5] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
-	joypad0[6] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_X)      ? 1 : 0;
-	joypad0[7] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_Y)      ? 1 : 0;
-
-	joypad0[8] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_START)  ? 1 : 0;
-	joypad0[9] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) ? 1 : 0;
-
-	joypad0[10] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L)     ? 1 : 0;
-	joypad0[11] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R)     ? 1 : 0;
-	joypad0[12] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L2)    ? 1 : 0;
-	joypad0[13] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R2)    ? 1 : 0;
-	joypad0[18] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)    ? 1 : 0;
-	joypad0[19] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)    ? 1 : 0;
-
 	joypad0[14] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
 	joypad0[15] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
 
-	// If we have enabled the Dual Controller option, the Keypad right stick inputs will come from Controller 2
+	// If we have enabled the Dual Controller option, the keypad and action buttons will come from the other controller
 	if (!dual_controllers)
 	{
+		joypad0[4] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
+		joypad0[5] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
+		joypad0[6] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_X)      ? 1 : 0;
+		joypad0[7] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_Y)      ? 1 : 0;
+
+		joypad0[8] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_START)  ? 1 : 0;
+		joypad0[9] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) ? 1 : 0;
+
+		joypad0[10] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L)     ? 1 : 0;
+		joypad0[11] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R)     ? 1 : 0;
+		joypad0[12] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L2)    ? 1 : 0;
+		joypad0[13] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R2)    ? 1 : 0;
+		joypad0[18] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)    ? 1 : 0;
+		joypad0[19] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)    ? 1 : 0;
+
 		joypad0[16] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
 		joypad0[17] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+	}
+	else
+	{
+		joypad0[4] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
+		joypad0[5] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
+		joypad0[6] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_X)      ? 1 : 0;
+		joypad0[7] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_Y)      ? 1 : 0;
+
+		joypad0[8] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_START)  ? 1 : 0;
+		joypad0[9] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) ? 1 : 0;
+
+		joypad0[10] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L)     ? 1 : 0;
+		joypad0[11] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R)     ? 1 : 0;
+		joypad0[12] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L2)    ? 1 : 0;
+		joypad0[13] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R2)    ? 1 : 0;
+		joypad0[18] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)    ? 1 : 0;
+		joypad0[19] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)    ? 1 : 0;
+
+		joypad0[16] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
+		joypad0[17] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
 	}
 
 	/* JoyPad 1 */
@@ -337,32 +357,47 @@ static void update_input(void)
 	joypad1[2] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)   ? 1 : 0;
 	joypad1[3] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)  ? 1 : 0;
 
-	joypad1[4] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
-	joypad1[5] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
-	joypad1[6] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_X)      ? 1 : 0;
-	joypad1[7] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_Y)      ? 1 : 0;
-
-	joypad1[8] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_START)  ? 1 : 0;
-	joypad1[9] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) ? 1 : 0;
-
-	joypad1[10] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L)     ? 1 : 0;
-	joypad1[11] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R)     ? 1 : 0;
-	joypad1[12] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L2)    ? 1 : 0;
-	joypad1[13] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R2)    ? 1 : 0;
-	joypad1[18] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)    ? 1 : 0;
-	joypad1[19] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)    ? 1 : 0;
-
 	joypad1[14] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
 	joypad1[15] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
 
-	// If we have enabled the Dual Controller option, the right analog will be routed to Controller 1
+	// If we have enabled the Dual Controller option, the keypad and action buttons will come from the other controller
 	if (!dual_controllers)
 	{
+		joypad1[4] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
+		joypad1[5] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
+		joypad1[6] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_X)      ? 1 : 0;
+		joypad1[7] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_Y)      ? 1 : 0;
+
+		joypad1[8] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_START)  ? 1 : 0;
+		joypad1[9] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) ? 1 : 0;
+
+		joypad1[10] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L)     ? 1 : 0;
+		joypad1[11] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R)     ? 1 : 0;
+		joypad1[12] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L2)    ? 1 : 0;
+		joypad1[13] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R2)    ? 1 : 0;
+		joypad1[18] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)    ? 1 : 0;
+		joypad1[19] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)    ? 1 : 0;
+
 		joypad1[16] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
 		joypad1[17] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
 	}
 	else
 	{
+		joypad1[4] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_A)      ? 1 : 0;
+		joypad1[5] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_B)      ? 1 : 0;
+		joypad1[6] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_X)      ? 1 : 0;
+		joypad1[7] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_Y)      ? 1 : 0;
+
+		joypad1[8] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_START)  ? 1 : 0;
+		joypad1[9] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) ? 1 : 0;
+
+		joypad1[10] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L)     ? 1 : 0;
+		joypad1[11] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R)     ? 1 : 0;
+		joypad1[12] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L2)    ? 1 : 0;
+		joypad1[13] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R2)    ? 1 : 0;
+		joypad1[18] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_L3)    ? 1 : 0;
+		joypad1[19] = joypad_bits[0] & (1 << RETRO_DEVICE_ID_JOYPAD_R3)    ? 1 : 0;
+
 		joypad1[16] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
 		joypad1[17] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
 	}
@@ -515,6 +550,7 @@ void retro_run(void)
 	else
 	{
 		// Only show the OSD keypad if the controller type is the default type - otherwise L/R are utilized as a normal input button
+		// @todo need to fix this to handle the dual controller option so it works as expected even when this option is enabled
 		if ((joypad0[10] | joypad0[11]) && !keypadButtonMode[0]) // left/right shoulder down
 		{
 			showKeypad0 = true;
