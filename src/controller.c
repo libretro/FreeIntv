@@ -67,6 +67,10 @@ int keypadStates[12]={ K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9, K_C, K_0, K_
 
 int cursor[4] = { 0, 0, 0, 0 }; // mini keypad cursor (button row/column p0x,p0y p1x,p1y)
 
+// flag to determine if keypad buttons are mapped to individual controller buttons
+// such as L/R and X rather than the default configuration
+int keypadButtonMode[2] = { 0, 0 };
+
 int getQuickKeypadState(int player);
 
 // This function is no longer directly called, the default controller is managed via core option now
@@ -110,7 +114,20 @@ int getControllerState(int joypad[], int player)
 	if(joypad[4]!=0) { state |= B_LEFT; } // 0x9F - Button Left
 	if(joypad[5]!=0) { state |= B_RIGHT; } // 0x3F - Button Right
 
-	if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
+	// Default configuration maps X to the last used keypad button
+	if(!keypadButtonMode[player])
+	{
+		if(joypad[6]!=0) { state |= getQuickKeypadState(player); }
+	}
+	else
+	{
+		// In Keypad mode the numpad keys that don't correspond to the up/down/left/right axes on the Rt Analog
+		// are mapped to buttons directly so they can be accessed/remapped via the RetroArch controller interface
+		if(joypad[6]!=0) { state |= K_1; } // 0x81 - Keypad 1
+		if(joypad[9]!=0) { state |= K_9; } // 0x24 - Keypad 9
+		if(joypad[10]!=0) { state |= K_3; } // 0x21 - Keypad 3
+		if(joypad[11]!=0) { state |= K_7; } // 0x84 - Keypad 7
+	}
 
 	/* Analog Controls for 16-way disc control */
 
