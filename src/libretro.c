@@ -47,6 +47,7 @@ retro_audio_sample_t Audio;
 retro_audio_sample_batch_t AudioBatch;
 retro_input_poll_t InputPoll;
 retro_input_state_t InputState;
+retro_log_printf_t log_cb;
 
 void retro_set_video_refresh(retro_video_refresh_t fn) { Video = fn; }
 void retro_set_audio_sample(retro_audio_sample_t fn) { Audio = fn; }
@@ -229,6 +230,7 @@ void retro_init(void)
 	char execPath[PATH_MAX_LENGTH];
 	char gromPath[PATH_MAX_LENGTH];
 	struct retro_keyboard_callback kb = { Keyboard };
+        struct retro_log_callback log;
 
 	// controller descriptors
 	struct retro_input_descriptor desc[] = {
@@ -272,6 +274,11 @@ void retro_init(void)
 
 		{ 0 },
 	};
+
+	if (Environ(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
+		log_cb = log.log;
+	else
+		log_cb = NULL;
 
 	// init buffers, structs
 	memset(frame, 0, frameSize);
@@ -488,7 +495,6 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 	Environ(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &pixelformat);
 }
-
 
 void retro_deinit(void)
 {
