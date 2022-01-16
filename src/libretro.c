@@ -74,6 +74,7 @@ bool paused = false;
 bool keyboardChange = false;
 bool keyboardDown = false;
 int  keyboardState = 0;
+static bool dual_controllers = false;
 
 // at 44.1khz, read 735 samples (44100/60) 
 // at 48khz, read 800 samples (48000/60)
@@ -257,6 +258,18 @@ static void check_variables(bool first_run)
 				controllerSwap = 1;
 		}
 	}
+
+	// Check if the Dual Controller option should be set
+	var.key   = "dual_controller_enabled";
+	var.value = NULL;
+
+	dual_controllers = false;
+
+	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	{
+		if (strcmp(var.value, "enabled") == 0)
+			dual_controllers = true;
+	}
 }
 
 static void update_input(void)
@@ -310,8 +323,13 @@ static void update_input(void)
 
 	joypad0[14] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
 	joypad0[15] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
-	joypad0[16] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
-	joypad0[17] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+
+	// If we have enabled the Dual Controller option, the Keypad right stick inputs will come from Controller 2
+	if (!dual_controllers)
+	{
+		joypad0[16] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
+		joypad0[17] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+	}
 
 	/* JoyPad 1 */
 	joypad1[0] = joypad_bits[1] & (1 << RETRO_DEVICE_ID_JOYPAD_UP)     ? 1 : 0;
@@ -336,8 +354,18 @@ static void update_input(void)
 
 	joypad1[14] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
 	joypad1[15] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
-	joypad1[16] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
-	joypad1[17] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+
+	// If we have enabled the Dual Controller option, the right analog will be routed to Controller 1
+	if (!dual_controllers)
+	{
+		joypad1[16] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
+		joypad1[17] = InputState(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+	}
+	else
+	{
+		joypad1[16] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
+		joypad1[17] = InputState(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+	}
 }
 
 void retro_set_environment(retro_environment_t fn)
@@ -620,6 +648,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 void retro_deinit(void)
 {
 	libretro_supports_bitmasks = false;
+	dual_controllers = false;
 	quit(0);
 }
 
