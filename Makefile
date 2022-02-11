@@ -143,16 +143,19 @@ endif
 DEFINES := -DIOS
 
 # Lightweight PS3 Homebrew SDK
-else ifeq ($(platform), psl1ght)
+else ifneq (,$(filter $(platform), ps3 psl1ght))
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
-	CC = $(PS3DEV)/ppu/bin/ppu-gcc$(EXE_EXT)
-	AR = $(PS3DEV)/ppu/bin/ppu-ar$(EXE_EXT)
+	CC = $(PS3DEV)/ppu/bin/ppu-$(COMMONLV)gcc$(EXE_EXT)
+	AR = $(PS3DEV)/ppu/bin/ppu-$(COMMONLV)ar$(EXE_EXT)
 	ENDIANNESS_DEFINES := -DMSB_FIRST
 	CFLAGS += -DWORDS_BIGENDIAN=1
 	GCC_DEFINES :=
-	PLATFORM_DEFINES := -D__PSL1GHT__ -D__ppc__
+	PLATFORM_DEFINES := -D__PS3__ -D__ppc__
 	HAVE_RZLIB := 1
 	STATIC_LINKING=1
+	ifeq ($(platform), psl1ght)
+		PLATFORM_DEFINES += -D__PSL1GHT__ 
+	endif
 
 # Xbox 360 (libxenon)
 else ifeq ($(platform), xenon)
