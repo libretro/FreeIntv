@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include <string.h>
 #include "libretro.h"
-#include "libretro_core_options.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
@@ -46,6 +45,7 @@ retro_audio_sample_batch_t AudioBatch;
 retro_input_poll_t InputPoll;
 retro_input_state_t InputState;
 
+void retro_set_environment(retro_environment_t fn) { Environ = fn; }
 void retro_set_video_refresh(retro_video_refresh_t fn) { Video = fn; }
 void retro_set_audio_sample(retro_audio_sample_t fn) { Audio = fn; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t fn) { AudioBatch = fn; }
@@ -112,33 +112,6 @@ static void Keyboard(bool down, unsigned keycode,
 	}
 }
 
-static void check_variables(bool first_run)
-{
-	struct retro_variable var = {0};
-
-	if (first_run)
-	{
-		var.key   = "default_p1_controller";
-		var.value = NULL;
-
-		// by default input 0 maps to Right Controller (0x1FE)
-		// and input 1 maps to Left Controller (0x1FF)
-		controllerSwap = 0;
-
-		if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-		{
-			if (strcmp(var.value, "left") == 0)
-				controllerSwap = 1;
-		}
-	}
-}
-
-void retro_set_environment(retro_environment_t fn)
-{
-	Environ = fn;
-	libretro_set_core_options(Environ);
-}
-
 void retro_init(void)
 {
 	char execPath[PATH_MAX_LENGTH];
@@ -192,6 +165,9 @@ void retro_init(void)
 	memset(frame, 0, frameSize);
 	OSD_setDisplay(frame, MaxWidth, MaxHeight);
 
+	// setup controller swap
+	controllerInit();
+
 	Environ(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
 	// reset console
@@ -215,7 +191,6 @@ void retro_init(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-	check_variables(true);
 	LoadGame(info->path);
 	return true;
 }
@@ -230,10 +205,6 @@ void retro_run(void)
 	int c, i, j, k, l;
 	int showKeypad0 = false;
 	int showKeypad1 = false;
-
-	bool options_updated  = false;
-	if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &options_updated) && options_updated)
-		check_variables(false);
 
 	InputPoll();
 
