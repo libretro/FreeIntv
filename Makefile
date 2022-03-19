@@ -593,9 +593,9 @@ ifeq (,$(findstring msvc,$(platform)))
 endif
 
 ifeq ($(DEBUG), 1)
-	CXXFLAGS += -O0 -g
+	CFLAGS += -O0 -g
 else
-	CXXFLAGS += -O2 -DNDEBUG
+	CFLAGS += -O2 -DNDEBUG
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
