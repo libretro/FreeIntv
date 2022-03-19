@@ -329,7 +329,16 @@ else ifeq ($(platform), retrofw)
 	CFLAGS += -fomit-frame-pointer -ffast-math	
 	CFLAGS += -funsafe-math-optimizations -fsingle-precision-constant -fexpensive-optimizations
 	CFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-unroll-loops
-	
+
+# Miyoo
+else ifeq ($(platform), miyoo)
+	TARGET := $(TARGET_NAME)_libretro.so
+	CC = /opt/miyoo/usr/bin/arm-linux-gcc
+	AR = /opt/miyoo/usr/bin/arm-linux-ar
+	fpic := -fPIC
+	SHARED := -shared -Wl,--version-script=link.T -Wl,-no-undefined
+	CFLAGS += -mcpu=arm926ej-s -ffast-math
+
 # Windows MSVC 2010 x64
 else ifeq ($(platform), windows_msvc2010_x64)
 	CC  = cl.exe
@@ -584,9 +593,9 @@ ifeq (,$(findstring msvc,$(platform)))
 endif
 
 ifeq ($(DEBUG), 1)
-	CXXFLAGS += -O0 -g
+	CFLAGS += -O0 -g
 else
-	CXXFLAGS += -O2 -DNDEBUG
+	CFLAGS += -O2 -DNDEBUG
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
