@@ -37,8 +37,8 @@ Mattel Intellivision games were often meant to be played with game-specific card
 | D-Pad| 8-way movement |
 | Left Analog Stick | 16-way disc |
 | Right Analog Stick | 8-way keypad |
-| L3(Left Analog Stick) | Keypad 0 |
-| R3(Right Analog Stick) | Keypad 5 |
+| L3 | Keypad 0 |
+| R3 | Keypad 5 |
 | L2 | Keypad Clear |
 | R2 | Keypad Enter |
 | A | Left Action Button |
@@ -48,4 +48,3 @@ Mattel Intellivision games were often meant to be played with game-specific card
 | L/R | Activate the Mini-Keypad |
 | Start | Pause Game |
 | Select | Controller Swap |
-
