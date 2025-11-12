@@ -14,7 +14,8 @@ SOURCES_C   := \
 	$(SOURCE_DIR)/osd.c \
 	$(SOURCE_DIR)/ivoice.c \
 	$(SOURCE_DIR)/psg.c \
-	$(SOURCE_DIR)/stic.c
+	$(SOURCE_DIR)/stic.c \
+	$(SOURCE_DIR)/stb_image_impl.c
 
 ifeq ($(STATIC_LINKING),1)
 else
