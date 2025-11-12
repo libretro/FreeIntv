@@ -1,4 +1,5 @@
 # DESCRIPTION: GitLab CI/CD for libRetro (NOT FOR GitLab-proper)
+# FreeIntv - Intellivision emulator with touchscreen support
 
 ##############################################################################
 ################################# BOILERPLATE ################################
@@ -8,7 +9,7 @@
 .core-defs:
   variables:
     JNI_PATH: .
-    CORENAME: freeintv
+    CORENAME: FreeIntv
 
 include:
   ################################## DESKTOPS ################################
