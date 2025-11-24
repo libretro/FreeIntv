@@ -1,13 +1,13 @@
-# FreeIntvTSOverlay User Guide
+# FreeIntv User Guide
 
 ## Overview
-FreeIntvTSOverlay is a libretro core for emulating the Mattel Intellivision, featuring enhanced touchscreen support and a dual-screen overlay UI. This guide explains how to set up and use the core in RetroArch, including instructions for overlay PNG files.
+FreeIntv is a libretro core for emulating the Mattel Intellivision, featuring enhanced touchscreen support and a dual-screen overlay UI. This guide explains how to set up and use the core in RetroArch, including instructions for overlay PNG files.
 
 ---
 
 ## Requirements
 - RetroArch (latest recommended)
-- FreeIntvTSOverlay core (`freeintvtsoverlay_libretro.so`, `.dll`, or `.dylib`)
+- FreeIntv core (`FreeIntv_libretro.so`, `.dll`, or `.dylib`)
 - Intellivision BIOS files: `exec.bin`, `grom.bin` (place in RetroArch `system` folder)
 - Game ROMs (Intellivision format)
 - Overlay PNG files (for custom keypad/utility UI)
@@ -17,7 +17,7 @@ FreeIntvTSOverlay is a libretro core for emulating the Mattel Intellivision, fea
 ## Installation
 1. **Install RetroArch**
    - Download from https://www.retroarch.com/
-2. **Install FreeIntvTSOverlay Core**
+2. **Install FreeIntv Core**
    - Place the core file in RetroArch's `cores` directory
    - Load the core via RetroArch's "Load Core" menu
 3. **Add BIOS Files**
@@ -28,41 +28,57 @@ FreeIntvTSOverlay is a libretro core for emulating the Mattel Intellivision, fea
 ---
 
 ## Using Overlay PNG Files
-Overlay PNG files provide custom graphics for the keypad and utility buttons.
+Overlay PNG files provide custom graphics for the keypad and utility banner.
 
 
 ### Where to Place Overlay PNG Files
-   - Example: `retroarch/system/FreeIntvTS_Overlays/`
+   - Base folder: `retroarch/system/freeIntv_image_assets/`
+   - Game-specific overlays: `retroarch/system/freeIntv_image_assets/overlays/`
 
 
-## Download Core Assets
+## Asset Installation
 
-You will need to download two separate ZIP files:
+The FreeIntv core requires 3 core asset files, plus optional user-provided overlays:
 
-1. **Controller Templates & Buttons:**
-   - [FreeTS_Overlay Core Assets.zip](https://github.com/jcarr71/FreeIntvTSOverlay/releases/latest/download/FreeTS_Overlay_Core_Assets.zip)
-   - This contains the controller template, default keypad, and utility button PNGs.
+**Required Core Assets (3 files) - Place in `retroarch/system/freeIntv_image_assets/`:**
+1. **banner.png** (704×152 pixels)
+   - Purpose: Fills the utility workspace with interactive toggle button
+   - Status: REQUIRED
 
-2. **Overlay PNGs:**
-   - [Overlays.zip](https://github.com/jcarr71/FreeIntvTSOverlay/releases/latest/download/Overlays.zip)
-   - This contains the actual overlays for individual games.
+2. **controller_base.png**
+   - Purpose: Background for keypad overlay
+   - Status: Required
+
+3. **default.png**
+   - Purpose: Fallback overlay if ROM-specific overlay not found
+   - Status: Required
+
+**User-Provided Game Overlays - Place in `retroarch/system/freeIntv_image_assets/overlays/`:**
+- Named to match ROM filenames (e.g., `astrosmash.png` for `astrosmash.bin`)
+- One PNG per game (optional, but recommended for best experience)
 
 **Installation Instructions:**
-1. Download both ZIP files from the links above.
-2. Unzip the contents of each ZIP file.
-3. Copy all files and folders from both ZIPs into your `retroarch\system` directory.
-   - The overlays should end up in `retroarch\system\FreeIntvTS_Overlays`.
-4. Restart RetroArch if it is running.
+1. Create the folder structure in your RetroArch system directory:
+   ```
+   retroarch/system/freeIntv_image_assets/
+   ├── banner.png
+   ├── controller_base.png
+   ├── default.png
+   └── overlays/
+       ├── astrosmash.png
+       ├── nightstalker.png
+       └── (more game overlays)
+   ```
+2. Place the 3 core asset files in `freeIntv_image_assets/`
+3. Place game-specific overlays in `freeIntv_image_assets/overlays/`
+4. Restart RetroArch if it is running
 
-Your overlays and assets will now be available for use with the FreeIntvTSOverlay core.
-
-## Touchscreen UI
-
-## Touchscreen & Mouse Support
+## Touchscreen & Pointer Support
 - On Android, touch the keypad area to send input to the emulator.
-- On Windows and Linux, you can use the mouse to click on the keypad overlay and utility buttons. Mouse clicks are mapped to touch events, allowing full use of the overlay UI features.
-- Utility button (Swap Screen) is available below the game screen.
-- The "Swap Screen" button toggles the position of the game and keypad overlays.
+- On Windows and Linux, you can use the mouse to click on the keypad overlay. Mouse clicks are mapped to touch events, allowing full use of the overlay UI features.
+- **Swap Screen Button**: A toggle button in the utility banner switches between two display layouts:
+  - Normal: Game screen on left, keypad on right
+  - Swapped: Keypad on left, game screen on right
 
 ---
 
@@ -75,7 +91,7 @@ Your overlays and assets will now be available for use with the FreeIntvTSOverla
 
 ## Additional Resources
 - [RetroArch Documentation](https://docs.libretro.com/)
-- [FreeIntvTSOverlay GitHub](https://github.com/jcarr71/FreeIntvTSOverlay)
+- [FreeIntv GitHub](https://github.com/jcarr71/FreeIntv)
 
 ---
 

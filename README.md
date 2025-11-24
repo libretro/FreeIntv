@@ -37,48 +37,47 @@ FreeIntv does not currently support Entertainment Computer System (ECS) function
 Mattel Intellivision games were often meant to be played with game-specific cards overlaid on the numeric keypad. These overlays convey information which can be very useful in gameplay. Images of a limited selection of Intellivision titles are available at: http://www.intellivisionlives.com/bluesky/games/instructions.shtml
 
 ### Overlay PNG Files (Touchscreen)
-To use custom keypad and utility overlays with the touchscreen UI, download the required asset files:
-
-1. **Compiled Core Library:**
-  - [FreeIntvTSOverlay_libretro.zip](Assets/FreeIntvTSOverlay_libretro.zip)
-  - Pre-compiled core binaries for all platforms (Windows DLL, Linux SO, etc.)
-
-2. **Controller Templates & Buttons:**
-  - [FreeIntvTS_Overlay Core Assets.zip](Assets/FreeIntvTS_Overlay%20Core%20Assets.zip)
-  - Contains the controller template, default keypad, and utility button PNGs.
-
-3. **Overlay PNGs:**
-  - [Overlays.zip](Assets/Overlays.zip)
-  - Contains the actual overlays for individual games.
+To use custom keypad and utility overlays with the touchscreen UI, set up the asset folder structure:
 
 **Installation Instructions:**
 
-**Step 1: Download the ZIP files**
-- Download all 3 ZIP files from the links above.
-
-**Step 2: Extract and Organize Files**
-- Extract `FreeIntvTSOverlay_libretro.zip` → Contains core binaries and `.info` file
-- Extract `FreeIntvTS_Overlay Core Assets.zip` → Contains controller template and default keypad
-- Extract `Overlays.zip` → Contains game-specific overlays
-
-**Step 3: Install Core Binary**
+**Step 1: Install Core Binary**
 - Place the core file for your platform into: `RetroArch/cores/`
-  - Windows: `FreeIntvTSOverlay_libretro.dll`
-  - Linux: `FreeIntvTSOverlay_libretro.so`
-  - macOS: `FreeIntvTSOverlay_libretro.dylib`
-- ⚠️ **Important:** If the core filename includes a platform identifier in brackets like `[Windows]FreeIntvTSOverlay_libretro.dll`, remove the brackets and platform name so it matches the info file: `FreeIntvTSOverlay_libretro.dll`
+  - Windows: `FreeIntv_libretro.dll`
+  - Linux: `FreeIntv_libretro.so`
+  - macOS: `FreeIntv_libretro.dylib`
 
-**Step 4: Install Info File**
-- Copy `FreeIntvTSOverlay_libretro.info` to: `RetroArch/info/`
+**Step 2: Install Info File**
+- Copy `FreeIntv_libretro.info` to: `RetroArch/info/`
 - ⚠️ **Important:** The info filename must match the core filename exactly (excluding file extension)
 
-**Step 5: Install Overlays**
-- Copy all files from both extracted archives to: `RetroArch/system/FreeIntvTS_Overlays/`
-  - Game overlays should be named to match your ROM files (e.g., `Astrosmash.png`)
+**Step 3: Create Asset Folder Structure**
+- Create the following folder structure in: `RetroArch/system/`
+  ```
+  system/
+  └── freeIntv_image_assets/
+      ├── banner.png              (704×152 utility bar banner - REQUIRED)
+      ├── controller_base.png     (Controller overlay base image)
+      ├── default.png             (Default overlay if ROM-specific not found)
+      └── overlays/
+          ├── astrosmash.png      (Game-specific overlay - matches ROM filename)
+          ├── nightstalker.png
+          └── ... (one PNG per game - user provided)
+  ```
 
-**Step 6: Refresh RetroArch**
-- Delete RetroArch's info cache (usually in `RetroArch/system/` or config folder)
-- Restart RetroArch to load the new core  
+**Step 4: Add Required Core Asset Files (3 files)**
+Place these files in `RetroArch/system/freeIntv_image_assets/`:
+- **banner.png**: 704×152 pixel image for the utility bar (REQUIRED)
+- **controller_base.png**: Controller overlay background image
+- **default.png**: Fallback overlay image if ROM-specific overlay not found
+
+**Step 5: Add User-Provided Game Overlays**
+Place game-specific overlay PNGs in `RetroArch/system/freeIntv_image_assets/overlays/`:
+- Name each file to match your ROM filename (without extension)
+- Example: If your ROM is `astrosmash.bin`, name the overlay `astrosmash.png`
+
+**Step 5: Refresh RetroArch**
+- Restart RetroArch to load the new core
 
 Recommended naming: ensure the PNG filename matches the ROM filename (excluding extension).
 ### Overlay PNG Files (Touchscreen & Mouse)

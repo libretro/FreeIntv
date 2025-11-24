@@ -1,8 +1,8 @@
-# FreeIntvTSOverlay with Android Touchscreen Support - AI Agent Instructions
+# FreeIntv with Android Touchscreen Support - AI Agent Instructions
 
 ## Project Overview
 
-FreeIntvTSOverlay is a libretro emulation core for the Mattel Intellivision, recently enhanced with Android touchscreen support. The codebase is a C-based emulator that runs on the libretro framework, supporting multiple platforms (Linux, Windows, macOS, Nintendo Switch, PS Vita, etc.).
+FreeIntv is a libretro emulation core for the Mattel Intellivision, recently enhanced with Android touchscreen support. The codebase is a C-based emulator that runs on the libretro framework, supporting multiple platforms (Linux, Windows, macOS, Nintendo Switch, PS Vita, etc.).
 
 **Key Architecture**: Libretro plugin core → RetroArch frontend. The core handles CPU emulation, graphics, audio, controllers, and now dual-screen rendering with an integrated touchscreen keypad UI.
 
@@ -124,9 +124,9 @@ Combine with bitwise OR: `state |= K_5 | D_N` for "keypad 5 + North direction"
 
 ## Build & Deploy
 
-- **Libretro repository**: Changes should track with upstream libretro/FreeIntvTSOverlay
-- **Core release**: Plugin compiled to `freeintvtsoverlay_libretro.{so,dll,dylib}` depending on platform
-- **Android APK**: Built via RetroArch Android app; FreeIntvTSOverlay core loads as plugin
+- **Libretro repository**: Changes should track with upstream libretro/FreeIntv
+- **Core release**: Plugin compiled to `FreeIntv_libretro.{so,dll,dylib}` depending on platform
+- **Android APK**: Built via RetroArch Android app; FreeIntv core loads as plugin
 
 ---
 
