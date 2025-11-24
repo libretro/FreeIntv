@@ -58,28 +58,9 @@
 #define UTILITY_AREA_HEIGHT 100 // Space for 6 buttons in 2 rows
 #define KEYPAD_WIDTH 370        // Keypad overlay width
 #define KEYPAD_HEIGHT 600       // Keypad overlay height
-#define UTILITY_BUTTON_WIDTH 60
-#define UTILITY_BUTTON_HEIGHT 50
-
 // Keypad hotspot configuration
 #define OVERLAY_HOTSPOT_COUNT 12
 #define OVERLAY_HOTSPOT_SIZE 70
-
-// RetroArch utility button codes
-#define RETROARCH_MENU 1000
-#define RETROARCH_PAUSE 1001
-#define RETROARCH_REWIND 1002
-#define RETROARCH_SAVE 1003
-#define RETROARCH_LOAD 1004
-#define RETROARCH_SWAP_OVERLAY 1005
-#define RETROARCH_QUIT 1006
-#define RETROARCH_RESET 1007
-#define RETROARCH_SCREENSHOT 1008
-#define RETROARCH_TOGGLE_DISPLAY 1009
-
-#define UTILITY_BUTTON_COUNT 6
-#define MENU_BUTTON_WIDTH 200
-#define MENU_BUTTON_HEIGHT 50
 
 // NOTE: Keypad codes are defined in controller.c - DO NOT redefine here!
 // Using correct codes from controller.c:
@@ -92,36 +73,13 @@ typedef struct {
     int y;
     int width;
     int height;
-    const char* label;
-    int command;  // RetroArch command code
-} utility_button_t;
-
-typedef struct {
-    int x;
-    int y;
-    int width;
-    int height;
     int id;
     int keypad_code;
 } overlay_hotspot_t;
 
 overlay_hotspot_t overlay_hotspots[OVERLAY_HOTSPOT_COUNT];
 
-// Utility buttons positioned in 704×152 utility workspace (below game screen)
-// Layout: 2 rows × 3 columns, menu_button.png placeholders (200×50 each)
-// Available space: X=0-704 (704px = same as game width), Y=448-600 (152px height)
-// Evenly distributed with 5px gaps: 3*200 + 2*5 = 610px, margins = (704-610)/2 = 47px
-// Vertically: 2*50 + 1*5 = 105px, margins = (152-105)/2 = 23.5px
-static utility_button_t utility_buttons[UTILITY_BUTTON_COUNT] = {
-    // Row 1 (Y=471) - 3 buttons with 5px horizontal gaps
-    {44, 471, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, "Menu", RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO},           // Menu button - command placeholder
-    {249, 471, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, "Quit", 0},                                              // Quit button - command placeholder
-    {454, 471, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, "Swap", 0},                                              // Swap button - command placeholder
-    // Row 2 (Y=526) - 3 buttons with 5px horizontal gaps
-    {44, 526, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, "Save", 0},                                               // Save button - command placeholder
-    {249, 526, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, "Load", 0},                                               // Load button - command placeholder
-    {454, 526, MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, "Screenshot", 0}                                          // Screenshot button - command placeholder
-};
+// Utility workspace now contains only banner with toggle button in gold box
 
 // Display system variables
 static int dual_screen_enabled = 1;
@@ -132,9 +90,6 @@ static int display_swap = 0;  // 0 = game left/keypad right, 1 = game right/keyp
 
 // Hotspot input tracking
 static int hotspot_pressed[OVERLAY_HOTSPOT_COUNT] = {0};  // Track which hotspots are currently pressed
-
-// Utility button input tracking
-static int utility_button_pressed[UTILITY_BUTTON_COUNT] = {0};  // Track which buttons are currently pressed
 
 // PNG overlay system
 static char current_rom_path[512] = {0};
@@ -180,31 +135,15 @@ static int controller_base_loaded = 0;
 static int controller_base_width = 446;
 static int controller_base_height = 620;
 
-// Individual button images for utility buttons (6 separate PNGs)
-// Top row: button_ra_menu.png, button_quit.png, button_swapscreen.png
-// Bottom row: button_save.png, button_load.png, button_screenshot.png
-static struct {
-    unsigned int* buffer;
-    int loaded;
-    int width;
-    int height;
-} utility_button_images[UTILITY_BUTTON_COUNT] = {
-    {NULL, 0, 0, 0},  // Button 0: button_ra_menu.png
-    {NULL, 0, 0, 0},  // Button 1: button_quit.png
-    {NULL, 0, 0, 0},  // Button 2: button_swapscreen.png
-    {NULL, 0, 0, 0},  // Button 3: button_save.png
-    {NULL, 0, 0, 0},  // Button 4: button_load.png
-    {NULL, 0, 0, 0}   // Button 5: button_screenshot.png
-};
+// Banner for utility workspace
+static unsigned int* banner_buffer = NULL;
+static int banner_loaded = 0;
+static int banner_width = 704;
+static int banner_height = 152;
 
-static const char* button_filenames[UTILITY_BUTTON_COUNT] = {
-    "button_ra_menu.png",
-    "button_quit.png",
-    "button_swapscreen.png",
-    "button_save.png",
-    "button_load.png",
-    "button_screenshot.png"
-};
+// Toggle button hotspot (in the gold box area of the banner)
+static int toggle_button_pressed = 0;
+static int last_toggle_button_state = 0;
 
 // Initialize overlay hotspots for keypad (positioned on RIGHT side)
 static void init_overlay_hotspots(void)
@@ -342,72 +281,46 @@ static void load_controller_base(void)
     }
 }
 
-// Load individual button images for utility buttons
-static void load_utility_buttons(void)
+// Load banner PNG
+static void load_banner(void)
 {
-    if (!system_dir[0]) {
+    if (banner_loaded || !system_dir[0]) {
         return;
     }
     
-    for (int i = 0; i < UTILITY_BUTTON_COUNT; i++) {
-        // DISABLED: Only load swap screen button (button 2)
-        // All other utility buttons are disabled
-        if (i != 2) {
-            // Skip loading for disabled buttons
-            continue;
-        }
-        
-        if (utility_button_images[i].loaded) {
-            continue;  // Already loaded
-        }
-        
-        char btn_path[512];
-        build_system_overlay_path(btn_path, sizeof(btn_path), button_filenames[i]);
-        
-        int width, height, channels;
-        unsigned char* img_data = stbi_load(btn_path, &width, &height, &channels, 4);
-        
-        if (img_data) {
-            printf("[UTILITY_BUTTON] Loaded button %d (%s): %dx%d\n", i, button_filenames[i], width, height);
-            utility_button_images[i].width = width;
-            utility_button_images[i].height = height;
-            
-            if (!utility_button_images[i].buffer) {
-                utility_button_images[i].buffer = (unsigned int*)malloc(width * height * sizeof(unsigned int));
-            }
-            
-            if (utility_button_images[i].buffer) {
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        unsigned char* pixel = img_data + (y * width + x) * 4;
-                        unsigned int alpha = pixel[3];
-                        unsigned int r = pixel[0];
-                        unsigned int g = pixel[1];
-                        unsigned int b = pixel[2];
-                        utility_button_images[i].buffer[y * width + x] = (alpha << 24) | (r << 16) | (g << 8) | b;
-                    }
-                }
-                utility_button_images[i].loaded = 1;
-                stbi_image_free(img_data);
-                printf("[UTILITY_BUTTON] Button %d loaded successfully\n", i);
-            }
-        } else {
-            printf("[UTILITY_BUTTON] Failed to load %s from %s\n", button_filenames[i], btn_path);
-        }
+    char banner_path[512];
+    build_system_overlay_path(banner_path, sizeof(banner_path), "banner.png");
+    
+    int width, height, channels;
+    unsigned char* img_data = stbi_load(banner_path, &width, &height, &channels, 4);
+    
+    if (!img_data) {
+        printf("[BANNER] Failed to load banner from: %s\n", banner_path);
+        return;
     }
-}
-
-// Cleanup utility button images
-static void cleanup_utility_buttons(void)
-{
-    for (int i = 0; i < UTILITY_BUTTON_COUNT; i++) {
-        if (utility_button_images[i].buffer) {
-            free(utility_button_images[i].buffer);
-            utility_button_images[i].buffer = NULL;
+    
+    printf("[BANNER] Loaded banner: %dx%d\n", width, height);
+    banner_width = width;
+    banner_height = height;
+    
+    if (!banner_buffer) {
+        banner_buffer = (unsigned int*)malloc(width * height * sizeof(unsigned int));
+    }
+    
+    if (banner_buffer) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                unsigned char* pixel = img_data + (y * width + x) * 4;
+                unsigned int alpha = pixel[3];
+                unsigned int r = pixel[0];
+                unsigned int g = pixel[1];
+                unsigned int b = pixel[2];
+                banner_buffer[y * width + x] = (alpha << 24) | (r << 16) | (g << 8) | b;
+            }
         }
-        utility_button_images[i].loaded = 0;
-        utility_button_images[i].width = 0;
-        utility_button_images[i].height = 0;
+        banner_loaded = 1;
+        stbi_image_free(img_data);
+        printf("[BANNER] Banner loaded successfully\n");
     }
 }
 
@@ -440,10 +353,21 @@ static void build_overlay_path(const char* rom_path, char* overlay_path, size_t 
     
     // Detect path separator based on system_dir content
     char sep = strchr(system_dir, '/') ? '/' : '\\';
-    snprintf(overlay_path, overlay_path_size, 
-             "%s%cfreeIntv_image_assets%c%.*s.png",
-             system_dir, sep, sep, (int)name_len, filename);
-    printf("[DEBUG] ROM overlay path (sep=%c): %s\n", sep, overlay_path);
+    
+    // Check if system_dir has trailing separator
+    size_t sys_len = strlen(system_dir);
+    int has_trailing = (sys_len > 0 && (system_dir[sys_len-1] == '/' || system_dir[sys_len-1] == '\\'));
+    
+    if (has_trailing) {
+        snprintf(overlay_path, overlay_path_size, 
+                 "%sfreeIntv_image_assets%coverlays%c%.*s.png",
+                 system_dir, sep, sep, (int)name_len, filename);
+    } else {
+        snprintf(overlay_path, overlay_path_size, 
+                 "%s%cfreeIntv_image_assets%coverlays%c%.*s.png",
+                 system_dir, sep, sep, sep, (int)name_len, filename);
+    }
+    printf("[DEBUG] ROM overlay path: %s\n", overlay_path);
 }
 
 // Load overlay for ROM
@@ -636,99 +560,32 @@ static void render_dual_screen(void)
     
     // === UTILITY BUTTONS (BELOW game screen, move with game when swapped) ===
     // Draw utility button PNG images
-    int buttons_loaded = 0;
-    for (int i = 0; i < UTILITY_BUTTON_COUNT; i++) {
-        if (utility_button_images[i].loaded) {
-            buttons_loaded++;
-        }
-    }
-    
-    if (buttons_loaded > 0) {
-        for (int i = 0; i < UTILITY_BUTTON_COUNT; i++) {
-            // DISABLED: Only render swap screen button (button 2)
-            // All other utility buttons are disabled and not rendered
-            if (i != 2) {
-                continue;
-            }
-            
-            if (!utility_button_images[i].loaded || !utility_button_images[i].buffer) {
-                continue;
-            }
-            
-            utility_button_t* btn = &utility_buttons[i];
-            int img_width = utility_button_images[i].width;
-            int img_height = utility_button_images[i].height;
-            
-            // Apply game_x_offset to utility button position (buttons move with game)
-            int button_x_offset = game_x_offset;
-            
-            // Blit individual button texture to workspace
-            for (int img_y = 0; img_y < img_height; img_y++) {
-                for (int img_x = 0; img_x < img_width; img_x++) {
-                    int workspace_x = button_x_offset + btn->x + img_x;
-                    int workspace_y = btn->y + img_y;
-                    
-                    if (workspace_x >= WORKSPACE_WIDTH || workspace_y >= WORKSPACE_HEIGHT) continue;
-                    if (workspace_x < 0) continue;
-                    
-                    unsigned int button_pixel = utility_button_images[i].buffer[img_y * img_width + img_x];
-                    unsigned int alpha = (button_pixel >> 24) & 0xFF;
-                    
-                    if (alpha > 0) {
-                        // Blend with alpha
-                        if (alpha == 255) {
-                            dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = button_pixel;
-                        } else {
-                            // Alpha blend
-                            unsigned int existing = dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x];
-                            unsigned int inv_alpha = 255 - alpha;
-                            
-                            unsigned int r = ((button_pixel >> 16) & 0xFF);
-                            unsigned int g = ((button_pixel >> 8) & 0xFF);
-                            unsigned int b = (button_pixel & 0xFF);
-                            
-                            unsigned int existing_r = ((existing >> 16) & 0xFF);
-                            unsigned int existing_g = ((existing >> 8) & 0xFF);
-                            unsigned int existing_b = (existing & 0xFF);
-                            
-                            unsigned int blended_r = (r * alpha + existing_r * inv_alpha) / 255;
-                            unsigned int blended_g = (g * alpha + existing_g * inv_alpha) / 255;
-                            unsigned int blended_b = (b * alpha + existing_b * inv_alpha) / 255;
-                            
-                            dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // === UTILITY BUTTON HIGHLIGHTING WHEN PRESSED ===
-        for (int i = 0; i < UTILITY_BUTTON_COUNT; i++) {
-            // DISABLED: Only highlight swap screen button (button 2)
-            // All other utility buttons are disabled
-            if (i != 2) {
-                continue;
-            }
-            
-            if (utility_button_pressed[i]) {
-                utility_button_t* btn = &utility_buttons[i];
-                unsigned int highlight_color = 0x88FFFF00;  // Yellow semi-transparent highlight
+    // === RENDER BANNER IN UTILITY WORKSPACE ===
+    if (banner_loaded && banner_buffer) {
+        // Blit banner to utility area at position (game_x_offset, 448)
+        for (int banner_y = 0; banner_y < banner_height; banner_y++) {
+            for (int banner_x = 0; banner_x < banner_width; banner_x++) {
+                int workspace_x = game_x_offset + banner_x;
+                int workspace_y = 448 + banner_y;
                 
-                // Apply game_x_offset to highlight position (buttons move with game)
-                int button_x_offset = game_x_offset;
+                if (workspace_x >= WORKSPACE_WIDTH || workspace_y >= WORKSPACE_HEIGHT) continue;
+                if (workspace_x < 0) continue;
                 
-                for (int y = btn->y; y < btn->y + btn->height; ++y) {
-                    if (y >= WORKSPACE_HEIGHT) continue;
-                    for (int x = button_x_offset + btn->x; x < button_x_offset + btn->x + btn->width; ++x) {
-                        if (x < 0 || x >= WORKSPACE_WIDTH) continue;
-                        
-                        unsigned int existing = dual_buffer[y * WORKSPACE_WIDTH + x];
-                        unsigned int alpha = (highlight_color >> 24) & 0xFF;
+                unsigned int banner_pixel = banner_buffer[banner_y * banner_width + banner_x];
+                unsigned int alpha = (banner_pixel >> 24) & 0xFF;
+                
+                if (alpha > 0) {
+                    // Blend with alpha
+                    if (alpha == 255) {
+                        dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = banner_pixel;
+                    } else {
+                        // Alpha blend
+                        unsigned int existing = dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x];
                         unsigned int inv_alpha = 255 - alpha;
                         
-                        unsigned int r = ((highlight_color >> 16) & 0xFF);
-                        unsigned int g = ((highlight_color >> 8) & 0xFF);
-                        unsigned int b = (highlight_color & 0xFF);
+                        unsigned int r = ((banner_pixel >> 16) & 0xFF);
+                        unsigned int g = ((banner_pixel >> 8) & 0xFF);
+                        unsigned int b = (banner_pixel & 0xFF);
                         
                         unsigned int existing_r = ((existing >> 16) & 0xFF);
                         unsigned int existing_g = ((existing >> 8) & 0xFF);
@@ -738,22 +595,19 @@ static void render_dual_screen(void)
                         unsigned int blended_g = (g * alpha + existing_g * inv_alpha) / 255;
                         unsigned int blended_b = (b * alpha + existing_b * inv_alpha) / 255;
                         
-                        dual_buffer[y * WORKSPACE_WIDTH + x] = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
+                        dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
                     }
                 }
             }
         }
     } else {
-        // Fallback: Draw gold rectangles if utility buttons not loaded
-        unsigned int utility_color = 0xFFFFD700;
-        for (int i = 0; i < UTILITY_BUTTON_COUNT; i++) {
-            utility_button_t* btn = &utility_buttons[i];
-            for (int y = btn->y; y < btn->y + btn->height; ++y) {
-                if (y >= WORKSPACE_HEIGHT) break;
-                for (int x = btn->x; x < btn->x + btn->width; ++x) {
-                    if (x >= WORKSPACE_WIDTH) break;
-                    dual_buffer[y * WORKSPACE_WIDTH + x] = utility_color;
-                }
+        // Fallback: Draw dark background if banner not loaded
+        unsigned int utility_bg_color = 0xFF1a2a3a;  // Dark blue-gray
+        for (int y = 448; y < 600; y++) {
+            if (y >= WORKSPACE_HEIGHT) break;
+            for (int x = game_x_offset; x < game_x_offset + GAME_SCREEN_WIDTH; x++) {
+                if (x >= WORKSPACE_WIDTH) break;
+                dual_buffer[y * WORKSPACE_WIDTH + x] = utility_bg_color;
             }
         }
     }
@@ -912,20 +766,14 @@ void quit(int state);
 // ========================================
 
 // Process utility button touchscreen input and trigger RetroArch commands
-static void process_utility_button_input(void)
+static void process_toggle_button_input(void)
 {
-    static int call_count = 0;
-    call_count++;
-    if (call_count % 100 == 0) {
-        debug_log("[UTILITY_INPUT] Function called %d times", call_count);
-    }
-    
-    // Get pointer/touchscreen input (RETRO_DEVICE_POINTER for touchscreen, RETRO_DEVICE_MOUSE for mouse)
+    // Get pointer/touchscreen input
     int16_t ptr_x_normalized = (int16_t)InputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
     int16_t ptr_y_normalized = (int16_t)InputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
     int mouse_button = InputState(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
     
-    // Transform from normalized coordinates (-32767 to 32767) to pixel coordinates (0 to WORKSPACE_WIDTH/HEIGHT)
+    // Transform from normalized coordinates to pixel coordinates
     int mouse_x = 0;
     int mouse_y = 0;
     if (ptr_x_normalized != 0 || ptr_y_normalized != 0 || mouse_button) {
@@ -938,74 +786,39 @@ static void process_utility_button_input(void)
         if (mouse_y >= WORKSPACE_HEIGHT) mouse_y = WORKSPACE_HEIGHT - 1;
     }
     
-    static int last_mouse_x = -1;
-    static int last_mouse_y = -1;
-    static int coord_logged = 0;
+    // Define toggle button hotspot - 80×80 gold box
+    // Position: X=611, Y=36 (relative to banner)
+    // Margins: 36px from top/bottom, 13px from right
+    // Center: (651, 76) relative to banner
     
-    // Log coordinates on change or button press
-    if (mouse_button && (!coord_logged || mouse_x != last_mouse_x || mouse_y != last_mouse_y)) {
-        debug_log("[UTILITY] TOUCH DETECTED! Raw: x_norm=%d y_norm=%d -> Transformed: x=%d y=%d button=%d", 
-                  ptr_x_normalized, ptr_y_normalized, mouse_x, mouse_y, mouse_button);
-        for (int i = 0; i < UTILITY_BUTTON_COUNT; i++) {
-            utility_button_t* btn = &utility_buttons[i];
-            int is_over = (mouse_x >= btn->x && mouse_x < btn->x + btn->width &&
-                          mouse_y >= btn->y && mouse_y < btn->y + btn->height);
-            debug_log("  Btn%d [x=%d-%d y=%d-%d]: %s", i, btn->x, btn->x+btn->width, btn->y, btn->y+btn->height, is_over?"HIT":"miss");
-        }
-        last_mouse_x = mouse_x;
-        last_mouse_y = mouse_y;
-        coord_logged = 1;
-    }
-    if (!mouse_button) coord_logged = 0;
+    int banner_start_x = display_swap ? KEYPAD_WIDTH : 0;
+    int banner_start_y = 448;
     
-    // Track pressed buttons
-    for (int i = 0; i < UTILITY_BUTTON_COUNT; i++)
-    {
-        // DISABLED: Only process swap screen button (button 2)
-        // All other utility buttons are disabled
-        if (i != 2) {
-            // Clear pressed state for disabled buttons
-            utility_button_pressed[i] = 0;
-            continue;
+    // Toggle button center in workspace coordinates
+    int toggle_x = banner_start_x + 651;  // Banner X + center X of gold box
+    int toggle_y = banner_start_y + 76;   // Banner Y + center Y of gold box
+    int toggle_radius = 45;  // Approximately half diagonal of 80×80 box for circular touch detection
+    
+    // Check if touch is within toggle button area (circular hotspot)
+    int dx = mouse_x - toggle_x;
+    int dy = mouse_y - toggle_y;
+    int distance_sq = dx * dx + dy * dy;
+    int is_over = (distance_sq <= toggle_radius * toggle_radius);
+    
+    if (is_over && mouse_button) {
+        if (!toggle_button_pressed) {
+            toggle_button_pressed = 1;
+            last_toggle_button_state = 1;
+            printf("[TOGGLE] Toggle button pressed at x=%d y=%d\n", mouse_x, mouse_y);
         }
-        
-        utility_button_t* btn = &utility_buttons[i];
-        
-        // When display_swap is true, utility buttons move with game (apply same offset as rendering)
-        // Use the same offset calculation as the rendering: display_swap ? KEYPAD_WIDTH : 0
-        int button_x = (display_swap ? KEYPAD_WIDTH : 0) + btn->x;
-        
-        // Check if mouse is over this button
-        int is_over = (mouse_x >= button_x && mouse_x < button_x + btn->width &&
-                       mouse_y >= btn->y && mouse_y < btn->y + btn->height);
-        
-        if (is_over && mouse_button)
-        {
-            // Button was pressed/held over this button
-            if (!utility_button_pressed[i])
-            {
-                // Button press detected - trigger command
-                utility_button_pressed[i] = 1;
-                
-                // Execute button-specific action
-                switch(i)
-                {
-                    case 2:  // Swap screen button
-                        debug_log("[BUTTON] Swap screen button pressed at x=%d y=%d", mouse_x, mouse_y);
-                        display_swap = !display_swap;
-                        break;
-                }
-            }
+    } else {
+        if (toggle_button_pressed && last_toggle_button_state) {
+            // Button released - perform toggle action
+            display_swap = !display_swap;
+            printf("[TOGGLE] Screen toggled! display_swap=%d\n", display_swap);
         }
-        else
-        {
-            // Button released or mouse moved away
-            if (utility_button_pressed[i])
-            {
-                utility_button_pressed[i] = 0;
-                printf("[BUTTON] Button %d released\n", i);
-            }
-        }
+        toggle_button_pressed = 0;
+        last_toggle_button_state = 0;
     }
 }
 
@@ -1137,7 +950,6 @@ unsigned int frameSize =  MaxWidth * MaxHeight; //78848
 
 void quit(int state)
 {
-	cleanup_utility_buttons();
 	Reset();
 	MemoryInit();
 }
@@ -1288,9 +1100,9 @@ bool retro_load_game(const struct retro_game_info *info)
 		printf("[GAME] Last char: '%c' (code %d)\n", system_dir[strlen(system_dir)-1], system_dir[strlen(system_dir)-1]);
 		printf("[GAME] ============================================================\n");
 		
-		// Load controller base, utility buttons, and ROM-specific overlay
+		// Load controller base, banner, and ROM-specific overlay
 		load_controller_base();
-		load_utility_buttons();
+		load_banner();
 		load_overlay_for_rom(info->path);
 		init_overlay_hotspots();
 	} else {
@@ -1429,8 +1241,8 @@ void retro_run(void)
 		// Process hotspot input directly - each hotspot assigned to its relative keypad button
 		process_hotspot_input();
 		
-		// Process utility button input - map to RetroArch commands
-		process_utility_button_input();
+		// Process toggle button input - map to screen swap
+		process_toggle_button_input();
 		
 		// Keep regular controller input for compatibility with non-overlay gameplay
 		// If no hotspot is pressed, fall back to standard controller input
