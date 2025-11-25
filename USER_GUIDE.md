@@ -27,6 +27,25 @@ FreeIntv is a libretro core for emulating the Mattel Intellivision, featuring en
 
 ---
 
+## Enabling the Dual-Screen / Multi-Screen Display
+
+The FreeIntv core includes an enhanced dual-screen layout option that displays the game on one side and a keypad UI on the other.
+
+### To Enable the Feature:
+
+**In RetroArch:**
+1. **Launch a game** using the FreeIntv core (make sure a game is running)
+2. **Open the Quick Menu** (usually by pressing `Hotkey + X` on your controller, or via the menu)
+3. **Navigate to**: Options (or "Core Options")
+4. Look for the **"Display Overlay"** option (or similar multi-screen setting)
+5. Set it to **"Enabled"** or the desired layout option
+6. **Close the menu** (the setting takes effect immediately)
+7. **Save Core Configuration** (Optional):
+   - In the Quick Menu, select "Overrides" → "Save Core Overrides" to make this the default for all FreeIntv games
+   - Or select "Save Game Overrides" to save the setting for this specific game only
+
+The dual-screen display will now be active, showing the game on one side and the keypad UI on the other.
+
 ## Using Game Overlays
 
 Game overlay PNG files provide custom graphics for the keypad area, displaying the actual game control layout and instructions.

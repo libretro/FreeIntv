@@ -51,7 +51,6 @@
 // HORIZONTAL LAYOUT DISPLAY CONFIGURATION
 // ========================================
 // Game Screen: Left side (704×448, 2x scaled from 352×224)
-// Utility Buttons: Below game (704×100)
 // Keypad: Right side (370×600)
 // Total Workspace: 1074 × 600 pixels (keypad full height)
 
@@ -59,8 +58,6 @@
 #define WORKSPACE_HEIGHT 600    // Keypad full height (600px)
 #define GAME_SCREEN_WIDTH 704   // 352 * 2x
 #define GAME_SCREEN_HEIGHT 448  // 224 * 2x
-#define UTILITY_AREA_WIDTH 704  // Same as game width
-#define UTILITY_AREA_HEIGHT 100 // Space for 6 buttons in 2 rows
 #define KEYPAD_WIDTH 370        // Keypad overlay width
 #define KEYPAD_HEIGHT 600       // Keypad overlay height
 // Keypad hotspot configuration
@@ -84,8 +81,6 @@ typedef struct {
 
 overlay_hotspot_t overlay_hotspots[OVERLAY_HOTSPOT_COUNT];
 
-// Utility workspace now contains only banner with toggle button in gold box
-
 // Display system variables
 static int dual_screen_enabled = 1;
 static void* dual_screen_buffer = NULL;
@@ -100,36 +95,6 @@ static int hotspot_pressed[OVERLAY_HOTSPOT_COUNT] = {0};  // Track which hotspot
 static char current_rom_path[512] = {0};
 static unsigned int* overlay_buffer = NULL;
 static int overlay_loaded = 0;
-
-// Debug logging to file
-static FILE* debug_log_file = NULL;
-static void debug_log(const char* format, ...) {
-    if (!debug_log_file) {
-        // Try multiple paths
-        const char* paths[] = {
-            "/storage/emulated/0/Download/freeintv_debug.log",
-            "/data/local/tmp/freeintv_debug.log",
-            "/sdcard/freeintv_debug.log",
-            "/storage/3861-3938/freeintv_debug.log"
-        };
-        for (int i = 0; i < 4; i++) {
-            debug_log_file = fopen(paths[i], "a");
-            if (debug_log_file) {
-                fprintf(debug_log_file, "[LOG STARTED] Path: %s\n", paths[i]);
-                fflush(debug_log_file);
-                break;
-            }
-        }
-    }
-    if (debug_log_file) {
-        va_list args;
-        va_start(args, format);
-        vfprintf(debug_log_file, format, args);
-        fprintf(debug_log_file, "\n");
-        fflush(debug_log_file);
-        va_end(args);
-    }
-}
 static int overlay_width = 370;
 static int overlay_height = 600;
 
@@ -543,8 +508,6 @@ static void render_dual_screen(void)
     
 
     
-    // === UTILITY BUTTONS (BELOW game screen, move with game when swapped) ===
-    // Draw utility button PNG images
     // === RENDER BANNER IN UTILITY WORKSPACE ===
     if (banner_loaded && banner_buffer) {
         // Blit banner to utility area at position (game_x_offset, 448)
@@ -833,10 +796,6 @@ static void process_hotspot_input(void)
         if (mouse_x >= WORKSPACE_WIDTH) mouse_x = WORKSPACE_WIDTH - 1;
         if (mouse_y < 0) mouse_y = 0;
         if (mouse_y >= WORKSPACE_HEIGHT) mouse_y = WORKSPACE_HEIGHT - 1;
-        
-        // Log HOTSPOT activity
-        debug_log("[HOTSPOT_INPUT] Call#%d: mouse_x=%d, mouse_y=%d, button=%d, ptr_x_norm=%d, ptr_y_norm=%d",
-                  call_count, mouse_x, mouse_y, mouse_button, ptr_x_normalized, ptr_y_normalized);
     }
     
     // Track pressed hotspots
@@ -866,8 +825,6 @@ static void process_hotspot_input(void)
             {
                 // Button press detected - send keypad code
                 hotspot_pressed[i] = 1;
-                debug_log("[HOTSPOT_PRESS] Button %d (idx=%d) pressed at (%d,%d) code=0x%02X",
-                          i, i, mouse_x, mouse_y, h->keypad_code);
             }
         }
         else
@@ -876,7 +833,6 @@ static void process_hotspot_input(void)
             if (hotspot_pressed[i])
             {
                 hotspot_pressed[i] = 0;
-                debug_log("[HOTSPOT_RELEASE] Button %d released", i);
             }
         }
     }
@@ -889,16 +845,12 @@ static void process_hotspot_input(void)
         if (hotspot_pressed[i])
         {
             hotspot_input |= overlay_hotspots[i].keypad_code;
-            debug_log("[HOTSPOT_COMBINE] Button %d: code=0x%02X, combined=0x%02X",
-                      i, overlay_hotspots[i].keypad_code, hotspot_input);
         }
     }
     
     // Send hotspot input directly to controller 0 (player 1)
     if (hotspot_input)
     {
-        debug_log("[HOTSPOT_SEND] hotspot_input=0x%02X -> setControllerInput(0, 0x%02X)",
-                  hotspot_input, hotspot_input);
         setControllerInput(0, hotspot_input);
     }
 }

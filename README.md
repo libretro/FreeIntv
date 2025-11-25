@@ -16,6 +16,43 @@ The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), an
 <div style="margin: 18px 0;"><img width="1372" height="770" alt="FreeIntv Screenshot 2" src="screenshots/Screenshot 2025-11-24 194901.png" style="border:2px solid #FFD700; border-radius:6px;" /></div>
 <div style="margin: 18px 0;"><img width="1365" height="765" alt="FreeIntv Screenshot 3" src="screenshots/Screenshot 2025-11-24 194935.png" style="border:2px solid #FFD700; border-radius:6px;" /></div>
 
+## Installation
+
+**Step 1: Install FreeIntv Core**
+- Place the compiled core file for your platform into RetroArch's `cores/` directory:
+  - Windows: `FreeIntv_libretro.dll`
+  - Linux: `FreeIntv_libretro.so`
+  - macOS: `FreeIntv_libretro.dylib`
+
+**Step 2: Install the Core Info File**
+- Copy `FreeIntv_libretro.info` to RetroArch's `info/` directory
+- ⚠️ The filename must match the core filename exactly (excluding the file extension)
+
+**Step 3: Add BIOS Files**
+- Place the two required Intellivision BIOS files in RetroArch's `system/` directory:
+  - `exec.bin` (Executive ROM)
+  - `grom.bin` (Graphics ROM)
+
+**Step 4: Launch Games**
+- Load an Intellivision ROM through RetroArch using the FreeIntv core
+
+## Enabling the Dual-Screen Display
+
+The FreeIntv core features an enhanced dual-screen layout option that shows the game on one side and the keypad UI on the other.
+
+### To Enable the Feature:
+
+1. **Launch a game** using the FreeIntv core
+2. **Open the Quick Menu** (usually `Hotkey + X` on your controller, or through RetroArch's menu)
+3. **Navigate to**: Options → Core Options (or "Display Overlay")
+4. Set the option to **"Enabled"** or your preferred layout
+5. **Close the menu** (setting takes effect immediately)
+6. **Save Configuration** (Optional but recommended):
+   - In the Quick Menu: **Overrides** → **Save Core Overrides** (applies to all FreeIntv games)
+   - Or: **Save Game Overrides** (applies only to the current game)
+
+The dual-screen display will now be active on your device!
+
 ## License
 The FreeIntv core is licensed under GPLv2+. More information at https://github.com/libretro/FreeIntv/blob/master/LICENSE
 
