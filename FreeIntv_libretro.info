@@ -1,11 +1,29 @@
-display_name = "Mattel Intellivision (FreeIntv)"
+display_name = "Mattel - Intellivision (FreeIntv)"
 authors = "David Richardson, Oscar Toledo G., Joe Zbiciak, Jason Carr"
-supported_extensions = "intv|bin|rom"
+supported_extensions = "int|bin|rom"
 corename = "FreeIntv"
-license = "GPLv2+"
 categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "2025.11"
+
+# Hardware Information
+manufacturer = "Mattel"
 systemname = "Intellivision"
-systemid = "intv"
-description = "Libretro core for Mattel Intellivision with Android touchscreen and keypad overlay support."
-required_files = "exec.bin|grom.bin"
-notes = "Place BIOS files in RetroArch system folder, and overlay PNG files in system/freeIntv_image_assets/ sub-folder."
+systemid = "intellivision"
+
+# Libretro Features
+database = "Mattel - Intellivision"
+supports_no_game = "false"
+
+# BIOS / Firmware
+firmware_count = 2
+firmware0_desc = "exec.bin"
+firmware0_path = "exec.bin"
+firmware0_opt = "false"
+firmware1_desc = "grom.bin"
+firmware1_path = "grom.bin"
+firmware1_opt = "false"
+notes = "(!) exec.bin (md5): 62e761035cb657903761800f4437b8af|(!) grom.bin (md5): 0cd5946c6473e42e8e4c2137785e427f"
+
+description = "A libretro emulation core for the Mattel Intellivision with dual-screen touchscreen and keypad overlay support for Android, Windows, and Linux. Supports ROM-specific overlays (370x600 PNG files) placed in system/freeintv_overlays/. Many Intellivision games relied on controller overlays for context, and custom overlays can enhance gameplay. Features include traditional controller support, 12-button keypad input, and screen position swapping."
