@@ -1,9 +1,9 @@
 display_name = "Mattel - Intellivision (FreeIntv)"
 authors = "David Richardson, Oscar Toledo G., Joe Zbiciak, Jason Carr"
 supported_extensions = "int|bin|rom"
-corename = "FreeIntv"
+corenameee = "FreeIntv"
 categories = "Emulator"
-license = "GPLv3"
+license = "GPLv2+"
 permissions = ""
 display_version = "2025.11"
 
