@@ -98,7 +98,6 @@ static int hotspot_pressed[OVERLAY_HOTSPOT_COUNT] = {0};  // Track which hotspot
 
 // PNG overlay system
 static char current_rom_path[512] = {0};
-static char system_dir[512] = {0};
 static unsigned int* overlay_buffer = NULL;
 static int overlay_loaded = 0;
 
@@ -203,61 +202,18 @@ static void init_overlay_hotspots(void)
 }
 
 // Helper function to build system overlay path (handles both Windows \\ and Android / paths)
-static void build_system_overlay_path(char* out_path, size_t out_size, const char* filename)
-{
-    if (!out_path || !system_dir[0] || !filename) {
-        printf("[DEBUG] build_system_overlay_path: out_path=%p, system_dir_empty=%d, filename=%p\n", 
-               out_path, !system_dir[0], filename);
-        return;
-    }
-    
-    // Detect path separator based on system_dir content
-    char sep = strchr(system_dir, '/') ? '/' : '\\';
-    
-    // Check if system_dir already has trailing separator
-    size_t dir_len = strlen(system_dir);
-    char last_char = system_dir[dir_len - 1];
-    int has_trailing_sep = (last_char == '/' || last_char == '\\');
-    
-    if (has_trailing_sep) {
-        snprintf(out_path, out_size, "%sfreeIntv_image_assets%c%s", system_dir, sep, filename);
-    } else {
-        snprintf(out_path, out_size, "%s%cfreeIntv_image_assets%c%s", system_dir, sep, sep, filename);
-    }
-    
-    printf("[DEBUG] Built overlay path: %s\n", out_path);
-    printf("[DEBUG]   sep='%c' | trailing_sep=%d | filename=%s\n", sep, has_trailing_sep, filename);
-    
-    // Try to open file to verify it exists
-    FILE* test = fopen(out_path, "rb");
-    if (test) {
-        fclose(test);
-        printf("[DEBUG]   File status: EXISTS ✓\n");
-    } else {
-        printf("[DEBUG]   File status: NOT FOUND (errno=%d)\n", errno);
-    }
-}
-
 // Forward declaration for build_overlay_path (ROM-specific overlay)
-static void build_overlay_path(const char* rom_path, char* overlay_path, size_t overlay_path_size);
+static void build_overlay_path(const char* rom_path, char* overlay_path, size_t overlay_path_size, const char* system_dir);
 
-// Load controller base PNG
+// Load controller base PNG from embedded data
 static void load_controller_base(void)
 {
-    if (controller_base_loaded || !system_dir[0]) {
+    if (controller_base_loaded) {
         return;
     }
     
-    char base_path[512];
-    build_system_overlay_path(base_path, sizeof(base_path), "controller_base.png");
-    
     int width, height, channels;
-    unsigned char* img_data = stbi_load(base_path, &width, &height, &channels, 4);
-    
-    if (!img_data) {
-        build_system_overlay_path(base_path, sizeof(base_path), "default.png");
-        img_data = stbi_load(base_path, &width, &height, &channels, 4);
-    }
+    unsigned char* img_data = stbi_load_from_memory(keypad_frame_graphic, keypad_frame_graphic_len, &width, &height, &channels, 4);
     
     if (img_data) {
         printf("[CONTROLLER] Loaded controller base: %dx%d\n", width, height);
@@ -280,9 +236,10 @@ static void load_controller_base(void)
                 }
             }
             controller_base_loaded = 1;
-            stbi_image_free(img_data);
             printf("[CONTROLLER] Controller base loaded successfully\n");
         }
+    } else {
+        printf("[CONTROLLER] Failed to load embedded controller base\n");
     }
 }
 
@@ -326,114 +283,45 @@ static void load_banner(void)
     }
 }
 
-// Build overlay path from ROM name
-static void build_overlay_path(const char* rom_path, char* overlay_path, size_t overlay_path_size)
+// Build overlay path from ROM name - looks in system/freeintv_overlays folder
+static void build_overlay_path(const char* rom_path, char* overlay_path, size_t overlay_path_size, const char* system_dir)
 {
-    FILE* debug_file = fopen("C:\\freeintv_debug.txt", "a");
-    
-    if (!rom_path || !overlay_path || overlay_path_size == 0) {
-        if (debug_file) {
-            fprintf(debug_file, "[BUILD_PATH] ERROR: NULL pointers\n");
-            fclose(debug_file);
-        }
+    if (!rom_path || !overlay_path || overlay_path_size == 0 || !system_dir) {
         overlay_path[0] = '\0';
         return;
-    }
-    
-    if (debug_file) {
-        fprintf(debug_file, "\n[BUILD_PATH] ROM path received: %s\n", rom_path);
-        fprintf(debug_file, "[BUILD_PATH] ROM path length: %zu\n", strlen(rom_path));
-    }
-    
-    // Get the ROM's directory
-    char rom_dir[1024];
-    strncpy(rom_dir, rom_path, sizeof(rom_dir) - 1);
-    rom_dir[sizeof(rom_dir) - 1] = '\0';
-    
-    if (debug_file) {
-        fprintf(debug_file, "[BUILD_PATH] Copied to rom_dir: %s\n", rom_dir);
-    }
-    
-    // Find last path separator
-    char* last_sep = NULL;
-    char sep_char = '\0';
-    for (int i = strlen(rom_dir) - 1; i >= 0; i--) {
-        if (rom_dir[i] == '\\' || rom_dir[i] == '/') {
-            last_sep = &rom_dir[i];
-            sep_char = rom_dir[i];
-            if (debug_file) {
-                fprintf(debug_file, "[BUILD_PATH] Found separator '%c' at position %d\n", sep_char, i);
-            }
-            break;
-        }
-    }
-    
-    if (!last_sep) {
-        if (debug_file) {
-            fprintf(debug_file, "[BUILD_PATH] No separator found!\n");
-            fclose(debug_file);
-        }
-        overlay_path[0] = '\0';
-        return;
-    }
-    
-    *last_sep = '\0';  // Truncate to ROM directory
-    if (debug_file) {
-        fprintf(debug_file, "[BUILD_PATH] ROM directory: %s\n", rom_dir);
     }
     
     // Get ROM filename without extension
-    const char* filename = last_sep + 1;
-    if (debug_file) {
-        fprintf(debug_file, "[BUILD_PATH] ROM filename: %s\n", filename);
-    }
+    const char* filename = rom_path;
+    const char* last_slash = strrchr(rom_path, '\\');
+    if (!last_slash) last_slash = strrchr(rom_path, '/');
+    if (last_slash) filename = last_slash + 1;
     
+    // Remove extension
     char rom_basename[512];
     strncpy(rom_basename, filename, sizeof(rom_basename) - 1);
+    rom_basename[sizeof(rom_basename) - 1] = '\0';
     char* ext = strrchr(rom_basename, '.');
-    if (ext) {
-        *ext = '\0';
-        if (debug_file) {
-            fprintf(debug_file, "[BUILD_PATH] ROM basename (without ext): %s\n", rom_basename);
-        }
-    }
+    if (ext) *ext = '\0';
     
-    // Build path: [rom_directory]/overlays/[rom_name].png
-    snprintf(overlay_path, overlay_path_size, 
-             "%s%coverlays%c%s.png",
-             rom_dir, sep_char, sep_char, rom_basename);
-    
-    if (debug_file) {
-        fprintf(debug_file, "[BUILD_PATH] Final overlay path: %s\n", overlay_path);
-        fclose(debug_file);
-    }
+    // Build path: [system_dir]\freeintv_overlays\[rom_name].png
+    // Use backslash for Windows, forward slash for other systems
+    #ifdef _WIN32
+    snprintf(overlay_path, overlay_path_size, "%s\\freeintv_overlays\\%s.png", system_dir, rom_basename);
+    #else
+    snprintf(overlay_path, overlay_path_size, "%s/freeintv_overlays/%s.png", system_dir, rom_basename);
+    #endif
 }
 
 // Load overlay for ROM
-static void load_overlay_for_rom(const char* rom_path)
+static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
 {
-    FILE* debug_file = fopen("C:\\freeintv_debug.txt", "a");
-    
-    if (!rom_path || !dual_screen_enabled) {
-        if (debug_file) {
-            fprintf(debug_file, "[LOAD_OVERLAY] Skipped: rom_path=%s, dual_screen_enabled=%d\n", 
-                    rom_path ? "NULL" : rom_path, dual_screen_enabled);
-            fclose(debug_file);
-        }
+    if (!rom_path || !system_dir || !dual_screen_enabled) {
         return;
     }
     
-    if (debug_file) {
-        fprintf(debug_file, "\n[LOAD_OVERLAY] ========== LOADING OVERLAY ==========\n");
-        fprintf(debug_file, "[LOAD_OVERLAY] ROM path: %s\n", rom_path);
-    }
-    
     char overlay_path[1024];
-    build_overlay_path(rom_path, overlay_path, sizeof(overlay_path));
-    
-    if (debug_file) {
-        fprintf(debug_file, "[LOAD_OVERLAY] Calculated overlay path: %s\n", overlay_path);
-    }
+    build_overlay_path(rom_path, overlay_path, sizeof(overlay_path), system_dir);
     
     overlay_loaded = 0;
     
@@ -444,48 +332,27 @@ static void load_overlay_for_rom(const char* rom_path)
     
     int width, height, channels;
     unsigned char* img_data = stbi_load(overlay_path, &width, &height, &channels, 4);
-    int from_file = 1;  // Track if data came from file vs embedded
+    int from_file = 1;
     
     if (!img_data) {
-        if (debug_file) {
-            fprintf(debug_file, "[LOAD_OVERLAY] Failed to load PNG from: %s\n", overlay_path);
-        }
+        // Try JPG format
         char jpg_path[1024];
         strncpy(jpg_path, overlay_path, sizeof(jpg_path) - 1);
         char* ext = strrchr(jpg_path, '.');
         if (ext) {
             strcpy(ext, ".jpg");
-            if (debug_file) {
-                fprintf(debug_file, "[LOAD_OVERLAY] Trying JPG: %s\n", jpg_path);
-            }
             img_data = stbi_load(jpg_path, &width, &height, &channels, 4);
             from_file = 1;
         }
     }
     
-    if (!img_data && system_dir[0] != '\0') {
-        char default_path[1024];
-        build_system_overlay_path(default_path, sizeof(default_path), "default.png");
-        if (debug_file) {
-            fprintf(debug_file, "[LOAD_OVERLAY] Trying system default: %s\n", default_path);
-        }
-        img_data = stbi_load(default_path, &width, &height, &channels, 4);
-        from_file = 1;
-    }
-    
     // Fall back to embedded default image
     if (!img_data) {
-        if (debug_file) {
-            fprintf(debug_file, "[LOAD_OVERLAY] Using embedded default overlay\n");
-        }
         img_data = stbi_load_from_memory(default_keypad_image, default_keypad_image_len, &width, &height, &channels, 4);
-        from_file = 0;  // Don't free embedded data
+        from_file = 0;
     }
     
     if (img_data) {
-        if (debug_file) {
-            fprintf(debug_file, "[LOAD_OVERLAY] Loaded overlay: %dx%d\n", width, height);
-        }
         overlay_width = width;
         overlay_height = height;
         overlay_buffer = (unsigned int*)malloc(width * height * sizeof(unsigned int));
@@ -508,9 +375,6 @@ static void load_overlay_for_rom(const char* rom_path)
             stbi_image_free(img_data);
         }
     } else {
-        if (debug_file) {
-            fprintf(debug_file, "[LOAD_OVERLAY] No image data - creating fallback pattern\n");
-        }
         overlay_width = 370;
         overlay_height = 600;
         overlay_buffer = (unsigned int*)malloc(overlay_width * overlay_height * sizeof(unsigned int));
@@ -532,11 +396,6 @@ static void load_overlay_for_rom(const char* rom_path)
     
     overlay_loaded = 1;
     strncpy(current_rom_path, rom_path, sizeof(current_rom_path) - 1);
-    
-    if (debug_file) {
-        fprintf(debug_file, "[LOAD_OVERLAY] Complete - overlay_loaded=%d\n", overlay_loaded);
-        fclose(debug_file);
-    }
 }
 
 
@@ -614,6 +473,7 @@ static void render_dual_screen(void)
     int ctrl_base_x_offset = (KEYPAD_WIDTH - controller_base_width) / 2;
     int overlay_x_offset = (KEYPAD_WIDTH - overlay_width) / 2;
     
+    
     for (int y = 0; y < KEYPAD_HEIGHT && y < WORKSPACE_HEIGHT; ++y) {
         for (int x = 0; x < KEYPAD_WIDTH; ++x) {
             int workspace_x = keypad_x_offset + x;
@@ -623,8 +483,8 @@ static void render_dual_screen(void)
             
             unsigned int pixel = bg_color;
             
-            // Layer game overlay (back)
-            if (overlay_buffer && y < overlay_height) {
+            // If overlay is loaded, show overlay with controller base on top
+            if (overlay_loaded && overlay_buffer && y < overlay_height) {
                 int overlay_x = x - overlay_x_offset;
                 if (overlay_x >= 0 && overlay_x < overlay_width) {
                     unsigned int overlay_pixel = overlay_buffer[y * overlay_width + overlay_x];
@@ -633,21 +493,55 @@ static void render_dual_screen(void)
                     }
                 }
             }
-            
-            // Layer controller base (front)
-            if (controller_base_loaded && controller_base && y < controller_base_height) {
+            // Only use controller base if NO overlay is loaded
+            else if (!overlay_loaded && controller_base_loaded && controller_base && y < controller_base_height) {
                 int ctrl_x = x - ctrl_base_x_offset;
                 if (ctrl_x >= 0 && ctrl_x < controller_base_width) {
                     unsigned int base_pixel = controller_base[y * controller_base_width + ctrl_x];
-                    if ((base_pixel >> 24) & 0xFF) {
+                    unsigned int alpha = (base_pixel >> 24) & 0xFF;
+                    if (alpha > 0) {
                         pixel = base_pixel;
                     }
+                }
+            }
+            
+            // Layer controller base on top (with overlay showing through transparent areas)
+            if (overlay_loaded && controller_base_loaded && controller_base && y < controller_base_height) {
+                int ctrl_x = x - ctrl_base_x_offset;
+                if (ctrl_x >= 0 && ctrl_x < controller_base_width) {
+                    unsigned int base_pixel = controller_base[y * controller_base_width + ctrl_x];
+                    unsigned int alpha = (base_pixel >> 24) & 0xFF;
+                    if (alpha > 0) {
+                        if (alpha == 255) {
+                            // Fully opaque: use controller base
+                            pixel = base_pixel;
+                        } else {
+                            // Semi-transparent: blend controller base over overlay
+                            unsigned int inv_alpha = 255 - alpha;
+                            unsigned int base_r = (base_pixel >> 16) & 0xFF;
+                            unsigned int base_g = (base_pixel >> 8) & 0xFF;
+                            unsigned int base_b = base_pixel & 0xFF;
+                            
+                            unsigned int bg_r = (pixel >> 16) & 0xFF;
+                            unsigned int bg_g = (pixel >> 8) & 0xFF;
+                            unsigned int bg_b = pixel & 0xFF;
+                            
+                            unsigned int blended_r = (base_r * alpha + bg_r * inv_alpha) / 255;
+                            unsigned int blended_g = (base_g * alpha + bg_g * inv_alpha) / 255;
+                            unsigned int blended_b = (base_b * alpha + bg_b * inv_alpha) / 255;
+                            
+                            pixel = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
+                        }
+                    }
+                    // If alpha == 0 (transparent), pixel stays as overlay
                 }
             }
             
             dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = pixel;
         }
     }
+    
+
     
     // === UTILITY BUTTONS (BELOW game screen, move with game when swapped) ===
     // Draw utility button PNG images
@@ -1175,40 +1069,16 @@ void retro_init(void)
 	Environ(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &kb);
 }
 
-bool retro_load_game(const struct retro_game_info *info)
-{
-	// Debug: Write path info to file
-	FILE* debug_file = fopen("C:\\freeintv_debug.txt", "w");
-	if (debug_file) {
-		fprintf(debug_file, "=== GAME LOADED ===\n");
-		fprintf(debug_file, "ROM path: %s\n", info->path);
-		fclose(debug_file);
-	}
-	
-	check_variables(true);
-	LoadGame(info->path);
-	
-	// Capture system directory and load overlays
-	if (SystemPath && SystemPath[0]) {
-		strncpy(system_dir, SystemPath, sizeof(system_dir) - 1);
-		system_dir[sizeof(system_dir) - 1] = '\0';
-		printf("[GAME] ==================== SYSTEM DIR DEBUG ====================\n");
-		printf("[GAME] Raw SystemPath from RetroArch: %s\n", SystemPath);
-		printf("[GAME] Copied to system_dir: %s\n", system_dir);
-		printf("[GAME] system_dir length: %zu\n", strlen(system_dir));
-		printf("[GAME] Last char: '%c' (code %d)\n", system_dir[strlen(system_dir)-1], system_dir[strlen(system_dir)-1]);
-		printf("[GAME] ============================================================\n");
+	bool retro_load_game(const struct retro_game_info *info)
+	{
+		check_variables(true);
+		LoadGame(info->path);
 		
-		// Load controller base, banner, and ROM-specific overlay
+		// Load embedded asset images (controller base, banner, overlay)
 		load_controller_base();
 		load_banner();
-		load_overlay_for_rom(info->path);
-		init_overlay_hotspots();
-	} else {
-		printf("[GAME] ERROR: SystemPath is NULL or empty!\n");
-	}
-	
-	return true;
+		load_overlay_for_rom(info->path, SystemPath);
+		init_overlay_hotspots();	return true;
 }
 
 void retro_unload_game(void)

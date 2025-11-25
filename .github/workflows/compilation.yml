@@ -29,7 +29,7 @@ jobs:
 
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: freeintv_libretro_ps2-${{ steps.slug.outputs.sha8 }}
         path: freeintv_libretro_ps2.a

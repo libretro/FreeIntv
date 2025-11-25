@@ -35,3 +35,4 @@ jni/obj/
 *.tmp
 *.temp
 *.log
+Assets/Thumbs.db
