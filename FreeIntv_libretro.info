@@ -5,7 +5,7 @@ corename = "FreeIntv"
 categories = "Emulator"
 license = "GPLv3"
 permissions = ""
-display_version = "2025.11"
+display_version = "2025.11.1"
 
 # Hardware Information
 manufacturer = "Mattel"
@@ -26,4 +26,4 @@ firmware1_path = "grom.bin"
 firmware1_opt = "false"
 notes = "(!) exec.bin (md5): 62e761035cb657903761800f4437b8af|(!) grom.bin (md5): 0cd5946c6473e42e8e4c2137785e427f"
 
-description = "A libretro emulation core for the Mattel Intellivision with dual-screen touchscreen and keypad overlay support for Android, Windows, and Linux. Supports ROM-specific overlays (370x600 PNG files) placed in system/freeintv_overlays/. Many Intellivision games relied on controller overlays for context, and custom overlays can enhance gameplay. Features include traditional controller support, 12-button keypad input, and screen position swapping."
+description = "A libretro emulation core for the Mattel Intellivision with onscreen interactive keypad overlays for Android (touchscreen), Windows, and Linux (mouse). Supports ROM-specific overlays (370x600 PNG files) placed in system/freeintv_overlays/. Many Intellivision games relied on controller overlays for context, and custom overlays can enhance gameplay. Features include traditional controller support, 12-button keypad input, and custom overlay graphics."

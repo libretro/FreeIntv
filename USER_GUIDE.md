@@ -27,24 +27,23 @@ FreeIntv is a libretro core for emulating the Mattel Intellivision, featuring en
 
 ---
 
-## Enabling the Dual-Screen / Multi-Screen Display
+## Enabling Onscreen Interactive Overlays
 
-The FreeIntv core includes an enhanced dual-screen layout option that displays the game on one side and a keypad UI on the other.
+The FreeIntv core features onscreen interactive keypad overlays that display custom controller graphics directly on screen.
 
 ### To Enable the Feature:
 
 **In RetroArch:**
 1. **Launch a game** using the FreeIntv core (make sure a game is running)
 2. **Open the Quick Menu** (usually by pressing `Hotkey + X` on your controller, or via the menu)
-3. **Navigate to**: Options (or "Core Options")
-4. Look for the **"Display Overlay"** option (or similar multi-screen setting)
-5. Set it to **"Enabled"** or the desired layout option
-6. **Close the menu** (the setting takes effect immediately)
-7. **Save Core Configuration** (Optional):
+3. **Navigate to**: Options → Core Options
+4. Enable the overlay option
+5. **Close the menu** (the overlay takes effect immediately)
+6. **Save Core Configuration** (Optional):
    - In the Quick Menu, select "Overrides" → "Save Core Overrides" to make this the default for all FreeIntv games
    - Or select "Save Game Overrides" to save the setting for this specific game only
 
-The dual-screen display will now be active, showing the game on one side and the keypad UI on the other.
+The onscreen interactive overlay will now be active, allowing you to interact with it via touch or mouse clicks.
 
 ## Using Game Overlays
 
@@ -78,9 +77,9 @@ Game overlay PNG files provide custom graphics for the keypad area, displaying t
 4. No need to restart RetroArch after adding new overlays
 
 ## Touchscreen & Pointer Support
-- **Android**: Touch the keypad area on the right side of the screen to send input to the game. If overlays are loaded, they display the game's specific control layout.
-- **Windows/Linux**: Use the mouse to click on the keypad area. Mouse clicks are mapped to touch events for full overlay functionality.
-- **Screen Position**: Use the RetroPad Select button to swap screen positions between normal (game left/keypad right) and swapped (keypad left/game right) layouts.
+- **Android**: Touch the onscreen keypad overlay buttons to send input to the game
+- **Windows/Linux**: Use the mouse to click on the overlay buttons to send input
+- **Custom Overlays**: ROM-specific overlay images automatically load and display game-specific button layouts
 
 ---
 

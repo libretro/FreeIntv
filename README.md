@@ -1,7 +1,7 @@
-# FreeIntv with Android Touchscreen Support
+# FreeIntv with Onscreen Interactive Keypad Overlays
 FreeIntv is a libretro emulation core for the Mattel Intellivision designed to be compatible with joypads from the SNES era forward even if they originally required a number pad.
 
-**Current Version**: Enhanced with full touchscreen support for Android devices (October 24, 2025)
+**Current Version**: Enhanced with onscreen interactive keypad overlays for Android, Windows, and Linux (November 24, 2025)
 
 ## Authors & Contributors
 
@@ -10,7 +10,7 @@ The PSG and STIC emulation was made closer to hardware and optimized by Oscar To
 
 The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), and adapted by Oscar Toledo G. (nanochess)
 
-**Touchscreen Enhancement**: Android touchscreen / Windows mouse / Linux mouse keypad and utility button implementation (October 2025) by Jason Carr
+**Onscreen Overlay Enhancement**: Onscreen interactive keypad overlays with touchscreen (Android) and mouse (Windows/Linux) support (November 2025) by Jason Carr
 
 <div style="margin: 18px 0;"><img width="1291" height="727" alt="FreeIntv Screenshot 1" src="screenshots/Screenshot 2025-11-24 194829.png" style="border:2px solid #FFD700; border-radius:6px;" /></div>
 <div style="margin: 18px 0;"><img width="1372" height="770" alt="FreeIntv Screenshot 2" src="screenshots/Screenshot 2025-11-24 194901.png" style="border:2px solid #FFD700; border-radius:6px;" /></div>
@@ -36,22 +36,22 @@ The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), an
 **Step 4: Launch Games**
 - Load an Intellivision ROM through RetroArch using the FreeIntv core
 
-## Enabling the Dual-Screen Display
+## Enabling Onscreen Interactive Overlays
 
-The FreeIntv core features an enhanced dual-screen layout option that shows the game on one side and the keypad UI on the other.
+The FreeIntv core features onscreen interactive keypad overlays that display custom controller graphics directly on screen, allowing touch or mouse input.
 
 ### To Enable the Feature:
 
 1. **Launch a game** using the FreeIntv core
 2. **Open the Quick Menu** (usually `Hotkey + X` on your controller, or through RetroArch's menu)
-3. **Navigate to**: Options → Core Options (or "Display Overlay")
-4. Set the option to **"Enabled"** or your preferred layout
-5. **Close the menu** (setting takes effect immediately)
+3. **Navigate to**: Options → Core Options
+4. Enable the overlay feature
+5. **Close the menu** (overlay takes effect immediately)
 6. **Save Configuration** (Optional but recommended):
    - In the Quick Menu: **Overrides** → **Save Core Overrides** (applies to all FreeIntv games)
    - Or: **Save Game Overrides** (applies only to the current game)
 
-The dual-screen display will now be active on your device!
+The onscreen interactive overlay will now be active, allowing you to touch or click buttons directly on screen!
 
 ## License
 The FreeIntv core is licensed under GPLv2+. More information at https://github.com/libretro/FreeIntv/blob/master/LICENSE
@@ -106,16 +106,17 @@ system/
 3. Touch or click directly on the overlay buttons to send input to the game
 
 #### Touch and Mouse Input
-- On Android, touch the keypad buttons directly on the right side of the screen (or left if swapped)
-- On Windows and Linux, use the mouse to click on the keypad area. Mouse clicks are mapped to touch events, enabling full overlay UI functionality.
+- On Android, touch the onscreen keypad overlay buttons to send input
+- On Windows and Linux, use the mouse to click on the overlay buttons. Mouse clicks are mapped to input events, enabling full overlay functionality.
 
 ## Controls
 
 ### Traditional Gamepad Controls
 * **Controller Swap** - Some Intellivision games expect the left controller to be player one, others expect the right controller. This isn't a problem if you have two controllers (and don't mind juggling them) but users with only one controller or using a portable setup would be effectively locked out of some games. Controller Swap swaps the two controller interfaces so that the player does not have to physically swap controllers.
 
-### Android Touchscreen Controls *(New)*
-* **Touchscreen Keypad** - Touch any of the 12 buttons (1-9, *, 0, #) on the right side of the screen to input commands directly
+### Onscreen Interactive Overlay Controls *(New)*
+* **Onscreen Keypad** - Touch (Android) or click (Windows/Linux) any of the 12 buttons (1-9, *, 0, #) directly on the overlay to input commands
+* **Custom Overlays** - ROM-specific overlay images display game-specific button layouts and instructions
 * **Visual Feedback** - Button presses show highlighting on keypad buttons
 
 ### RetroPad Mapping
