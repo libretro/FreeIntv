@@ -27,58 +27,41 @@ FreeIntv is a libretro core for emulating the Mattel Intellivision, featuring en
 
 ---
 
-## Using Overlay PNG Files
-Overlay PNG files provide custom graphics for the keypad and utility banner.
+## Using Game Overlays
 
+Game overlay PNG files provide custom graphics for the keypad area, displaying the actual game control layout and instructions.
 
-### Where to Place Overlay PNG Files
-   - Base folder: `retroarch/system/freeIntv_image_assets/`
-   - Game-specific overlays: `retroarch/system/freeIntv_image_assets/overlays/`
+### Overlay Installation
 
+**Folder Location:**
+- Create a folder named `freeintv_overlays` in the same directory where your BIOS files are located
+- Path: `retroarch/system/freeintv_overlays/`
 
-## Asset Installation
+**Overlay Image Requirements:**
+- **Dimensions**: 370×600 pixels (required - core will not scale automatically)
+- **Format**: PNG image (any color depth)
+- **Naming**: Must match your ROM filename exactly (extension-insensitive)
+  - ROM: `astrosmash.bin` → Overlay: `astrosmash.png`
+  - ROM: `nightstalker.rom` → Overlay: `nightstalker.png`
+  - ROM: `weekendwar.bin` → Overlay: `weekendwar.png`
 
-The FreeIntv core requires 3 core asset files, plus optional user-provided overlays:
-
-**Required Core Assets (3 files) - Place in `retroarch/system/freeIntv_image_assets/`:**
-1. **banner.png** (704×152 pixels)
-   - Purpose: Fills the utility workspace with interactive toggle button
-   - Status: REQUIRED
-
-2. **controller_base.png**
-   - Purpose: Background for keypad overlay
-   - Status: Required
-
-3. **default.png**
-   - Purpose: Fallback overlay if ROM-specific overlay not found
-   - Status: Required
-
-**User-Provided Game Overlays - Place in `retroarch/system/freeIntv_image_assets/overlays/`:**
-- Named to match ROM filenames (e.g., `astrosmash.png` for `astrosmash.bin`)
-- One PNG per game (optional, but recommended for best experience)
-
-**Installation Instructions:**
-1. Create the folder structure in your RetroArch system directory:
+**Installation Steps:**
+1. Create the `freeintv_overlays` folder in your RetroArch system directory:
    ```
-   retroarch/system/freeIntv_image_assets/
-   ├── banner.png
-   ├── controller_base.png
-   ├── default.png
-   └── overlays/
-       ├── astrosmash.png
-       ├── nightstalker.png
-       └── (more game overlays)
+   retroarch/system/freeintv_overlays/
+   ├── astrosmash.png
+   ├── nightstalker.png
+   ├── weekendwar.png
+   └── (more game overlays as needed)
    ```
-2. Place the 3 core asset files in `freeIntv_image_assets/`
-3. Place game-specific overlays in `freeIntv_image_assets/overlays/`
-4. Restart RetroArch if it is running
+2. Place your 370×600 PNG overlay files in this folder, named to match your ROM files
+3. Launch a game in FreeIntv - the overlay will load automatically if a matching PNG is found
+4. No need to restart RetroArch after adding new overlays
 
 ## Touchscreen & Pointer Support
-- On Android, touch the keypad area to send input to the emulator.
-- On Windows and Linux, you can use the mouse to click on the keypad overlay. Mouse clicks are mapped to touch events, allowing full use of the overlay UI features.
-- **Swap Screen Button**: A toggle button in the utility banner switches between two display layouts:
-  - Normal: Game screen on left, keypad on right
-  - Swapped: Keypad on left, game screen on right
+- **Android**: Touch the keypad area on the right side of the screen to send input to the game. If overlays are loaded, they display the game's specific control layout.
+- **Windows/Linux**: Use the mouse to click on the keypad area. Mouse clicks are mapped to touch events for full overlay functionality.
+- **Screen Position**: Use the RetroPad Select button to swap screen positions between normal (game left/keypad right) and swapped (keypad left/game right) layouts.
 
 ---
 

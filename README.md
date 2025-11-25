@@ -12,9 +12,9 @@ The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), an
 
 **Touchscreen Enhancement**: Android touchscreen / Windows mouse / Linux mouse keypad and utility button implementation (October 2025) by Jason Carr
 
-<div style="margin: 18px 0;"><img width="1291" height="727" alt="Screenshot 2025-10-29 135437" src="https://github.com/user-attachments/assets/92d2cafc-44f9-4bfa-aad7-9adfa14d2e0b" style="border:2px solid #FFD700; border-radius:6px;" /></div>
-<div style="margin: 18px 0;"><img width="1372" height="770" alt="Screenshot 2025-10-29 135007" src="https://github.com/user-attachments/assets/0aeeada9-423b-406d-9b4f-0081e81c312f" style="border:2px solid #FFD700; border-radius:6px;" /></div>
-<div style="margin: 18px 0;"><img width="1365" height="765" alt="Screenshot 2025-10-29 135115" src="https://github.com/user-attachments/assets/725acb8c-2d6b-4170-9893-45f9d2b3f447" style="border:2px solid #FFD700; border-radius:6px;" /></div>
+<div style="margin: 18px 0;"><img width="1291" height="727" alt="FreeIntv Screenshot 1" src="screenshots/Screenshot 2025-11-24 194829.png" style="border:2px solid #FFD700; border-radius:6px;" /></div>
+<div style="margin: 18px 0;"><img width="1372" height="770" alt="FreeIntv Screenshot 2" src="screenshots/Screenshot 2025-11-24 194901.png" style="border:2px solid #FFD700; border-radius:6px;" /></div>
+<div style="margin: 18px 0;"><img width="1365" height="765" alt="FreeIntv Screenshot 3" src="screenshots/Screenshot 2025-11-24 194935.png" style="border:2px solid #FFD700; border-radius:6px;" /></div>
 
 ## License
 The FreeIntv core is licensed under GPLv2+. More information at https://github.com/libretro/FreeIntv/blob/master/LICENSE
@@ -32,64 +32,45 @@ FreeIntv requires two Intellivision BIOS files to be placed in the libretro 'sys
 ## Entertainment Computer System
 FreeIntv does not currently support Entertainment Computer System (ECS) functionality. Contributions to the code are welcome!
 
-## Controller overlays
+## Game Overlays
 
 Mattel Intellivision games were often meant to be played with game-specific cards overlaid on the numeric keypad. These overlays convey information which can be very useful in gameplay. Images of a limited selection of Intellivision titles are available at: http://www.intellivisionlives.com/bluesky/games/instructions.shtml
 
-### Overlay PNG Files (Touchscreen)
-To use custom keypad and utility overlays with the touchscreen UI, set up the asset folder structure:
+### Overlay Setup Instructions
 
-**Installation Instructions:**
+To use custom game overlays with the touchscreen UI on Android or mouse input on Windows/Linux:
 
-**Step 1: Install Core Binary**
-- Place the core file for your platform into: `RetroArch/cores/`
-  - Windows: `FreeIntv_libretro.dll`
-  - Linux: `FreeIntv_libretro.so`
-  - macOS: `FreeIntv_libretro.dylib`
+**Folder Location:**
+- Create a folder named `freeintv_overlays` in the same directory where you keep your BIOS files (`exec.bin` and `grom.bin`)
+- Typically: `RetroArch/system/freeintv_overlays/`
 
-**Step 2: Install Info File**
-- Copy `FreeIntv_libretro.info` to: `RetroArch/info/`
-- ⚠️ **Important:** The info filename must match the core filename exactly (excluding file extension)
+**Overlay Image Specifications:**
+- **Dimensions**: 370×600 pixels
+- **Format**: PNG image (any color depth)
+- **Naming**: Match your ROM filename exactly (case-insensitive on most systems)
+  - Example: If your ROM is `astrosmash.bin`, name the overlay `astrosmash.png`
+  - Example: If your ROM is `nightstalker.rom`, name the overlay `nightstalker.png`
 
-**Step 3: Create Asset Folder Structure**
-- Create the following folder structure in: `RetroArch/system/`
-  ```
-  system/
-  └── freeIntv_image_assets/
-      ├── banner.png              (704×152 utility bar banner - REQUIRED)
-      ├── controller_base.png     (Controller overlay base image)
-      ├── default.png             (Default overlay if ROM-specific not found)
-      └── overlays/
-          ├── astrosmash.png      (Game-specific overlay - matches ROM filename)
-          ├── nightstalker.png
-          └── ... (one PNG per game - user provided)
-  ```
+**Example Folder Structure:**
+```
+system/
+├── exec.bin
+├── grom.bin
+└── freeintv_overlays/
+    ├── astrosmash.png
+    ├── nightstalker.png
+    ├── weekendwar.png
+    └── (additional game overlays...)
+```
 
-**Step 4: Add Required Core Asset Files (3 files)**
-Place these files in `RetroArch/system/freeIntv_image_assets/`:
-- **banner.png**: 704×152 pixel image for the utility bar (REQUIRED)
-- **controller_base.png**: Controller overlay background image
-- **default.png**: Fallback overlay image if ROM-specific overlay not found
-
-**Step 5: Add User-Provided Game Overlays**
-Place game-specific overlay PNGs in `RetroArch/system/freeIntv_image_assets/overlays/`:
-- Name each file to match your ROM filename (without extension)
-- Example: If your ROM is `astrosmash.bin`, name the overlay `astrosmash.png`
-
-**Step 5: Refresh RetroArch**
-- Restart RetroArch to load the new core
-
-Recommended naming: ensure the PNG filename matches the ROM filename (excluding extension).
-### Overlay PNG Files (Touchscreen & Mouse)
-To use custom keypad and utility overlays with the touchscreen UI, place your PNG files in the following directory:
-
-  retroarch/system/FreeIntvTS_Overlays/
-
-Recommended naming: ensure the PNG filename matches the ROM filename (excluding extension).
+**Usage:**
+1. When a game launches, FreeIntv automatically looks for a matching overlay image in the `freeintv_overlays` folder
+2. If found, the overlay is displayed on the keypad area (right side of screen, or left if swapped)
+3. Touch or click directly on the overlay buttons to send input to the game
 
 #### Touch and Mouse Input
-- On Android, touch the keypad and utility buttons directly.
-- On Windows and Linux, you can use the mouse to click on the keypad overlay and utility buttons. Mouse clicks are mapped to touch events, enabling full overlay UI functionality.
+- On Android, touch the keypad buttons directly on the right side of the screen (or left if swapped)
+- On Windows and Linux, use the mouse to click on the keypad area. Mouse clicks are mapped to touch events, enabling full overlay UI functionality.
 
 ## Controls
 
@@ -98,9 +79,7 @@ Recommended naming: ensure the PNG filename matches the ROM filename (excluding 
 
 ### Android Touchscreen Controls *(New)*
 * **Touchscreen Keypad** - Touch any of the 12 buttons (1-9, *, 0, #) on the right side of the screen to input commands directly
-* **Utility Buttons** - Quick access buttons below the game screen:
-  - **Swap Screen** - Toggle game/keypad positions (fully implemented)
-* **Visual Feedback** - Button presses show green highlighting on keypad buttons, yellow on utility buttons
+* **Visual Feedback** - Button presses show highlighting on keypad buttons
 
 ### RetroPad Mapping
 
