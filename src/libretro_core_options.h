@@ -80,9 +80,9 @@ struct retro_core_option_v2_definition option_defs_us[] = {
    },
    {
       "freeintv_multiscreen_overlay",
-      "Onscreen Interactive Keypad Overlays",
+      "Onscreen Interactive Keypad Overlays (Restart and Touchscreen/Mouse Required)",
       NULL,
-      "Enable multi-screen mode with onscreen interactive keypad overlays (370x600 PNG files) and side-by-side game/keypad display. When disabled, FreeIntv runs in classic single-screen mode with L/R button-triggered keypad popup.",
+      "Enable multi-screen mode with onscreen interactive keypad overlays (370x600 PNG files) and side-by-side game/keypad display. Changing this setting requires a core restart. Mouse or touchscreen input is required to interact with the keypad overlays.",
       NULL,
       "display",
       {
