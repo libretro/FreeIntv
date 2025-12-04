@@ -46,10 +46,8 @@ The FreeIntv core features onscreen interactive keypad overlays that display cus
 2. **Open the Quick Menu** (usually `Hotkey + X` on your controller, or through RetroArch's menu)
 3. **Navigate to**: Options → Core Options
 4. Enable the overlay feature
-5. **Close the menu** (overlay takes effect immediately)
-6. **Save Configuration** (Optional but recommended):
-   - In the Quick Menu: **Overrides** → **Save Core Overrides** (applies to all FreeIntv games)
-   - Or: **Save Game Overrides** (applies only to the current game)
+5. **Close the menu** (RESTART to take effect)
+6. **Revert to fullscreen** follow same instructions but disable core option, and restart to take effect.
 
 The onscreen interactive overlay will now be active, allowing you to touch or click buttons directly on screen!
 
