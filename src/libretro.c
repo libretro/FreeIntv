@@ -82,8 +82,8 @@ typedef struct {
 overlay_hotspot_t overlay_hotspots[OVERLAY_HOTSPOT_COUNT];
 
 // Display system variables
-static int dual_screen_enabled = 1;
-static void* dual_screen_buffer = NULL;
+static int multi_screen_enabled = 0;  // Default to disabled - enable via core option
+static void* multi_screen_buffer = NULL;
 static const int GAME_WIDTH = 352;
 static const int GAME_HEIGHT = 224;
 static int display_swap = 0;  // 0 = game left/keypad right, 1 = game right/keypad left
@@ -281,7 +281,7 @@ static void build_overlay_path(const char* rom_path, char* overlay_path, size_t 
 // Load overlay for ROM
 static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
 {
-    if (!rom_path || !system_dir || !dual_screen_enabled) {
+    if (!rom_path || !system_dir || !multi_screen_enabled) {
         return;
     }
     
@@ -365,21 +365,21 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
 
 
 // Render display with game screen LEFT and keypad RIGHT
-static void render_dual_screen(void)
+static void render_multi_screen(void)
 {
-    if (!dual_screen_enabled) return;
+    if (!multi_screen_enabled) return;
     
-    if (!dual_screen_buffer) {
-        dual_screen_buffer = malloc(WORKSPACE_WIDTH * WORKSPACE_HEIGHT * sizeof(unsigned int));
+    if (!multi_screen_buffer) {
+        multi_screen_buffer = malloc(WORKSPACE_WIDTH * WORKSPACE_HEIGHT * sizeof(unsigned int));
     }
-    if (!dual_screen_buffer) return;
+    if (!multi_screen_buffer) return;
     
-    unsigned int* dual_buffer = (unsigned int*)dual_screen_buffer;
+    unsigned int* multi_buffer = (unsigned int*)multi_screen_buffer;
     extern unsigned int frame[352 * 224];
     
     // Clear entire workspace with black
     for (int i = 0; i < WORKSPACE_WIDTH * WORKSPACE_HEIGHT; i++) {
-        dual_buffer[i] = 0xFF000000;
+        multi_buffer[i] = 0xFF000000;
     }
     
     // Determine screen positions based on display_swap setting
@@ -400,7 +400,7 @@ static void render_dual_screen(void)
         if (y >= WORKSPACE_HEIGHT) break;
         for (int x = util_bg_x1; x < util_bg_x2; x++) {
             if (x < WORKSPACE_WIDTH) {
-                dual_buffer[y * WORKSPACE_WIDTH + x] = util_bg_color;
+                multi_buffer[y * WORKSPACE_WIDTH + x] = util_bg_color;
             }
         }
     }
@@ -415,9 +415,9 @@ static void render_dual_screen(void)
             if (workspace_x >= WORKSPACE_WIDTH) continue;
             
             if (src_y < GAME_HEIGHT && src_x < GAME_WIDTH) {
-                dual_buffer[y * WORKSPACE_WIDTH + workspace_x] = frame[src_y * GAME_WIDTH + src_x];
+                multi_buffer[y * WORKSPACE_WIDTH + workspace_x] = frame[src_y * GAME_WIDTH + src_x];
             } else {
-                dual_buffer[y * WORKSPACE_WIDTH + workspace_x] = 0xFF000000;
+                multi_buffer[y * WORKSPACE_WIDTH + workspace_x] = 0xFF000000;
             }
         }
     }
@@ -429,7 +429,7 @@ static void render_dual_screen(void)
         for (int x = 0; x < KEYPAD_WIDTH; ++x) {
             int workspace_x = keypad_x_offset + x;
             if (workspace_x < WORKSPACE_WIDTH) {
-                dual_buffer[y * WORKSPACE_WIDTH + workspace_x] = bg_color;
+                multi_buffer[y * WORKSPACE_WIDTH + workspace_x] = bg_color;
             }
         }
     }
@@ -502,7 +502,7 @@ static void render_dual_screen(void)
                 }
             }
             
-            dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = pixel;
+            multi_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = pixel;
         }
     }
     
@@ -525,10 +525,10 @@ static void render_dual_screen(void)
                 if (alpha > 0) {
                     // Blend with alpha
                     if (alpha == 255) {
-                        dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = banner_pixel;
+                        multi_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = banner_pixel;
                     } else {
                         // Alpha blend
-                        unsigned int existing = dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x];
+                        unsigned int existing = multi_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x];
                         unsigned int inv_alpha = 255 - alpha;
                         
                         unsigned int r = ((banner_pixel >> 16) & 0xFF);
@@ -543,7 +543,7 @@ static void render_dual_screen(void)
                         unsigned int blended_g = (g * alpha + existing_g * inv_alpha) / 255;
                         unsigned int blended_b = (b * alpha + existing_b * inv_alpha) / 255;
                         
-                        dual_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
+                        multi_buffer[workspace_y * WORKSPACE_WIDTH + workspace_x] = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
                     }
                 }
             }
@@ -555,7 +555,7 @@ static void render_dual_screen(void)
             if (y >= WORKSPACE_HEIGHT) break;
             for (int x = game_x_offset; x < game_x_offset + GAME_SCREEN_WIDTH; x++) {
                 if (x >= WORKSPACE_WIDTH) break;
-                dual_buffer[y * WORKSPACE_WIDTH + x] = utility_bg_color;
+                multi_buffer[y * WORKSPACE_WIDTH + x] = utility_bg_color;
             }
         }
     }
@@ -588,7 +588,7 @@ static void render_dual_screen(void)
         for (int y = util_border_y1 + offset; y < util_border_y1 + offset + 1; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
             for (int x = util_border_x1 + corner_cut; x < util_border_x2 - corner_cut; x++) {
-                if (x < WORKSPACE_WIDTH) dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                if (x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
@@ -596,7 +596,7 @@ static void render_dual_screen(void)
         for (int y = util_border_y2 - offset - 1; y < util_border_y2 - offset; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
             for (int x = util_border_x1 + corner_cut; x < util_border_x2 - corner_cut; x++) {
-                if (x < WORKSPACE_WIDTH) dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                if (x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
@@ -604,7 +604,7 @@ static void render_dual_screen(void)
         for (int y = util_border_y1 + offset; y < util_border_y2 - offset; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
             for (int x = util_border_x1 + offset; x < util_border_x1 + offset + 1; x++) {
-                if (x >= 0 && x < WORKSPACE_WIDTH) dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                if (x >= 0 && x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
@@ -612,7 +612,7 @@ static void render_dual_screen(void)
         for (int y = util_border_y1 + offset; y < util_border_y2 - offset; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
             for (int x = util_border_x2 - offset - 1; x < util_border_x2 - offset; x++) {
-                if (x < WORKSPACE_WIDTH) dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                if (x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
@@ -621,7 +621,7 @@ static void render_dual_screen(void)
             int x = util_border_x1 + i;
             int y = util_border_y1 + offset + i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y < WORKSPACE_HEIGHT) {
-                dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
@@ -630,7 +630,7 @@ static void render_dual_screen(void)
             int x = util_border_x2 - 1 - i;
             int y = util_border_y1 + offset + i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y < WORKSPACE_HEIGHT) {
-                dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
@@ -639,7 +639,7 @@ static void render_dual_screen(void)
             int x = util_border_x1 + i;
             int y = util_border_y2 - 1 - offset - i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y >= 0 && y < WORKSPACE_HEIGHT) {
-                dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
@@ -648,7 +648,7 @@ static void render_dual_screen(void)
             int x = util_border_x2 - 1 - i;
             int y = util_border_y2 - 1 - offset - i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y >= 0 && y < WORKSPACE_HEIGHT) {
-                dual_buffer[y * WORKSPACE_WIDTH + x] = color;
+                multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
     }
@@ -668,7 +668,7 @@ static void render_dual_screen(void)
                 for (int x = h->x + hotspot_x_adjust; x < h->x + h->width + hotspot_x_adjust; ++x) {
                     if (x < 0 || x >= WORKSPACE_WIDTH) continue;
                     
-                    unsigned int existing = dual_buffer[y * WORKSPACE_WIDTH + x];
+                    unsigned int existing = multi_buffer[y * WORKSPACE_WIDTH + x];
                     unsigned int alpha = (highlight_color >> 24) & 0xFF;
                     unsigned int inv_alpha = 255 - alpha;
                     
@@ -684,7 +684,7 @@ static void render_dual_screen(void)
                     unsigned int blended_g = (g * alpha + existing_g * inv_alpha) / 255;
                     unsigned int blended_b = (b * alpha + existing_b * inv_alpha) / 255;
                     
-                    dual_buffer[y * WORKSPACE_WIDTH + x] = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
+                    multi_buffer[y * WORKSPACE_WIDTH + x] = 0xFF000000 | (blended_r << 16) | (blended_g << 8) | blended_b;
                 }
             }
         }
@@ -935,6 +935,17 @@ static void check_variables(bool first_run)
 			if (strcmp(var.value, "left") == 0)
 				controllerSwap = 1;
 		}
+
+		// Check multi-screen overlay option
+		var.key   = "freeintv_multiscreen_overlay";
+		var.value = NULL;
+		multi_screen_enabled = 0;  // Default disabled
+
+		if (Environ(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+		{
+			if (strcmp(var.value, "enabled") == 0)
+				multi_screen_enabled = 1;
+		}
 	}
 }
 
@@ -1159,40 +1170,71 @@ void retro_run(void)
 	}
 	else
 	{
-		// Process hotspot input directly - each hotspot assigned to its relative keypad button
-		process_hotspot_input();
-		
-		// Process toggle button input - map to screen swap
-		process_toggle_button_input();
-		
-		// Keep regular controller input for compatibility with non-overlay gameplay
-		// If no hotspot is pressed, fall back to standard controller input
-		int any_hotspot_pressed = 0;
-		for (int h = 0; h < OVERLAY_HOTSPOT_COUNT; h++)
+		// SINGLE-SCREEN MODE: Use original FreeIntv keypad popup behavior
+		if (!multi_screen_enabled)
 		{
-			if (hotspot_pressed[h])
+			// Player 1: L/R button shows keypad overlay
+			if(joypad0[10] | joypad0[11]) // left/right shoulder down
 			{
-				any_hotspot_pressed = 1;
-				break;
+				showKeypad0 = true;
+				setControllerInput(0, getKeypadState(0, joypad0, joypre0));
+			}
+			else
+			{
+				showKeypad0 = false;
+				setControllerInput(0, getControllerState(joypad0, 0));
+			}
+
+			// Player 2: L/R button shows keypad overlay
+			if(joypad1[10] | joypad1[11]) // left/right shoulder down
+			{
+				showKeypad1 = true;
+				setControllerInput(1, getKeypadState(1, joypad1, joypre1));
+			}
+			else
+			{
+				showKeypad1 = false;
+				setControllerInput(1, getControllerState(joypad1, 1));
 			}
 		}
-		
-		// If no hotspots pressed, handle regular controller input
-		if (!any_hotspot_pressed)
-		{
-			setControllerInput(0, getControllerState(joypad0, 0));
-		}
-
-		// Player 2 controller input (unchanged - no hotspot overlay for player 2)
-		if(joypad1[10] | joypad1[11]) // left shoulder down
-		{
-			showKeypad1 = true;
-			setControllerInput(1, getKeypadState(1, joypad1, joypre1));
-		}
+		// MULTI-SCREEN MODE: Use overlay hotspot system
 		else
 		{
-			showKeypad1 = false;
-			setControllerInput(1, getControllerState(joypad1, 1));
+			// Process hotspot input directly - each hotspot assigned to its relative keypad button
+			process_hotspot_input();
+			
+			// Process toggle button input - map to screen swap
+			process_toggle_button_input();
+			
+			// Keep regular controller input for compatibility with non-overlay gameplay
+			// If no hotspot is pressed, fall back to standard controller input
+			int any_hotspot_pressed = 0;
+			for (int h = 0; h < OVERLAY_HOTSPOT_COUNT; h++)
+			{
+				if (hotspot_pressed[h])
+				{
+					any_hotspot_pressed = 1;
+					break;
+				}
+			}
+			
+			// If no hotspots pressed, handle regular controller input
+			if (!any_hotspot_pressed)
+			{
+				setControllerInput(0, getControllerState(joypad0, 0));
+			}
+
+			// Player 2 controller input (unchanged - no hotspot overlay for player 2)
+			if(joypad1[10] | joypad1[11]) // left shoulder down
+			{
+				showKeypad1 = true;
+				setControllerInput(1, getKeypadState(1, joypad1, joypre1));
+			}
+			else
+			{
+				showKeypad1 = false;
+				setControllerInput(1, getControllerState(joypad1, 1));
+			}
 		}
 
 		if(keyboardDown || keyboardChange)
@@ -1267,12 +1309,12 @@ void retro_run(void)
 	if (intv_halt)
 		OSD_drawTextBG(3, 5, "INTELLIVISION HALTED");
 	
-	// Render dual-screen display (game + keypad)
-	render_dual_screen();
+	// Render multi-screen display (game + keypad)
+	render_multi_screen();
 	
 	// Send frame to libretro
-	if (dual_screen_enabled && dual_screen_buffer) {
-		Video(dual_screen_buffer, WORKSPACE_WIDTH, WORKSPACE_HEIGHT, sizeof(unsigned int) * WORKSPACE_WIDTH);
+	if (multi_screen_enabled && multi_screen_buffer) {
+		Video(multi_screen_buffer, WORKSPACE_WIDTH, WORKSPACE_HEIGHT, sizeof(unsigned int) * WORKSPACE_WIDTH);
 	} else {
 		Video(frame, frameWidth, frameHeight, sizeof(unsigned int) * frameWidth);
 	}
@@ -1302,8 +1344,8 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
 	memset(info, 0, sizeof(*info));
 	
-	// Report dimensions based on dual-screen mode
-	if (dual_screen_enabled) {
+	// Report dimensions based on multi-screen mode
+	if (multi_screen_enabled) {
 		info->geometry.base_width   = WORKSPACE_WIDTH;
 		info->geometry.base_height  = WORKSPACE_HEIGHT;
 		info->geometry.max_width    = WORKSPACE_WIDTH;
