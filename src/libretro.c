@@ -144,12 +144,13 @@ static void init_overlay_hotspots(void)
     
     int start_x = keypad_x_offset + ctrl_base_x_offset + hotspots_x_in_base;
     int start_y = keypad_y_offset + top_margin;
+    int row, col, idx;
     
     int keypad_map[12] = { K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9, K_C, K_0, K_E };
     
-    for (int row = 0; row < rows; row++) {
-        for (int col = 0; col < cols; col++) {
-            int idx = row * cols + col;
+    for (row = 0; row < rows; row++) {
+        for (col = 0; col < cols; col++) {
+            idx = row * cols + col;
             overlay_hotspots[idx].x = start_x + col * (hotspot_w + gap_x);
             overlay_hotspots[idx].y = start_y + row * (hotspot_h + gap_y);
             overlay_hotspots[idx].width = hotspot_w;
@@ -190,8 +191,9 @@ static void load_controller_base(void)
         }
         
         if (controller_base) {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
+            int y, x;
+            for (y = 0; y < height; y++) {
+                for (x = 0; x < width; x++) {
                     unsigned char* pixel = img_data + (y * width + x) * 4;
                     unsigned int alpha = pixel[3];
                     unsigned int r = pixel[0];
@@ -232,8 +234,9 @@ static void load_banner(void)
     }
     
     if (banner_buffer) {
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        int y, x;
+        for (y = 0; y < height; y++) {
+            for (x = 0; x < width; x++) {
                 unsigned char* pixel = img_data + (y * width + x) * 4;
                 unsigned int alpha = pixel[3];
                 unsigned int r = pixel[0];
@@ -323,8 +326,9 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
         overlay_buffer = (unsigned int*)malloc(width * height * sizeof(unsigned int));
         
         if (overlay_buffer) {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
+            int y, x;
+            for (y = 0; y < height; y++) {
+                for (x = 0; x < width; x++) {
                     unsigned char* pixel = img_data + (y * width + x) * 4;
                     unsigned int alpha = pixel[3];
                     unsigned int r = pixel[0];
@@ -344,8 +348,9 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
         overlay_height = 600;
         overlay_buffer = (unsigned int*)malloc(overlay_width * overlay_height * sizeof(unsigned int));
         if (overlay_buffer) {
-            for (int y = 0; y < overlay_height; y++) {
-                for (int x = 0; x < overlay_width; x++) {
+            int y, x;
+            for (y = 0; y < overlay_height; y++) {
+                for (x = 0; x < overlay_width; x++) {
                     if (y < overlay_height / 2 && x < overlay_width / 2)
                         overlay_buffer[y * overlay_width + x] = 0xFF0000FF;
                     else if (y < overlay_height / 2)
@@ -367,6 +372,28 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
 // Render display with game screen LEFT and keypad RIGHT
 static void render_multi_screen(void)
 {
+    int i, y, x;
+    unsigned int* multi_buffer;
+    extern unsigned int frame[352 * 224];
+    int game_x_offset, keypad_x_offset;
+    int util_bg_x1, util_bg_x2, util_bg_y1, util_bg_y2;
+    unsigned int util_bg_color;
+    int src_y, src_x, workspace_x, workspace_y;
+    unsigned int bg_color;
+    int overlay_x, overlay_y, overlay_workspace_x, overlay_workspace_y;
+    unsigned int overlay_pixel;
+    int banner_start_x, banner_start_y;
+    int banner_x, banner_y;
+    int banner_workspace_x, banner_workspace_y;
+    unsigned int banner_pixel;
+    unsigned int existing;
+    int blended_r, blended_g, blended_b;
+    float alpha;
+    int button_idx, btn_y, btn_x, utility_bg_color;
+    int color;
+    int hotspot_idx, workspace_idx;
+    int layer;
+    
     if (!multi_screen_enabled) return;
     
     if (!multi_screen_buffer) {
@@ -374,31 +401,30 @@ static void render_multi_screen(void)
     }
     if (!multi_screen_buffer) return;
     
-    unsigned int* multi_buffer = (unsigned int*)multi_screen_buffer;
-    extern unsigned int frame[352 * 224];
+    multi_buffer = (unsigned int*)multi_screen_buffer;
     
-    // Clear entire workspace with black
-    for (int i = 0; i < WORKSPACE_WIDTH * WORKSPACE_HEIGHT; i++) {
+    /* Clear entire workspace with black */
+    for (i = 0; i < WORKSPACE_WIDTH * WORKSPACE_HEIGHT; i++) {
         multi_buffer[i] = 0xFF000000;
     }
     
-    // Determine screen positions based on display_swap setting
-    int game_x_offset = display_swap ? KEYPAD_WIDTH : 0;
-    int keypad_x_offset = display_swap ? 0 : GAME_SCREEN_WIDTH;
+    /* Determine screen positions based on display_swap setting */
+    game_x_offset = display_swap ? KEYPAD_WIDTH : 0;
+    keypad_x_offset = display_swap ? 0 : GAME_SCREEN_WIDTH;
     
-    // === UTILITY SECTION BACKGROUND (drawn first, behind buttons) ===
-    // Add a more visible background to the utility area
-    int util_bg_x1 = game_x_offset;
-    int util_bg_x2 = game_x_offset + GAME_SCREEN_WIDTH;
-    int util_bg_y1 = 448;
-    int util_bg_y2 = 600;
+    /* === UTILITY SECTION BACKGROUND (drawn first, behind buttons) === */
+    /* Add a more visible background to the utility area */
+    util_bg_x1 = game_x_offset;
+    util_bg_x2 = game_x_offset + GAME_SCREEN_WIDTH;
+    util_bg_y1 = 448;
+    util_bg_y2 = 600;
     
-    // More visible dark background color - dark blue with better contrast than near-black
-    unsigned int util_bg_color = 0xFF1a2a3a;  // Dark blue-gray with visible contrast to black
+    /* More visible dark background color - dark blue with better contrast than near-black */
+    util_bg_color = 0xFF1a2a3a;  /* Dark blue-gray with visible contrast to black */
     
-    for (int y = util_bg_y1; y < util_bg_y2; y++) {
+    for (y = util_bg_y1; y < util_bg_y2; y++) {
         if (y >= WORKSPACE_HEIGHT) break;
-        for (int x = util_bg_x1; x < util_bg_x2; x++) {
+        for (x = util_bg_x1; x < util_bg_x2; x++) {
             if (x < WORKSPACE_WIDTH) {
                 multi_buffer[y * WORKSPACE_WIDTH + x] = util_bg_color;
             }
@@ -406,11 +432,11 @@ static void render_multi_screen(void)
     }
     
     // === GAME SCREEN ===
-    for (int y = 0; y < GAME_SCREEN_HEIGHT; ++y) {
-        int src_y = y / 2;
-        for (int x = 0; x < GAME_SCREEN_WIDTH; ++x) {
-            int src_x = x / 2;
-            int workspace_x = game_x_offset + x;
+    for (y = 0; y < GAME_SCREEN_HEIGHT; ++y) {
+        src_y = y / 2;
+        for (x = 0; x < GAME_SCREEN_WIDTH; ++x) {
+            src_x = x / 2;
+            workspace_x = game_x_offset + x;
             
             if (workspace_x >= WORKSPACE_WIDTH) continue;
             
@@ -422,12 +448,12 @@ static void render_multi_screen(void)
         }
     }
     
-    // === KEYPAD ===
-    // Background for keypad area
-    unsigned int bg_color = 0xFF1a1a1a;
-    for (int y = 0; y < KEYPAD_HEIGHT && y < WORKSPACE_HEIGHT; ++y) {
-        for (int x = 0; x < KEYPAD_WIDTH; ++x) {
-            int workspace_x = keypad_x_offset + x;
+    /* === KEYPAD === */
+    /* Background for keypad area */
+    bg_color = 0xFF1a1a1a;
+    for (y = 0; y < KEYPAD_HEIGHT && y < WORKSPACE_HEIGHT; ++y) {
+        for (x = 0; x < KEYPAD_WIDTH; ++x) {
+            workspace_x = keypad_x_offset + x;
             if (workspace_x < WORKSPACE_WIDTH) {
                 multi_buffer[y * WORKSPACE_WIDTH + workspace_x] = bg_color;
             }
@@ -439,10 +465,10 @@ static void render_multi_screen(void)
     int overlay_x_offset = (KEYPAD_WIDTH - overlay_width) / 2;
     
     
-    for (int y = 0; y < KEYPAD_HEIGHT && y < WORKSPACE_HEIGHT; ++y) {
-        for (int x = 0; x < KEYPAD_WIDTH; ++x) {
-            int workspace_x = keypad_x_offset + x;
-            int workspace_y = y;
+    for (y = 0; y < KEYPAD_HEIGHT && y < WORKSPACE_HEIGHT; ++y) {
+        for (x = 0; x < KEYPAD_WIDTH; ++x) {
+            workspace_x = keypad_x_offset + x;
+            workspace_y = y;
             
             if (workspace_x >= WORKSPACE_WIDTH || workspace_y >= WORKSPACE_HEIGHT) continue;
             
@@ -508,15 +534,13 @@ static void render_multi_screen(void)
     
 
     
-    // === RENDER BANNER IN UTILITY WORKSPACE ===
+    /* === RENDER BANNER IN UTILITY WORKSPACE === */
     if (banner_loaded && banner_buffer) {
-        // Blit banner to utility area at position (game_x_offset, 448)
-        for (int banner_y = 0; banner_y < banner_height; banner_y++) {
-            for (int banner_x = 0; banner_x < banner_width; banner_x++) {
-                int workspace_x = game_x_offset + banner_x;
-                int workspace_y = 448 + banner_y;
-                
-                if (workspace_x >= WORKSPACE_WIDTH || workspace_y >= WORKSPACE_HEIGHT) continue;
+        /* Blit banner to utility area at position (game_x_offset, 448) */
+        for (banner_y = 0; banner_y < banner_height; banner_y++) {
+            for (banner_x = 0; banner_x < banner_width; banner_x++) {
+                workspace_x = game_x_offset + banner_x;
+                workspace_y = 448 + banner_y;                if (workspace_x >= WORKSPACE_WIDTH || workspace_y >= WORKSPACE_HEIGHT) continue;
                 if (workspace_x < 0) continue;
                 
                 unsigned int banner_pixel = banner_buffer[banner_y * banner_width + banner_x];
@@ -549,11 +573,11 @@ static void render_multi_screen(void)
             }
         }
     } else {
-        // Fallback: Draw dark background if banner not loaded
-        unsigned int utility_bg_color = 0xFF1a2a3a;  // Dark blue-gray
-        for (int y = 448; y < 600; y++) {
+        /* Fallback: Draw dark background if banner not loaded */
+        unsigned int utility_bg_color = 0xFF1a2a3a;  /* Dark blue-gray */
+        for (y = 448; y < 600; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
-            for (int x = game_x_offset; x < game_x_offset + GAME_SCREEN_WIDTH; x++) {
+            for (x = game_x_offset; x < game_x_offset + GAME_SCREEN_WIDTH; x++) {
                 if (x >= WORKSPACE_WIDTH) break;
                 multi_buffer[y * WORKSPACE_WIDTH + x] = utility_bg_color;
             }
@@ -578,46 +602,47 @@ static void render_multi_screen(void)
         0xFF605117   // Layer 6 (innermost): Dark gold/brown (mirror)
     };
     
-    // Draw each layer from outside to inside
-    for (int layer = 0; layer < 7; layer++) {
+    /* Draw each layer from outside to inside */
+    for (layer = 0; layer < 7; layer++) {
         int offset = layer;
         unsigned int color = border_colors[layer];
-        int corner_cut = offset;  // Amount to cut corners at 45° angle
+        int corner_cut = offset;  /* Amount to cut corners at 45° angle */
+        int i;
         
-        // Top border line
-        for (int y = util_border_y1 + offset; y < util_border_y1 + offset + 1; y++) {
+        /* Top border line */
+        for (y = util_border_y1 + offset; y < util_border_y1 + offset + 1; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
-            for (int x = util_border_x1 + corner_cut; x < util_border_x2 - corner_cut; x++) {
+            for (x = util_border_x1 + corner_cut; x < util_border_x2 - corner_cut; x++) {
                 if (x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
-        // Bottom border line
-        for (int y = util_border_y2 - offset - 1; y < util_border_y2 - offset; y++) {
+        /* Bottom border line */
+        for (y = util_border_y2 - offset - 1; y < util_border_y2 - offset; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
-            for (int x = util_border_x1 + corner_cut; x < util_border_x2 - corner_cut; x++) {
+            for (x = util_border_x1 + corner_cut; x < util_border_x2 - corner_cut; x++) {
                 if (x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
-        // Left border line
-        for (int y = util_border_y1 + offset; y < util_border_y2 - offset; y++) {
+        /* Left border line */
+        for (y = util_border_y1 + offset; y < util_border_y2 - offset; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
-            for (int x = util_border_x1 + offset; x < util_border_x1 + offset + 1; x++) {
+            for (x = util_border_x1 + offset; x < util_border_x1 + offset + 1; x++) {
                 if (x >= 0 && x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
-        // Right border line
-        for (int y = util_border_y1 + offset; y < util_border_y2 - offset; y++) {
+        /* Right border line */
+        for (y = util_border_y1 + offset; y < util_border_y2 - offset; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
-            for (int x = util_border_x2 - offset - 1; x < util_border_x2 - offset; x++) {
+            for (x = util_border_x2 - offset - 1; x < util_border_x2 - offset; x++) {
                 if (x < WORKSPACE_WIDTH) multi_buffer[y * WORKSPACE_WIDTH + x] = color;
             }
         }
         
-        // Top-left 45° corner cut
-        for (int i = 0; i < corner_cut; i++) {
+        /* Top-left 45° corner cut */
+        for (i = 0; i < corner_cut; i++) {
             int x = util_border_x1 + i;
             int y = util_border_y1 + offset + i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y < WORKSPACE_HEIGHT) {
@@ -625,8 +650,8 @@ static void render_multi_screen(void)
             }
         }
         
-        // Top-right 45° corner cut
-        for (int i = 0; i < corner_cut; i++) {
+        /* Top-right 45° corner cut */
+        for (i = 0; i < corner_cut; i++) {
             int x = util_border_x2 - 1 - i;
             int y = util_border_y1 + offset + i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y < WORKSPACE_HEIGHT) {
@@ -634,8 +659,8 @@ static void render_multi_screen(void)
             }
         }
         
-        // Bottom-left 45° corner cut
-        for (int i = 0; i < corner_cut; i++) {
+        /* Bottom-left 45° corner cut */
+        for (i = 0; i < corner_cut; i++) {
             int x = util_border_x1 + i;
             int y = util_border_y2 - 1 - offset - i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y >= 0 && y < WORKSPACE_HEIGHT) {
@@ -643,8 +668,8 @@ static void render_multi_screen(void)
             }
         }
         
-        // Bottom-right 45° corner cut
-        for (int i = 0; i < corner_cut; i++) {
+        /* Bottom-right 45° corner cut */
+        for (i = 0; i < corner_cut; i++) {
             int x = util_border_x2 - 1 - i;
             int y = util_border_y2 - 1 - offset - i;
             if (x >= 0 && x < WORKSPACE_WIDTH && y >= 0 && y < WORKSPACE_HEIGHT) {
@@ -653,19 +678,19 @@ static void render_multi_screen(void)
         }
     }
     
-    // === HOTSPOT HIGHLIGHTING - Show which buttons are pressed by touch ===
-    // Highlight all pressed hotspots (from touch input detection)
-    // When display_swap is true, hotspots translate from right side to left side
+    /* === HOTSPOT HIGHLIGHTING - Show which buttons are pressed by touch === */
+    /* Highlight all pressed hotspots (from touch input detection) */
+    /* When display_swap is true, hotspots translate from right side to left side */
     int hotspot_x_adjust = display_swap ? (-GAME_SCREEN_WIDTH) : 0;
     
-    for (int i = 0; i < OVERLAY_HOTSPOT_COUNT; i++) {
+    for (i = 0; i < OVERLAY_HOTSPOT_COUNT; i++) {
         if (hotspot_pressed[i]) {
             overlay_hotspot_t *h = &overlay_hotspots[i];
-            unsigned int highlight_color = 0xAA00FF00;  // Green highlight for touch-pressed
+            unsigned int highlight_color = 0xAA00FF00;  /* Green highlight for touch-pressed */
             
-            for (int y = h->y; y < h->y + h->height; ++y) {
+            for (y = h->y; y < h->y + h->height; ++y) {
                 if (y >= WORKSPACE_HEIGHT) continue;
-                for (int x = h->x + hotspot_x_adjust; x < h->x + h->width + hotspot_x_adjust; ++x) {
+                for (x = h->x + hotspot_x_adjust; x < h->x + h->width + hotspot_x_adjust; ++x) {
                     if (x < 0 || x >= WORKSPACE_WIDTH) continue;
                     
                     unsigned int existing = multi_buffer[y * WORKSPACE_WIDTH + x];
@@ -1164,7 +1189,7 @@ void retro_run(void)
 			OSD_drawTextBG(3, 14, " START  - PAUSE GAME                  ");
 			OSD_drawTextBG(3, 15, " SELECT - SWAP LEFT/RIGHT CONTROLLERS ");
 			OSD_drawTextBG(3, 16, "                                      ");
-			OSD_drawTextBG(3, 17, " FREEINTV 1.2          LICENSE GPL V2+");
+			OSD_drawTextBG(3, 17, " freeintv 1.2          LICENSE GPL V2+");
 			OSD_drawTextBG(3, 18, "                                      ");
 		}
 	}
@@ -1329,7 +1354,7 @@ unsigned retro_get_region(void)
 void retro_get_system_info(struct retro_system_info *info)
 {
 	memset(info, 0, sizeof(*info));
-	info->library_name = "FreeIntv";
+	info->library_name = "freeintv";
 #ifndef GIT_VERSION
 #define GIT_VERSION ""
 #endif
