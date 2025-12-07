@@ -114,13 +114,10 @@ static int banner_height = 152;
 static int toggle_button_pressed = 0;
 static int last_toggle_button_state = 0;
 
-// Initialize overlay hotspots for keypad (positioned on RIGHT side)
+/* Initialize overlay hotspots for keypad (positioned on RIGHT side) */
 static void init_overlay_hotspots(void)
 {
-    printf("[INIT] Initializing overlay hotspots (horizontal layout)...\n");
-    fflush(stdout);
-    
-    // Layout: 4 rows x 3 columns, positioned on RIGHT side of workspace
+    /* Layout: 4 rows x 3 columns, positioned on RIGHT side of workspace */
     int hotspot_w = OVERLAY_HOTSPOT_SIZE;
     int hotspot_h = OVERLAY_HOTSPOT_SIZE;
     int gap_x = 28;
@@ -128,19 +125,19 @@ static void init_overlay_hotspots(void)
     int rows = 4;
     int cols = 3;
     
-    // Position keypad on right side: start at GAME_SCREEN_WIDTH
+    /* Position keypad on right side: start at GAME_SCREEN_WIDTH */
     int keypad_x_offset = GAME_SCREEN_WIDTH;
-    int keypad_y_offset = 0;  // Align to top of keypad region
+    int keypad_y_offset = 0;  /* Align to top of keypad region */
     
-    // IMPORTANT: Controller base is 446px wide, centered in 370px keypad space
-    // This creates a left/right margin of (370 - 446) / 2 = -38px (extends beyond)
-    // Hotspots must account for this centering offset
-    int ctrl_base_x_offset = (KEYPAD_WIDTH - controller_base_width) / 2;  // = -38
+    /* IMPORTANT: Controller base is 446px wide, centered in 370px keypad space */
+    /* This creates a left/right margin of (370 - 446) / 2 = -38px (extends beyond) */
+    /* Hotspots must account for this centering offset */
+    int ctrl_base_x_offset = (KEYPAD_WIDTH - controller_base_width) / 2;  /* = -38 */
     
-    // Center hotspots within the ACTUAL controller base (446px), not the keypad space
-    int hotspots_width = 3 * hotspot_w + 2 * gap_x;  // 266
-    int hotspots_x_in_base = (controller_base_width - hotspots_width) / 2;  // center in 446px
-    int top_margin = 183;  // From DS version: hotspots start 183px from top of workspace
+    /* Center hotspots within the ACTUAL controller base (446px), not the keypad space */
+    int hotspots_width = 3 * hotspot_w + 2 * gap_x;  /* 266 */
+    int hotspots_x_in_base = (controller_base_width - hotspots_width) / 2;  /* center in 446px */
+    int top_margin = 183;  /* From DS version: hotspots start 183px from top of workspace */
     
     int start_x = keypad_x_offset + ctrl_base_x_offset + hotspots_x_in_base;
     int start_y = keypad_y_offset + top_margin;
@@ -157,14 +154,8 @@ static void init_overlay_hotspots(void)
             overlay_hotspots[idx].height = hotspot_h;
             overlay_hotspots[idx].id = idx + 1;
             overlay_hotspots[idx].keypad_code = keypad_map[idx];
-            printf("[INIT] Hotspot %d: pos=(%d,%d), size=%dx%d, keypad_code=0x%02X\n",
-                   idx, overlay_hotspots[idx].x, overlay_hotspots[idx].y,
-                   overlay_hotspots[idx].width, overlay_hotspots[idx].height,
-                   overlay_hotspots[idx].keypad_code);
         }
     }
-    printf("[INIT] Hotspot initialization complete!\n");
-    fflush(stdout);
 }
 
 // Helper function to build system overlay path (handles both Windows \\ and Android / paths)
@@ -182,7 +173,6 @@ static void load_controller_base(void)
     unsigned char* img_data = stbi_load_from_memory(keypad_frame_graphic, keypad_frame_graphic_len, &width, &height, &channels, 4);
     
     if (img_data) {
-        printf("[CONTROLLER] Loaded controller base: %dx%d\n", width, height);
         controller_base_width = width;
         controller_base_height = height;
         
@@ -203,10 +193,8 @@ static void load_controller_base(void)
                 }
             }
             controller_base_loaded = 1;
-            printf("[CONTROLLER] Controller base loaded successfully\n");
         }
     } else {
-        printf("[CONTROLLER] Failed to load embedded controller base\n");
     }
 }
 
@@ -221,11 +209,9 @@ static void load_banner(void)
     unsigned char* img_data = stbi_load_from_memory(banner, banner_len, &width, &height, &channels, 4);
     
     if (!img_data) {
-        printf("[BANNER] Failed to load embedded banner\n");
         return;
     }
     
-    printf("[BANNER] Loaded embedded banner: %dx%d\n", width, height);
     banner_width = width;
     banner_height = height;
     
@@ -247,7 +233,6 @@ static void load_banner(void)
         }
         banner_loaded = 1;
         stbi_image_free(img_data);
-        printf("[BANNER] Banner loaded successfully\n");
     }
 }
 
@@ -782,13 +767,11 @@ static void process_toggle_button_input(void)
         if (!toggle_button_pressed) {
             toggle_button_pressed = 1;
             last_toggle_button_state = 1;
-            printf("[TOGGLE] Toggle button pressed at x=%d y=%d\n", mouse_x, mouse_y);
         }
     } else {
         if (toggle_button_pressed && last_toggle_button_state) {
             // Button released - perform toggle action
             display_swap = !display_swap;
-            printf("[TOGGLE] Screen toggled! display_swap=%d\n", display_swap);
         }
         toggle_button_pressed = 0;
         last_toggle_button_state = 0;
@@ -1095,8 +1078,6 @@ void retro_run(void)
 		
 		FILE *f = fopen("/storage/emulated/0/Download/freeintv_pointer_debug.txt", "a");
 		if (f) {
-			fprintf(f, "Frame %d: POINTER x=%d y=%d pressed=%d\n", debug_frame_count, px, py, pp);
-			fflush(f);
 			fclose(f);
 		}
 		debug_frame_count++;
