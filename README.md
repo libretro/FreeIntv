@@ -1,11 +1,11 @@
-# FreeIntv with Onscreen Interactive Keypad Overlays
-FreeIntv is a libretro emulation core for the Mattel Intellivision designed to be compatible with joypads from the SNES era forward even if they originally required a number pad.
+# freeintv with Onscreen Interactive Keypad Overlays
+freeintv is a libretro emulation core for the Mattel Intellivision designed to be compatible with joypads from the SNES era forward even if they originally required a number pad.
 
 **Current Version**: Enhanced with onscreen interactive keypad overlays for Android, Windows, and Linux (November 24, 2025)
 
 ## Authors & Contributors
 
-FreeIntv was created by David Richardson.
+freeintv was created by David Richardson.
 The PSG and STIC emulation was made closer to hardware and optimized by Oscar Toledo G. (nanochess), who also added save states.
 
 The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), and adapted by Oscar Toledo G. (nanochess)
@@ -18,14 +18,14 @@ The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), an
 
 ## Installation
 
-**Step 1: Install FreeIntv Core**
+**Step 1: Install freeintv Core**
 - Place the compiled core file for your platform into RetroArch's `cores/` directory:
-  - Windows: `FreeIntv_libretro.dll`
-  - Linux: `FreeIntv_libretro.so`
-  - macOS: `FreeIntv_libretro.dylib`
+  - Windows: `freeintv_libretro.dll`
+  - Linux: `freeintv_libretro.so`
+  - macOS: `freeintv_libretro.dylib`
 
 **Step 2: Install the Core Info File**
-- Copy `FreeIntv_libretro.info` to RetroArch's `info/` directory
+- Copy `freeintv_libretro.info` to RetroArch's `info/` directory
 - ⚠️ The filename must match the core filename exactly (excluding the file extension)
 
 **Step 3: Add BIOS Files**
@@ -34,11 +34,11 @@ The Intellivoice code has been contributed by Joe Zbiciak (author of jzintv), an
   - `grom.bin` (Graphics ROM)
 
 **Step 4: Launch Games**
-- Load an Intellivision ROM through RetroArch using the FreeIntv core
+- Load an Intellivision ROM through RetroArch using the freeintv core
 
 ## Enabling Onscreen Interactive Overlays
 
-The FreeIntv core features onscreen interactive keypad overlays that display custom controller graphics directly on screen, allowing touch or mouse input.
+The freeintv core features onscreen interactive keypad overlays that display custom controller graphics directly on screen, allowing touch or mouse input.
 
 ### To Enable the Feature:
 

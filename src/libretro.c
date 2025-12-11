@@ -165,12 +165,16 @@ static void build_overlay_path(const char* rom_path, char* overlay_path, size_t 
 // Load controller base PNG from embedded data
 static void load_controller_base(void)
 {
+    int width, height, channels, y, x;
+    unsigned char* img_data;
+    unsigned char* pixel;
+    unsigned int alpha, r, g, b;
+    
     if (controller_base_loaded) {
         return;
     }
     
-    int width, height, channels;
-    unsigned char* img_data = stbi_load_from_memory(keypad_frame_graphic, keypad_frame_graphic_len, &width, &height, &channels, 4);
+    img_data = stbi_load_from_memory(keypad_frame_graphic, keypad_frame_graphic_len, &width, &height, &channels, 4);
     
     if (img_data) {
         controller_base_width = width;
@@ -181,14 +185,13 @@ static void load_controller_base(void)
         }
         
         if (controller_base) {
-            int y, x;
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
-                    unsigned char* pixel = img_data + (y * width + x) * 4;
-                    unsigned int alpha = pixel[3];
-                    unsigned int r = pixel[0];
-                    unsigned int g = pixel[1];
-                    unsigned int b = pixel[2];
+                    pixel = img_data + (y * width + x) * 4;
+                    alpha = pixel[3];
+                    r = pixel[0];
+                    g = pixel[1];
+                    b = pixel[2];
                     controller_base[y * width + x] = (alpha << 24) | (r << 16) | (g << 8) | b;
                 }
             }
@@ -201,12 +204,16 @@ static void load_controller_base(void)
 // Load banner PNG from embedded data
 static void load_banner(void)
 {
+    int width, height, channels, y, x;
+    unsigned char* img_data;
+    unsigned char* pixel;
+    unsigned int alpha, r, g, b;
+    
     if (banner_loaded) {
         return;
     }
     
-    int width, height, channels;
-    unsigned char* img_data = stbi_load_from_memory(banner, banner_len, &width, &height, &channels, 4);
+    img_data = stbi_load_from_memory(banner, banner_len, &width, &height, &channels, 4);
     
     if (!img_data) {
         return;
@@ -269,11 +276,17 @@ static void build_overlay_path(const char* rom_path, char* overlay_path, size_t 
 // Load overlay for ROM
 static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
 {
+    char overlay_path[1024], jpg_path[1024];
+    int width, height, channels, y, x, from_file;
+    unsigned char* img_data;
+    unsigned char* pixel;
+    unsigned int alpha, r, g, b;
+    char* ext;
+    
     if (!rom_path || !system_dir || !multi_screen_enabled) {
         return;
     }
     
-    char overlay_path[1024];
     build_overlay_path(rom_path, overlay_path, sizeof(overlay_path), system_dir);
     
     overlay_loaded = 0;
@@ -283,15 +296,13 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
         overlay_buffer = NULL;
     }
     
-    int width, height, channels;
-    unsigned char* img_data = stbi_load(overlay_path, &width, &height, &channels, 4);
-    int from_file = 1;
+    img_data = stbi_load(overlay_path, &width, &height, &channels, 4);
+    from_file = 1;
     
     if (!img_data) {
         // Try JPG format
-        char jpg_path[1024];
         strncpy(jpg_path, overlay_path, sizeof(jpg_path) - 1);
-        char* ext = strrchr(jpg_path, '.');
+        ext = strrchr(jpg_path, '.');
         if (ext) {
             strcpy(ext, ".jpg");
             img_data = stbi_load(jpg_path, &width, &height, &channels, 4);
@@ -311,14 +322,13 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
         overlay_buffer = (unsigned int*)malloc(width * height * sizeof(unsigned int));
         
         if (overlay_buffer) {
-            int y, x;
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
-                    unsigned char* pixel = img_data + (y * width + x) * 4;
-                    unsigned int alpha = pixel[3];
-                    unsigned int r = pixel[0];
-                    unsigned int g = pixel[1];
-                    unsigned int b = pixel[2];
+                    pixel = img_data + (y * width + x) * 4;
+                    alpha = pixel[3];
+                    r = pixel[0];
+                    g = pixel[1];
+                    b = pixel[2];
                     overlay_buffer[y * width + x] = (alpha << 24) | (r << 16) | (g << 8) | b;
                 }
             }
@@ -333,7 +343,6 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
         overlay_height = 600;
         overlay_buffer = (unsigned int*)malloc(overlay_width * overlay_height * sizeof(unsigned int));
         if (overlay_buffer) {
-            int y, x;
             for (y = 0; y < overlay_height; y++) {
                 for (x = 0; x < overlay_width; x++) {
                     if (y < overlay_height / 2 && x < overlay_width / 2)
@@ -366,7 +375,7 @@ static void render_multi_screen(void)
     int src_y, src_x, workspace_x, workspace_y;
     unsigned int bg_color;
     int overlay_x, overlay_y, overlay_workspace_x, overlay_workspace_y;
-    unsigned int overlay_pixel;
+    unsigned int overlay_pixel, overlay_pixel_val;
     int banner_start_x, banner_start_y;
     int banner_x, banner_y;
     int banner_workspace_x, banner_workspace_y;
@@ -374,10 +383,18 @@ static void render_multi_screen(void)
     unsigned int existing;
     int blended_r, blended_g, blended_b;
     float alpha;
-    int button_idx, btn_y, btn_x, utility_bg_color;
+    int button_idx, btn_y, btn_x;
     int color;
     int hotspot_idx, workspace_idx;
-    int layer;
+    int layer, offset, corner_cut;
+    unsigned int border_colors[7];
+    int util_border_x1, util_border_x2, util_border_y1, util_border_y2;
+    unsigned int pixel, base_pixel;
+    unsigned int inv_alpha;
+    unsigned int base_r, base_g, base_b;
+    unsigned int bg_r, bg_g, bg_b;
+    int ctrl_base_x_offset, overlay_x_offset, ctrl_x;
+    unsigned int utility_bg_color;
     
     if (!multi_screen_enabled) return;
     
@@ -446,8 +463,8 @@ static void render_multi_screen(void)
     }
     
     // Layer overlay and controller base
-    int ctrl_base_x_offset = (KEYPAD_WIDTH - controller_base_width) / 2;
-    int overlay_x_offset = (KEYPAD_WIDTH - overlay_width) / 2;
+    ctrl_base_x_offset = (KEYPAD_WIDTH - controller_base_width) / 2;
+    overlay_x_offset = (KEYPAD_WIDTH - overlay_width) / 2;
     
     
     for (y = 0; y < KEYPAD_HEIGHT && y < WORKSPACE_HEIGHT; ++y) {
@@ -457,24 +474,24 @@ static void render_multi_screen(void)
             
             if (workspace_x >= WORKSPACE_WIDTH || workspace_y >= WORKSPACE_HEIGHT) continue;
             
-            unsigned int pixel = bg_color;
+            pixel = bg_color;
             
             // If overlay is loaded, show overlay with controller base on top
             if (overlay_loaded && overlay_buffer && y < overlay_height) {
-                int overlay_x = x - overlay_x_offset;
+                overlay_x = x - overlay_x_offset;
                 if (overlay_x >= 0 && overlay_x < overlay_width) {
-                    unsigned int overlay_pixel = overlay_buffer[y * overlay_width + overlay_x];
-                    if ((overlay_pixel >> 24) & 0xFF) {
-                        pixel = overlay_pixel;
+                    overlay_pixel_val = overlay_buffer[y * overlay_width + overlay_x];
+                    if ((overlay_pixel_val >> 24) & 0xFF) {
+                        pixel = overlay_pixel_val;
                     }
                 }
             }
             // Only use controller base if NO overlay is loaded
             else if (!overlay_loaded && controller_base_loaded && controller_base && y < controller_base_height) {
-                int ctrl_x = x - ctrl_base_x_offset;
+                ctrl_x = x - ctrl_base_x_offset;
                 if (ctrl_x >= 0 && ctrl_x < controller_base_width) {
-                    unsigned int base_pixel = controller_base[y * controller_base_width + ctrl_x];
-                    unsigned int alpha = (base_pixel >> 24) & 0xFF;
+                    base_pixel = controller_base[y * controller_base_width + ctrl_x];
+                    alpha = (base_pixel >> 24) & 0xFF;
                     if (alpha > 0) {
                         pixel = base_pixel;
                     }
@@ -483,22 +500,22 @@ static void render_multi_screen(void)
             
             // Layer controller base on top (with overlay showing through transparent areas)
             if (overlay_loaded && controller_base_loaded && controller_base && y < controller_base_height) {
-                int ctrl_x = x - ctrl_base_x_offset;
+                ctrl_x = x - ctrl_base_x_offset;
                 if (ctrl_x >= 0 && ctrl_x < controller_base_width) {
-                    unsigned int base_pixel = controller_base[y * controller_base_width + ctrl_x];
-                    unsigned int alpha = (base_pixel >> 24) & 0xFF;
+                    base_pixel = controller_base[y * controller_base_width + ctrl_x];
+                    alpha = (base_pixel >> 24) & 0xFF;
                     if (alpha > 0) {
                         if (alpha == 255) {
                             // Fully opaque: use controller base
                             pixel = base_pixel;
                         } else {
                             // Semi-transparent: blend controller base over overlay
-                            unsigned int inv_alpha = 255 - alpha;
-                            unsigned int base_r = (base_pixel >> 16) & 0xFF;
-                            unsigned int base_g = (base_pixel >> 8) & 0xFF;
-                            unsigned int base_b = base_pixel & 0xFF;
+                            inv_alpha = 255 - alpha;
+                            base_r = (base_pixel >> 16) & 0xFF;
+                            base_g = (base_pixel >> 8) & 0xFF;
+                            base_b = base_pixel & 0xFF;
                             
-                            unsigned int bg_r = (pixel >> 16) & 0xFF;
+                            bg_r = (pixel >> 16) & 0xFF;
                             unsigned int bg_g = (pixel >> 8) & 0xFF;
                             unsigned int bg_b = pixel & 0xFF;
                             
@@ -559,7 +576,7 @@ static void render_multi_screen(void)
         }
     } else {
         /* Fallback: Draw dark background if banner not loaded */
-        unsigned int utility_bg_color = 0xFF1a2a3a;  /* Dark blue-gray */
+        utility_bg_color = 0xFF1a2a3a;  /* Dark blue-gray */
         for (y = 448; y < 600; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
             for (x = game_x_offset; x < game_x_offset + GAME_SCREEN_WIDTH; x++) {
@@ -571,28 +588,25 @@ static void render_multi_screen(void)
     
     // === UTILITY SECTION BORDER - 7 LAYER GRADIENT WITH 45° CORNERS (gold retro palette) ===
     // Colors from outside to inside: #605117, #927b18, #c7a814, #ffd700, #c7a814, #927b18, #605117
-    int util_border_x1 = game_x_offset;
-    int util_border_x2 = game_x_offset + GAME_SCREEN_WIDTH;
-    int util_border_y1 = 448;
-    int util_border_y2 = 600;
+    util_border_x1 = game_x_offset;
+    util_border_x2 = game_x_offset + GAME_SCREEN_WIDTH;
+    util_border_y1 = 448;
+    util_border_y2 = 600;
     
     // 7-layer color palette (ARGB format with full opacity)
-    unsigned int border_colors[7] = {
-        0xFF605117,  // Layer 0 (outermost): Dark gold/brown
-        0xFF927b18,  // Layer 1: Medium-dark gold
-        0xFFc7a814,  // Layer 2: Medium gold
-        0xFFffd700,  // Layer 3 (center): Bright gold
-        0xFFc7a814,  // Layer 4: Medium gold (mirror)
-        0xFF927b18,  // Layer 5: Medium-dark gold (mirror)
-        0xFF605117   // Layer 6 (innermost): Dark gold/brown (mirror)
-    };
+    border_colors[0] = 0xFF605117;  // Layer 0 (outermost): Dark gold/brown
+    border_colors[1] = 0xFF927b18;  // Layer 1: Medium-dark gold
+    border_colors[2] = 0xFFc7a814;  // Layer 2: Medium gold
+    border_colors[3] = 0xFFffd700;  // Layer 3 (center): Bright gold
+    border_colors[4] = 0xFFc7a814;  // Layer 4: Medium gold (mirror)
+    border_colors[5] = 0xFF927b18;  // Layer 5: Medium-dark gold (mirror)
+    border_colors[6] = 0xFF605117;  // Layer 6 (innermost): Dark gold/brown (mirror)
     
     /* Draw each layer from outside to inside */
     for (layer = 0; layer < 7; layer++) {
-        int offset = layer;
-        unsigned int color = border_colors[layer];
-        int corner_cut = offset;  /* Amount to cut corners at 45° angle */
-        int i;
+        offset = layer;
+        color = border_colors[layer];
+        corner_cut = offset;  /* Amount to cut corners at 45° angle */
         
         /* Top border line */
         for (y = util_border_y1 + offset; y < util_border_y1 + offset + 1; y++) {

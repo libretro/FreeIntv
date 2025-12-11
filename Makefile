@@ -45,7 +45,7 @@ endif
 
 
 CORE_DIR	+= .
-TARGET_NAME := FreeIntv
+TARGET_NAME := freeintv
 SOURCE_DIR := src
 
 ifeq (,$(findstring msvc,$(platform)))
