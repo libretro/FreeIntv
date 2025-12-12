@@ -5,7 +5,7 @@
 
 /* Disable thread-local storage for iOS armv7 compatibility */
 #ifdef __APPLE__
-#define STBI_THREAD_LOCAL
+#define STBI_NO_THREAD_LOCALS
 #endif
 
 #define STB_IMAGE_IMPLEMENTATION
