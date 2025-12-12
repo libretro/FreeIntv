@@ -31,6 +31,9 @@ jni/obj/
 *~
 .DS_Store
 
+# Local build and test scripts
+build-test.ps1
+
 # Temporary and log files
 *.tmp
 *.temp
