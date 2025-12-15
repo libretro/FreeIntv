@@ -691,7 +691,7 @@ static void render_multi_screen(void)
     /* === HOTSPOT HIGHLIGHTING - Show which buttons are pressed by touch === */
     /* Highlight all pressed hotspots (from touch input detection) */
     /* When display_swap is true, hotspots translate from right side to left side */
-    int hotspot_x_adjust = display_swap ? (-GAME_SCREEN_WIDTH) : 0;
+    hotspot_x_adjust = display_swap ? (-GAME_SCREEN_WIDTH) : 0;
     
     for (i = 0; i < OVERLAY_HOTSPOT_COUNT; i++) {
         if (hotspot_pressed[i]) {
