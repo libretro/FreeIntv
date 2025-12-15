@@ -378,7 +378,6 @@ static void render_multi_screen(void)
     extern unsigned int frame[352 * 224];
     int game_x_offset, keypad_x_offset;
     int util_bg_x1, util_bg_x2, util_bg_y1, util_bg_y2;
-    unsigned int util_bg_color;
     int src_y, src_x, workspace_x, workspace_y;
     unsigned int bg_color;
     int overlay_x, overlay_y, overlay_workspace_x, overlay_workspace_y;
