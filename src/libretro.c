@@ -381,7 +381,7 @@ static void render_multi_screen(void)
     int src_y, src_x, workspace_x, workspace_y;
     unsigned int bg_color;
     int overlay_x, overlay_y, overlay_workspace_x, overlay_workspace_y;
-    unsigned int overlay_pixel;
+    unsigned int overlay_pixel, overlay_pixel_val;
     int banner_start_x, banner_start_y;
     int banner_x, banner_y;
     int banner_workspace_x, banner_workspace_y;
@@ -389,10 +389,22 @@ static void render_multi_screen(void)
     unsigned int existing;
     int blended_r, blended_g, blended_b;
     float alpha;
-    int button_idx, btn_y, btn_x, utility_bg_color;
+    int button_idx, btn_y, btn_x;
     int color;
     int hotspot_idx, workspace_idx;
-    int layer;
+    int layer, offset, corner_cut;
+    unsigned int border_colors[7];
+    int util_border_x1, util_border_x2, util_border_y1, util_border_y2;
+    unsigned int pixel, base_pixel;
+    unsigned int inv_alpha;
+    unsigned int base_r, base_g, base_b;
+    unsigned int bg_r, bg_g, bg_b;
+    int ctrl_base_x_offset, overlay_x_offset, ctrl_x;
+    unsigned int utility_bg_color;
+    unsigned int r, g, b;
+    unsigned int existing_r, existing_g, existing_b;
+    int hotspot_x_adjust;
+    unsigned int highlight_color;
     
     if (!multi_screen_enabled) return;
     
@@ -420,13 +432,13 @@ static void render_multi_screen(void)
     util_bg_y2 = 600;
     
     /* More visible dark background color - dark blue with better contrast than near-black */
-    util_bg_color = 0xFF1a2a3a;  /* Dark blue-gray with visible contrast to black */
+    utility_bg_color = 0xFF1a2a3a;  /* Dark blue-gray with visible contrast to black */
     
     for (y = util_bg_y1; y < util_bg_y2; y++) {
         if (y >= WORKSPACE_HEIGHT) break;
         for (x = util_bg_x1; x < util_bg_x2; x++) {
             if (x < WORKSPACE_WIDTH) {
-                multi_buffer[y * WORKSPACE_WIDTH + x] = util_bg_color;
+                multi_buffer[y * WORKSPACE_WIDTH + x] = utility_bg_color;
             }
         }
     }
