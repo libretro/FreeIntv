@@ -185,13 +185,14 @@ static void load_controller_base(void)
         }
         
         if (controller_base) {
+            int y, x;
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
-                    pixel = img_data + (y * width + x) * 4;
-                    alpha = pixel[3];
-                    r = pixel[0];
-                    g = pixel[1];
-                    b = pixel[2];
+                    unsigned char* pixel = img_data + (y * width + x) * 4;
+                    unsigned int alpha = pixel[3];
+                    unsigned int r = pixel[0];
+                    unsigned int g = pixel[1];
+                    unsigned int b = pixel[2];
                     controller_base[y * width + x] = (alpha << 24) | (r << 16) | (g << 8) | b;
                 }
             }
@@ -326,13 +327,14 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
         overlay_buffer = (unsigned int*)malloc(width * height * sizeof(unsigned int));
         
         if (overlay_buffer) {
+            int y, x;
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width; x++) {
-                    pixel = img_data + (y * width + x) * 4;
-                    alpha = pixel[3];
-                    r = pixel[0];
-                    g = pixel[1];
-                    b = pixel[2];
+                    unsigned char* pixel = img_data + (y * width + x) * 4;
+                    unsigned int alpha = pixel[3];
+                    unsigned int r = pixel[0];
+                    unsigned int g = pixel[1];
+                    unsigned int b = pixel[2];
                     overlay_buffer[y * width + x] = (alpha << 24) | (r << 16) | (g << 8) | b;
                 }
             }
@@ -347,6 +349,7 @@ static void load_overlay_for_rom(const char* rom_path, const char* system_dir)
         overlay_height = 600;
         overlay_buffer = (unsigned int*)malloc(overlay_width * overlay_height * sizeof(unsigned int));
         if (overlay_buffer) {
+            int y, x;
             for (y = 0; y < overlay_height; y++) {
                 for (x = 0; x < overlay_width; x++) {
                     if (y < overlay_height / 2 && x < overlay_width / 2)
@@ -379,7 +382,7 @@ static void render_multi_screen(void)
     int src_y, src_x, workspace_x, workspace_y;
     unsigned int bg_color;
     int overlay_x, overlay_y, overlay_workspace_x, overlay_workspace_y;
-    unsigned int overlay_pixel, overlay_pixel_val;
+    unsigned int overlay_pixel;
     int banner_start_x, banner_start_y;
     int banner_x, banner_y;
     int banner_workspace_x, banner_workspace_y;
@@ -387,22 +390,10 @@ static void render_multi_screen(void)
     unsigned int existing;
     int blended_r, blended_g, blended_b;
     float alpha;
-    int button_idx, btn_y, btn_x;
+    int button_idx, btn_y, btn_x, utility_bg_color;
     int color;
     int hotspot_idx, workspace_idx;
-    int layer, offset, corner_cut;
-    unsigned int border_colors[7];
-    int util_border_x1, util_border_x2, util_border_y1, util_border_y2;
-    unsigned int pixel, base_pixel;
-    unsigned int inv_alpha;
-    unsigned int base_r, base_g, base_b;
-    unsigned int bg_r, bg_g, bg_b;
-    int ctrl_base_x_offset, overlay_x_offset, ctrl_x;
-    unsigned int utility_bg_color;
-    unsigned int r, g, b;
-    unsigned int existing_r, existing_g, existing_b;
-    int hotspot_x_adjust;
-    unsigned int highlight_color;
+    int layer;
     
     if (!multi_screen_enabled) return;
     
@@ -584,7 +575,7 @@ static void render_multi_screen(void)
         }
     } else {
         /* Fallback: Draw dark background if banner not loaded */
-        utility_bg_color = 0xFF1a2a3a;  /* Dark blue-gray */
+        unsigned int utility_bg_color = 0xFF1a2a3a;  /* Dark blue-gray */
         for (y = 448; y < 600; y++) {
             if (y >= WORKSPACE_HEIGHT) break;
             for (x = game_x_offset; x < game_x_offset + GAME_SCREEN_WIDTH; x++) {
@@ -612,9 +603,10 @@ static void render_multi_screen(void)
     
     /* Draw each layer from outside to inside */
     for (layer = 0; layer < 7; layer++) {
-        offset = layer;
-        color = border_colors[layer];
-        corner_cut = offset;  /* Amount to cut corners at 45° angle */
+        int offset = layer;
+        unsigned int color = border_colors[layer];
+        int corner_cut = offset;  /* Amount to cut corners at 45° angle */
+        int i;
         
         /* Top border line */
         for (y = util_border_y1 + offset; y < util_border_y1 + offset + 1; y++) {
@@ -688,12 +680,12 @@ static void render_multi_screen(void)
     /* === HOTSPOT HIGHLIGHTING - Show which buttons are pressed by touch === */
     /* Highlight all pressed hotspots (from touch input detection) */
     /* When display_swap is true, hotspots translate from right side to left side */
-    hotspot_x_adjust = display_swap ? (-GAME_SCREEN_WIDTH) : 0;
+    int hotspot_x_adjust = display_swap ? (-GAME_SCREEN_WIDTH) : 0;
     
     for (i = 0; i < OVERLAY_HOTSPOT_COUNT; i++) {
         if (hotspot_pressed[i]) {
             overlay_hotspot_t *h = &overlay_hotspots[i];
-            highlight_color = 0xAA00FF00;  /* Green highlight for touch-pressed */
+            unsigned int highlight_color = 0xAA00FF00;  /* Green highlight for touch-pressed */
             
             for (y = h->y; y < h->y + h->height; ++y) {
                 if (y >= WORKSPACE_HEIGHT) continue;
