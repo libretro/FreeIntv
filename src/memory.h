@@ -20,6 +20,8 @@
 
 extern unsigned int Memory[0x10000];
 
+extern int d000_ram; /* 1 = $D000-$D3FF is 8-bit RAM (e.g. USCF Chess) */
+
 void MemoryInit(void);
 
 int readMem(int adr);

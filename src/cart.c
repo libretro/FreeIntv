@@ -209,7 +209,7 @@ void load3()
 void load4()
 {
 	loadRange(0x5000, 0x6FFF);
-	// [memattr] $D000 - $D3FF = RAM 8 // automatic 
+	d000_ram = 1; /* $D000-$D3FF = RAM 8 */
 }
 
 void load5()

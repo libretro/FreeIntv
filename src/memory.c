@@ -25,6 +25,8 @@
 
 unsigned int Memory[0x10000];
 
+int d000_ram = 0; /* 1 = $D000-$D3FF is 8-bit RAM (e.g. USCF Chess) */
+
 int stic_and[64] = {
     0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff, 0x07ff,
     0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff, 0x0fff,
@@ -66,6 +68,10 @@ void writeMem(int adr, int val) // Write (should handle hooks/alias)
         case 0x15:  /* A800-AFFF */
         case 0x16:  /* B000-B7FF */
         case 0x1a:  /* D000-D7FF */
+            if (d000_ram && adr <= 0xD3FF) {
+                Memory[adr] = val & 0xFF; /* RAM 8 */
+            }
+            return;
         case 0x1b:  /* D800-DFFF */
         case 0x1c:  /* E000-E7FF */
         case 0x1d:  /* E800-EFFF */
@@ -146,13 +152,19 @@ int readMem(int adr) // Read (should handle hooks/alias)
 		val = val & 0xFF;
 	}
 
+	if(d000_ram && adr>=0xD000 && adr<=0xD3FF)
+	{
+		val = val & 0xFF; /* RAM 8 */
+	}
+
 	return val;
 }
 
 void MemoryInit()
 {
 	int i;
-	for(i=0x0000; i<=0x0007; i++) { Memory[i] = 0x3800; } // STIC Registers
+	d000_ram = 0; /* reset per-cart flags before loading new cart */
+	for(i=0x0000; i<=0x0007; i++) { Memory[i] = 0x3800; } /* STIC Registers */
 	for(i=0x0008; i<=0x000F; i++) { Memory[i] = 0x3000; }
 	for(i=0x0010; i<=0x0017; i++) { Memory[i] = 0x0000; }
 	for(i=0x0018; i<=0x001F; i++) { Memory[i] = 0x3C00; }
@@ -171,6 +183,6 @@ void MemoryInit()
 	for(i=0x4000; i<=0x4FFF; i++) { Memory[i] = 0xFFFF; }
 	for(i=0x5000; i<=0x5FFF; i++) { Memory[i] = 0x0000; }
 	for(i=0x6000; i<=0xFFFF; i++) { Memory[i] = 0xFFFF; }
-	Memory[0x1FE] = 0xFF; // Controller R
-	Memory[0x1FF] = 0xFF; // Controller L
+	Memory[0x1FE] = 0xFF; /* Controller R */
+	Memory[0x1FF] = 0xFF; /* Controller L */
 }

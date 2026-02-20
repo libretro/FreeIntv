@@ -361,9 +361,9 @@ void drawBackgroundColorStack(int scanline)
             fgcolor = fgcard[col];
             bgcolor = bgcard[col];
             
-            if (((card >> 11) & 0x01) != 0) // Limit GRAM to 64 cards
+            if (((card >> 11) & 0x01) != 0) /* Card is from GRAM - limit to 64 cards */
                 gaddress = 0x3000 + (card & 0x09f8);
-            else
+            else                             /* Card is from GROM */
                 gaddress = 0x3000 + (card & 0x0ff8);
             
             gdata = Memory[gaddress + cardrow]; // fetch current line of current card graphic
