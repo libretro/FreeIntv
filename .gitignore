@@ -39,3 +39,4 @@ build-test.ps1
 *.temp
 *.log
 Assets/Thumbs.db
+screenshots/Thumbs.db
