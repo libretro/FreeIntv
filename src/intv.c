@@ -27,6 +27,10 @@
 #include "osd.h"
 #include "ivoice.h"
 
+#ifdef __LIBRETRO__
+#include <streams/file_stream.h>
+#endif
+
 int SR1;
 int intv_halt;
 
@@ -49,6 +53,22 @@ void loadExec(const char* path)
 	// EXEC lives at 0x1000-0x1FFF
 	int i;
 	unsigned char word[2];
+
+#ifdef __LIBRETRO__
+	RFILE *fp;
+	if((fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)) != NULL)
+	{
+		for(i=0x1000; i<=0x1FFF; i++)
+		{
+			filestream_read(fp, word, sizeof(word));
+			Memory[i] = (word[0]<<8) | word[1];
+		}
+
+		filestream_close(fp);
+		OSD_drawText(3, 1, "LOAD EXEC: OKAY");
+		printf("[INFO] [FREEINTV] Succeeded loading Executive BIOS from: %s\n", path);
+	}
+#else
 	FILE *fp;
 	if((fp = fopen(path,"rb"))!=NULL)
 	{
@@ -62,6 +82,7 @@ void loadExec(const char* path)
 		OSD_drawText(3, 1, "LOAD EXEC: OKAY");
 		printf("[INFO] [FREEINTV] Succeeded loading Executive BIOS from: %s\n", path);		
 	}
+#endif
 	else
 	{
 		OSD_drawText(3, 1, "LOAD EXEC: FAIL");
@@ -75,7 +96,23 @@ void loadGrom(const char* path)
 	// GROM lives at 0x3000-0x37FF
 	int i;
 	unsigned char word[1];
-	FILE *fp;
+
+#ifdef __LIBRETRO__
+	RFILE *fp;
+	if((fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)) != NULL)
+	{
+		for(i=0x3000; i<=0x37FF; i++)
+		{
+			filestream_read(fp, word, sizeof(word));
+			Memory[i] = word[0];
+		}
+
+		filestream_close(fp);
+		OSD_drawText(3, 2, "LOAD GROM: OKAY");
+		printf("[INFO] [FREEINTV] Succeeded loading Graphics BIOS from: %s\n", path);
+	}
+#else
+    FILE *fp;
 	if((fp = fopen(path,"rb"))!=NULL)
 	{
 		for(i=0x3000; i<=0x37FF; i++)
@@ -89,6 +126,7 @@ void loadGrom(const char* path)
 		printf("[INFO] [FREEINTV] Succeeded loading Graphics BIOS from: %s\n", path);
 		
 	}
+#endif
 	else
 	{
 		OSD_drawText(3, 2, "LOAD GROM: FAIL");
