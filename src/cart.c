@@ -51,12 +51,17 @@ int LoadCart(const char *path)
 {
 	unsigned char word[1];
 
+#ifdef __LIBRETRO__
+    RFILE *fp;
+#else
+    FILE *fp;
+#endif
+
     printf("[INFO] [FREEINTV] Attempting to load cartridge ROM from: %s\n", path);		
 
 	size = 0;
 
 #ifdef __LIBRETRO__
-	RFILE *fp;
 	if((fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)) != NULL)
 	{
 		while(filestream_read(fp, word, sizeof(word)) == sizeof(word) && size<0x20000)
@@ -67,7 +72,6 @@ int LoadCart(const char *path)
         filestream_close(fp);
         printf("[INFO] [FREEINTV] Cartridge load complete: %d bytes read\n", size);
 #else
-	FILE *fp;
 	if((fp = fopen(path,"rb"))!=NULL)
 	{
 		while(fread(word,sizeof(word),1,fp) && size<0x20000)
