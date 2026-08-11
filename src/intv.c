@@ -55,7 +55,12 @@ void loadExec(const char* path)
 	unsigned char word[2];
 
 #ifdef __LIBRETRO__
-	RFILE *fp;
+    RFILE *fp;
+#else
+    FILE *fp;
+#endif
+
+#ifdef __LIBRETRO__
 	if((fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)) != NULL)
 	{
 		for(i=0x1000; i<=0x1FFF; i++)
@@ -69,7 +74,6 @@ void loadExec(const char* path)
 		printf("[INFO] [FREEINTV] Succeeded loading Executive BIOS from: %s\n", path);
 	}
 #else
-	FILE *fp;
 	if((fp = fopen(path,"rb"))!=NULL)
 	{
 		for(i=0x1000; i<=0x1FFF; i++)
@@ -98,7 +102,12 @@ void loadGrom(const char* path)
 	unsigned char word[1];
 
 #ifdef __LIBRETRO__
-	RFILE *fp;
+    RFILE *fp;
+#else
+    FILE *fp;
+#endif
+
+#ifdef __LIBRETRO__
 	if((fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)) != NULL)
 	{
 		for(i=0x3000; i<=0x37FF; i++)
@@ -112,7 +121,6 @@ void loadGrom(const char* path)
 		printf("[INFO] [FREEINTV] Succeeded loading Graphics BIOS from: %s\n", path);
 	}
 #else
-    FILE *fp;
 	if((fp = fopen(path,"rb"))!=NULL)
 	{
 		for(i=0x3000; i<=0x37FF; i++)

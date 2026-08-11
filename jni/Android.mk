@@ -22,14 +22,17 @@ ANDROID_SOURCES_C := \
 	../src/stic.c \
 	../src/stb_image_impl.c \
 	../src/deps/libretro-common/file/file_path.c \
+	../src/deps/libretro-common/file/file_path_io.c \
 	../src/deps/libretro-common/compat/compat_posix_string.c \
 	../src/deps/libretro-common/compat/compat_snprintf.c \
 	../src/deps/libretro-common/compat/compat_strl.c \
 	../src/deps/libretro-common/compat/compat_strcasestr.c \
 	../src/deps/libretro-common/compat/fopen_utf8.c \
 	../src/deps/libretro-common/encodings/encoding_utf.c \
+	../src/deps/libretro-common/streams/file_stream.c \
 	../src/deps/libretro-common/string/stdstring.c \
-	../src/deps/libretro-common/time/rtime.c
+	../src/deps/libretro-common/time/rtime.c \
+	../src/deps/libretro-common/vfs/vfs_implementation.c
 
 include $(CLEAR_VARS)
 LOCAL_MODULE    := retro
