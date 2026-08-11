@@ -25,6 +25,8 @@
 #include "libretro_core_options.h"
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <streams/file_stream.h>
+#include <vfs/vfs_implementation.h>
 
 #include "intv.h"
 #include "cp1610.h"
@@ -1093,11 +1095,18 @@ static void check_variables(bool first_run)
 
 void retro_set_environment(retro_environment_t fn)
 {
+    struct retro_vfs_interface_info vfs_iface_info;
+
 	Environ = fn;
 
 	// Set core options
 	libretro_supports_option_categories = false;
 	libretro_set_core_options(Environ, &libretro_supports_option_categories);
+
+    vfs_iface_info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+	vfs_iface_info.iface = NULL;
+	if (Environ(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+		filestream_vfs_init(&vfs_iface_info);
 }
 
 void retro_init(void)
