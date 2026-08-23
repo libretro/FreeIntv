@@ -79,6 +79,20 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "right"
    },
    {
+      "dual_controller_enabled",
+      "Enable Dual Controllers",
+      NULL,
+      "Maps the Right Analog Keypad Buttons from Controller 2 to Controller 1 Right Analog. This allows games such as Night Stalker and Tron Deadly Discs to support moving and shooting simultaneously.",
+      NULL,
+      "input",
+      {
+         { "enabled",  "Enabled"  },
+         { "disabled", "Disabled" },
+         { NULL, NULL },
+      },
+      "disabled"
+   },
+   {
       "freeintv_multiscreen_overlay",
       "Onscreen Interactive Keypad Overlays (Restart and Touchscreen/Mouse Required)",
       NULL,
