@@ -213,6 +213,15 @@ else ifeq ($(platform), libnx)
     CFLAGS += -std=gnu11
     STATIC_LINKING = 1
 
+# Nintendo Switch 2 (libounce)
+else ifeq ($(platform), libounce)
+    include $(DEVKITPRO)/libounce/switch2_rules
+    TARGET := $(TARGET_NAME)_libretro_$(platform).elf
+    TARGET_NRO := $(TARGET:.elf=.nro)
+    fpic := -fPIC
+    SHARED := -shared -Wl,--version-script=$(CORE_DIR)/link.T -Wl,--no-undefined
+    LDFLAGS += -Wl,-soname,$(TARGET_NRO)
+
 # Nintendo WiiU
 else ifeq ($(platform), wiiu)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).a
@@ -640,6 +649,10 @@ INCFLAGS += $(INCFLAGS_PLATFORM)
 
 all: $(TARGET)
 
+ifeq ($(platform), libounce)
+all: $(TARGET_NRO)
+endif
+
 $(TARGET): $(OBJECTS)
 ifeq ($(STATIC_LINKING),1)
 ifneq (,$(findstring msvc,$(platform)))
@@ -655,4 +668,4 @@ endif
 	$(CC) -c $(OBJOUT)$@ $< $(CFLAGS) $(INCFLAGS) 
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
+	rm -f $(OBJECTS) $(TARGET) $(TARGET_NRO)
